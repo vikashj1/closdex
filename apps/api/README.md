@@ -13,12 +13,18 @@ NestJS (Node + TypeScript). The SOW's 8 system components become Nest modules.
 - `users/` — profile read + edit (user fields + salesperson-only fields)
 - `companies/` — read + ADMIN-only edit
 
-### M3 — Challenge Engine (slice 1)
-- `personas/` — admin-only CRUD for lead personas; `personalityPrompt` (the LLM system
-  prompt) is never returned to non-admins, by design
-- `challenges/` — challenge CRUD + lifecycle (publish/archive). Non-admins see only
-  PUBLISHED. Filtering by difficulty / goalType / category. Persona shown to
-  salespeople omits the personalityPrompt.
+### M3 — Challenge Engine + AI Lead Simulation
+- `personas/` — admin-only CRUD for lead personas; `personalityPrompt` (the LLM
+  system prompt) is never returned to non-admins, by design
+- `challenges/` — challenge CRUD + lifecycle (publish/archive). Non-admins see
+  PUBLISHED only. Filtering by difficulty / goalType / category.
+- `ai/` — provider-agnostic LLM interface, OpenAI + Anthropic providers, persona-driven
+  `AiLeadService`. Provider selected by `AI_PROVIDER` env (`openai` | `anthropic`).
+  Anthropic provider uses prompt caching on the persona system prompt + the trailing
+  message in conversation history.
+- `attempts/` — challenge attempt lifecycle: start, send message (drives the AI lead
+  reply), end. Auto-completes when the salesperson hits `challenge.maxMessages`. The
+  persona's `personalityPrompt` is stripped from every response shape.
 
 ## Endpoints
 
@@ -47,11 +53,17 @@ NestJS (Node + TypeScript). The SOW's 8 system components become Nest modules.
 - `PATCH /api/challenges/:id` — ADMIN
 - `POST  /api/challenges/:id/publish` · `POST /api/challenges/:id/archive` — ADMIN
 
-## Next (M3 slice 2)
+### Challenge attempts (SALESPERSON, Bearer required)
+- `POST /api/challenges/:id/attempts` — start a new attempt
+- `GET  /api/attempts/me` — list my attempts
+- `GET  /api/attempts/:id` — attempt state + conversation
+- `POST /api/attempts/:id/messages` — `{ content }` → `{ attempt, leadReply }`
+- `POST /api/attempts/:id/end` — manually abandon
 
-Starting a challenge attempt + the AI lead conversation loop (provider-agnostic LLM
-call, persona-driven, goal/milestone evaluator). Scoring (rubric + bonuses/penalties)
-sits in M4 and writes to the points ledger + Redis leaderboards.
+## Next (M4)
+
+Scoring engine — rubric application (base × goal × quality, +bonuses, −penalties),
+AI evaluator for the 5 quality dimensions, points ledger writes, Redis leaderboards.
 
 ## Run
 
@@ -61,4 +73,5 @@ pnpm --filter @closdex/db generate
 pnpm --filter @closdex/api start:dev
 ```
 
-Needs Postgres + Redis up (`docker compose up -d`) and `.env` filled.
+Needs Postgres + Redis up (`docker compose up -d`), `.env` filled, and an LLM API
+key for whichever provider (`AI_PROVIDER=openai` or `anthropic`).
