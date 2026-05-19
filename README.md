@@ -63,7 +63,6 @@ pnpm --filter @closdex/db seed  # loads rubric/rank/pricing config from the SOW
 - **M7 — Payments + Admin** Razorpay subscriptions & placement invoicing, admin/CMS
 - **M8 — Hardening** notifications, polish, tests, deploy
 
-Status: **M1 complete. M2 in progress** — auth + role-aware onboarding + profile
-editing for users and companies all landed. OAuth (Google/LinkedIn) deferred to the
-frontend kickoff (needs a real callback URL); M3 (challenge engine + AI lead sim) is
-the realistic next slice.
+Status: **M1 complete. M2 done less OAuth** (deferred to frontend kickoff — needs a
+real callback URL). **M3 in progress** — challenge & persona CRUD landed; AI lead
+conversation loop is the next slice.
