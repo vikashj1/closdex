@@ -63,4 +63,5 @@ pnpm --filter @closdex/db seed  # loads rubric/rank/pricing config from the SOW
 - **M7 — Payments + Admin** Razorpay subscriptions & placement invoicing, admin/CMS
 - **M8 — Hardening** notifications, polish, tests, deploy
 
-Status: **M1 complete.** M2 next.
+Status: **M1 complete. M2 in progress** — NestJS scaffold + email/password auth, JWT,
+RBAC, and role-aware onboarding landed. OAuth (Google/LinkedIn) + profile editing next.
