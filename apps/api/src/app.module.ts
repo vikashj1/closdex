@@ -7,6 +7,7 @@ import { CompaniesModule } from './companies/companies.module';
 import { PersonasModule } from './personas/personas.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { AiModule } from './ai/ai.module';
+import { ScoringModule } from './scoring/scoring.module';
 import { AttemptsModule } from './attempts/attempts.module';
 
 @Module({
@@ -19,6 +20,7 @@ import { AttemptsModule } from './attempts/attempts.module';
     PersonasModule,
     ChallengesModule,
     AiModule,
+    ScoringModule,
     AttemptsModule,
   ],
 })

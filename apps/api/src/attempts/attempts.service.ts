@@ -2,18 +2,23 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { AttemptStatus, ChallengeStatus, MessageSender, UserRole } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
 import { AiLeadService } from '../ai/ai-lead.service';
+import { ScoringService } from '../scoring/scoring.service';
 
 @Injectable()
 export class AttemptsService {
+  private readonly logger = new Logger(AttemptsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiLead: AiLeadService,
+    private readonly scoring: ScoringService,
   ) {}
 
   async start(user: AuthUser, challengeId: string) {
@@ -71,13 +76,11 @@ export class AttemptsService {
     const conversationId = attempt.conversation!.id;
     const priorHistory = attempt.conversation!.messages;
 
-    // Build the history the LLM will see, including the new salesperson message in-memory.
     const aiHistory = [
       ...priorHistory.map((m) => ({ sender: m.sender, content: m.content })),
       { sender: MessageSender.SALESPERSON, content },
     ];
 
-    // Call the LLM BEFORE any DB writes — on failure no state is mutated.
     const leadReply = await this.aiLead.respond({
       personaName: attempt.challenge.persona.name,
       personaPrompt: attempt.challenge.persona.personalityPrompt,
@@ -110,6 +113,16 @@ export class AttemptsService {
       });
     });
 
+    if (reachedCap) {
+      // Scoring failure shouldn't fail the salesperson's request — log + leave unscored
+      // (recoverable: re-run scoring later via admin or a follow-up GET-then-retry).
+      try {
+        await this.scoring.scoreAttempt(updated.id);
+      } catch (err) {
+        this.logger.error(`Scoring failed for attempt ${updated.id}: ${err}`);
+      }
+    }
+
     return { attempt: this.shape(updated), leadReply };
   }
 
@@ -127,6 +140,13 @@ export class AttemptsService {
         salesperson: true,
       },
     });
+
+    try {
+      await this.scoring.scoreAttempt(updated.id);
+    } catch (err) {
+      this.logger.error(`Scoring failed for abandoned attempt ${updated.id}: ${err}`);
+    }
+
     return this.shape(updated);
   }
 

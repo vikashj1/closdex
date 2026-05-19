@@ -63,7 +63,8 @@ pnpm --filter @closdex/db seed  # loads rubric/rank/pricing config from the SOW
 - **M7 — Payments + Admin** Razorpay subscriptions & placement invoicing, admin/CMS
 - **M8 — Hardening** notifications, polish, tests, deploy
 
-Status: **M1–M3 in.** M2 less OAuth (deferred to frontend kickoff — needs a real
-callback URL). M3 complete: challenge & persona CRUD + AI lead conversation loop
-(provider-agnostic OpenAI/Anthropic, persona-driven, prompt-cached on the Anthropic
-path). M4 next: scoring engine + Redis leaderboards.
+Status: **M1–M4 (slice 1) in.** M2 less OAuth (deferred to frontend kickoff).
+M3 complete (challenges + AI lead loop). M4 slice 1: scoring engine — AI
+evaluator (5 quality dims + spam/lying), rubric math (bonuses, penalties,
+repeat-attempt decay), points ledger, rank promotion. M4 slice 2 next: Redis
+leaderboards (daily/weekly/monthly/all-time).

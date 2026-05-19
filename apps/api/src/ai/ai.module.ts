@@ -24,6 +24,6 @@ import { AiLeadService } from './ai-lead.service';
     },
     AiLeadService,
   ],
-  exports: [AiLeadService],
+  exports: [AiLeadService, LLM_PROVIDER],
 })
 export class AiModule {}

@@ -60,10 +60,29 @@ NestJS (Node + TypeScript). The SOW's 8 system components become Nest modules.
 - `POST /api/attempts/:id/messages` — `{ content }` → `{ attempt, leadReply }`
 - `POST /api/attempts/:id/end` — manually abandon
 
-## Next (M4)
+### M4 — Scoring engine (slice 1)
+- `scoring/rubric.service.ts` — pure math, mirrors SOW §6.3 exactly. Inputs: base
+  points, goal multiplier, 5 quality dims (0-5 each), bonuses/penalties flags,
+  attempt number for repeat-attempt decay. Decay applies to earnings (base+bonuses)
+  only — penalties stay at full value across retries.
+- `scoring/ai-evaluator.service.ts` — provider-agnostic LLM call that returns the
+  5 quality dims + goalAchieved + spamDetected + lyingDetected. Parses JSON with a
+  conservative fallback (zeroed dims on parse failure → 0 points, reviewable via
+  ScoreDispute).
+- `scoring/scoring.service.ts` — orchestrator. Triggered when an attempt completes
+  or is abandoned: loads config, runs evaluator, updates streak, computes rubric,
+  writes PointsTransaction ledger entries (CHALLENGE_SCORE + one per bonus/penalty),
+  updates SalespersonProfile.totalPoints (clamped at 0), promotes rank if applicable
+  (ranks never decay per SOW §6.5).
+- Scoring is awaited inline in `attempts.service` on COMPLETED/ABANDONED transitions
+  but wrapped in try/catch — AI failure leaves the attempt unscored (recoverable),
+  not failed.
 
-Scoring engine — rubric application (base × goal × quality, +bonuses, −penalties),
-AI evaluator for the 5 quality dimensions, points ledger writes, Redis leaderboards.
+## Next (M4 slice 2)
+
+Redis client + sorted sets for daily / weekly / monthly / all-time leaderboards, plus
+endpoints to query them. Optional polish: move scoring to a BullMQ queue so the
+salesperson's last-message response doesn't wait on the evaluator.
 
 ## Run
 
