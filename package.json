@@ -1,0 +1,15 @@
+{
+  "name": "closdex",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Sales gamification & talent marketplace platform",
+  "scripts": {
+    "dev": "echo \"run apps individually until M2 lands\"",
+    "db:migrate": "pnpm --filter @closdex/db prisma migrate dev",
+    "db:seed": "pnpm --filter @closdex/db seed"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

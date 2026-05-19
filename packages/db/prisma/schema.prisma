@@ -1,0 +1,650 @@
+// Closdex — data model. The spine of the platform; maps directly to docs/SOW.md.
+// Leaderboards themselves live in Redis (sorted sets); Postgres holds the points
+// ledger (PointsTransaction) that those sorted sets are built from.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SALESPERSON
+  COMPANY
+  ADMIN
+}
+
+enum OAuthProvider {
+  EMAIL
+  GOOGLE
+  LINKEDIN
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  HIDDEN
+}
+
+enum Rank {
+  ROOKIE
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+  MASTER
+  GRANDMASTER
+}
+
+enum DifficultyTier {
+  ROOKIE
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum GoalType {
+  QUALIFY_LEAD
+  BOOK_DISCOVERY_CALL
+  SEND_PROPOSAL
+  REACH_DECISION_MAKER
+  WIN_BACK
+  CLOSE_DEAL
+}
+
+enum ChallengeStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum MessageSender {
+  SALESPERSON
+  LEAD
+  SYSTEM
+}
+
+enum PointsReason {
+  CHALLENGE_SCORE
+  SPEED_BONUS
+  FIRST_TRY_BONUS
+  STREAK_BONUS
+  DIFFICULTY_JUMP_BONUS
+  SPAM_PENALTY
+  LYING_PENALTY
+  ABANDONMENT_PENALTY
+  QUIZ_REWARD
+  ADMIN_ADJUSTMENT
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum CompanyRole {
+  ADMIN
+  RECRUITER
+  VIEWER
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum JobStatus {
+  DRAFT
+  LIVE
+  PAUSED
+  CLOSED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  CONTRACT
+}
+
+enum ListingTier {
+  BASIC
+  FEATURED
+  PREMIUM
+}
+
+enum ApplicationStatus {
+  APPLIED
+  VIEWED
+  SHORTLISTED
+  INTERVIEW
+  OFFERED
+  HIRED
+  REJECTED
+}
+
+enum SubscriptionTier {
+  FREE
+  STARTER
+  GROWTH
+  SCALE
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum InvoiceType {
+  JOB_POSTING
+  PLACEMENT_COMMISSION
+  SUBSCRIPTION
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+}
+
+enum PlacementStatus {
+  PENDING
+  CONFIRMED
+  INVOICED
+  PAID
+}
+
+enum TutorialType {
+  VIDEO
+  ARTICLE
+}
+
+// ─── Identity & Access ──────────────────────────────────────────────────
+
+model User {
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  passwordHash       String?
+  role               UserRole            @default(SALESPERSON)
+  name               String
+  photoUrl           String?
+  location           String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  oauthAccounts      OAuthAccount[]
+  salesperson        SalespersonProfile?
+  companyMemberships CompanyMembership[]
+  notifications      Notification[]
+  adminAuditLogs     AdminAuditLog[]     @relation("AdminActor")
+}
+
+model OAuthAccount {
+  id                String        @id @default(cuid())
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  provider          OAuthProvider
+  providerAccountId String
+  createdAt         DateTime      @default(now())
+
+  @@unique([provider, providerAccountId])
+}
+
+model SalespersonProfile {
+  id                  String              @id @default(cuid())
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String              @unique
+  publicSlug          String              @unique
+  experienceYears     Int                 @default(0)
+  currentCompany      String?
+  specializationTags  String[]
+  skillSelfAssessment Int?                // seeds initial difficulty calibration
+  resumeUrl           String?
+  visibility          ProfileVisibility   @default(PUBLIC)
+  openToWork          Boolean             @default(false)
+  preferredLocations  String[]
+  salaryExpectation   Int?
+  rank                Rank                @default(ROOKIE)
+  totalPoints         Int                 @default(0)
+  currentStreakDays   Int                 @default(0)
+  lastChallengeDate   DateTime?
+
+  attempts            ChallengeAttempt[]
+  pointsTransactions  PointsTransaction[]
+  badges              UserBadge[]
+  applications        Application[]
+  savedJobs           SavedJob[]
+  shortlistEntries    ShortlistEntry[]
+  trackProgress       TrackProgress[]
+  quizAttempts        QuizAttempt[]
+  disputes            ScoreDispute[]
+  placements          Placement[]
+}
+
+// ─── Company ────────────────────────────────────────────────────────────
+
+model Company {
+  id                 String               @id @default(cuid())
+  name               String
+  logoUrl            String?
+  industry           String?
+  size               String?
+  locations          String[]
+  website            String?
+  about              String?
+  perks              String?
+  culture            String?
+  incentiveStructure String?
+  verification       VerificationStatus   @default(PENDING)
+  gstin              String?
+  pan                String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  members            CompanyMembership[]
+  jobs               Job[]
+  subscription       CompanySubscription?
+  invoices           Invoice[]
+  shortlists         Shortlist[]
+  placements         Placement[]
+}
+
+model CompanyMembership {
+  id          String      @id @default(cuid())
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  companyRole CompanyRole @default(RECRUITER)
+  createdAt   DateTime    @default(now())
+
+  @@unique([companyId, userId])
+}
+
+// ─── Challenge engine ───────────────────────────────────────────────────
+
+model LeadPersona {
+  id                String      @id @default(cuid())
+  name              String
+  role              String
+  company           String
+  contextSnippet    String
+  personalityPrompt String      // LLM system prompt that drives this lead
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  challenges        Challenge[]
+}
+
+model Challenge {
+  id               String             @id @default(cuid())
+  title            String
+  brief            String
+  category         String             // e.g. "IT Sales"
+  difficulty       DifficultyTier
+  goalType         GoalType
+  goalDescription  String
+  basePoints       Int
+  maxMessages      Int
+  estimatedMinutes Int
+  attemptsAllowed  Int                @default(3)
+  status           ChallengeStatus    @default(DRAFT)
+  persona          LeadPersona        @relation(fields: [personaId], references: [id])
+  personaId        String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  attempts         ChallengeAttempt[]
+}
+
+model ChallengeAttempt {
+  id                 String              @id @default(cuid())
+  salesperson        SalespersonProfile  @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId      String
+  challenge          Challenge           @relation(fields: [challengeId], references: [id])
+  challengeId        String
+  attemptNumber      Int                 @default(1)
+  status             AttemptStatus       @default(IN_PROGRESS)
+  goalAchieved       Boolean             @default(false)
+  messagesUsed       Int                 @default(0)
+  finalScore         Int?
+  scoreBreakdown     Json?               // quality dims, bonuses, penalties
+  startedAt          DateTime            @default(now())
+  completedAt        DateTime?
+
+  conversation       Conversation?
+  pointsTransactions PointsTransaction[]
+  dispute            ScoreDispute?
+
+  @@unique([salespersonId, challengeId, attemptNumber])
+}
+
+model Conversation {
+  id        String           @id @default(cuid())
+  attempt   ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  attemptId String           @unique
+  messages  Message[]
+  createdAt DateTime         @default(now())
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  sender         MessageSender
+  content        String
+  createdAt      DateTime      @default(now())
+}
+
+// ─── Scoring & leaderboards ─────────────────────────────────────────────
+
+model PointsTransaction {
+  id            String              @id @default(cuid())
+  salesperson   SalespersonProfile  @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId String
+  attempt       ChallengeAttempt?   @relation(fields: [attemptId], references: [id], onDelete: SetNull)
+  attemptId     String?
+  reason        PointsReason
+  points        Int                 // signed: bonuses positive, penalties negative
+  createdAt     DateTime            @default(now())
+
+  @@index([salespersonId, createdAt])
+}
+
+model ScoreDispute {
+  id            String             @id @default(cuid())
+  attempt       ChallengeAttempt   @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  attemptId     String             @unique
+  salesperson   SalespersonProfile @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId String
+  reason        String
+  status        DisputeStatus      @default(OPEN)
+  resolution    String?
+  createdAt     DateTime           @default(now())
+  resolvedAt    DateTime?
+}
+
+// ─── Admin-tunable config (rubric, ranks, pricing — seeded from the SOW) ─
+
+model DifficultyTierConfig {
+  tier         DifficultyTier @id
+  color        String
+  basePoints   Int
+  leadBehavior String
+}
+
+model GoalTypeConfig {
+  goalType   GoalType @id
+  label      String
+  multiplier Float
+}
+
+model RubricDimensionConfig {
+  id     String @id @default(cuid())
+  name   String @unique
+  weight Float  // fractions sum to 1.0
+}
+
+model RankConfig {
+  rank       Rank   @id
+  minPoints  Int
+  maxPoints  Int?   // null = unbounded (Grandmaster)
+  privileges String
+}
+
+model ScoringRuleConfig {
+  key   String  @id // e.g. "speed_bonus_pct"
+  value Float
+  note  String?
+}
+
+// ─── Badges & achievements ──────────────────────────────────────────────
+
+model Badge {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  name        String
+  description String
+  iconUrl     String?
+
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id            String             @id @default(cuid())
+  salesperson   SalespersonProfile @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId String
+  badge         Badge              @relation(fields: [badgeId], references: [id])
+  badgeId       String
+  awardedAt     DateTime           @default(now())
+
+  @@unique([salespersonId, badgeId])
+}
+
+// ─── Learning library ───────────────────────────────────────────────────
+
+model LearningTrack {
+  id          String          @id @default(cuid())
+  title       String
+  description String
+  category    String
+  order       Int             @default(0)
+
+  tutorials   Tutorial[]
+  progress    TrackProgress[]
+}
+
+model Tutorial {
+  id         String        @id @default(cuid())
+  track      LearningTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId    String
+  title      String
+  type       TutorialType
+  contentUrl String?
+  body       String?
+  order      Int           @default(0)
+
+  quiz       Quiz?
+}
+
+model Quiz {
+  id           String        @id @default(cuid())
+  tutorial     Tutorial      @relation(fields: [tutorialId], references: [id], onDelete: Cascade)
+  tutorialId   String        @unique
+  questions    Json          // [{ q, options, answerIndex }]
+  rewardPoints Int           @default(0)
+
+  attempts     QuizAttempt[]
+}
+
+model QuizAttempt {
+  id            String             @id @default(cuid())
+  quiz          Quiz               @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quizId        String
+  salesperson   SalespersonProfile @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId String
+  score         Int
+  passed        Boolean
+  createdAt     DateTime           @default(now())
+}
+
+model TrackProgress {
+  id                   String             @id @default(cuid())
+  track                LearningTrack      @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId              String
+  salesperson          SalespersonProfile @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId        String
+  completedTutorialIds String[]
+  updatedAt            DateTime           @updatedAt
+
+  @@unique([trackId, salespersonId])
+}
+
+// ─── Talent marketplace ─────────────────────────────────────────────────
+
+model Job {
+  id                  String         @id @default(cuid())
+  company             Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId           String
+  title               String
+  description         String
+  requiredSkills      String[]
+  specializationTag   String
+  experienceMinYears  Int            @default(0)
+  experienceMaxYears  Int?
+  salaryMin           Int?
+  salaryMax           Int?
+  location            String
+  employmentType      EmploymentType @default(FULL_TIME)
+  minRank             Rank?          // minimum rank threshold to apply
+  listingTier         ListingTier    @default(BASIC)
+  status              JobStatus      @default(DRAFT)
+  applicationDeadline DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  applications        Application[]
+  savedBy             SavedJob[]
+  placements          Placement[]
+}
+
+model Application {
+  id                String             @id @default(cuid())
+  job               Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId             String
+  salesperson       SalespersonProfile @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId     String
+  status            ApplicationStatus  @default(APPLIED)
+  resumeUrlSnapshot String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  placement         Placement?
+
+  @@unique([jobId, salespersonId])
+}
+
+model SavedJob {
+  id            String             @id @default(cuid())
+  job           Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId         String
+  salesperson   SalespersonProfile @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId String
+  createdAt     DateTime           @default(now())
+
+  @@unique([jobId, salespersonId])
+}
+
+model Shortlist {
+  id        String           @id @default(cuid())
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+  name      String
+  createdAt DateTime         @default(now())
+
+  entries   ShortlistEntry[]
+}
+
+model ShortlistEntry {
+  id            String             @id @default(cuid())
+  shortlist     Shortlist          @relation(fields: [shortlistId], references: [id], onDelete: Cascade)
+  shortlistId   String
+  salesperson   SalespersonProfile @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId String
+  createdAt     DateTime           @default(now())
+
+  @@unique([shortlistId, salespersonId])
+}
+
+// ─── Billing & placements ───────────────────────────────────────────────
+
+model CompanySubscription {
+  id               String             @id @default(cuid())
+  company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId        String             @unique
+  tier             SubscriptionTier   @default(FREE)
+  status           SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd DateTime?
+  razorpaySubId    String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model Placement {
+  id               String             @id @default(cuid())
+  job              Job                @relation(fields: [jobId], references: [id])
+  jobId            String
+  application      Application        @relation(fields: [applicationId], references: [id])
+  applicationId    String             @unique
+  company          Company            @relation(fields: [companyId], references: [id])
+  companyId        String
+  salesperson      SalespersonProfile @relation(fields: [salespersonId], references: [id])
+  salespersonId    String
+  annualCtc        Int
+  commissionRate   Float              // 0.10 – 0.15
+  commissionAmount Int
+  status           PlacementStatus    @default(PENDING)
+  confirmedAt      DateTime?
+  createdAt        DateTime           @default(now())
+
+  invoice          Invoice?
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  company     Company       @relation(fields: [companyId], references: [id])
+  companyId   String
+  type        InvoiceType
+  placement   Placement?    @relation(fields: [placementId], references: [id])
+  placementId String?       @unique
+  number      String        @unique
+  amount      Int           // paise
+  gstAmount   Int           @default(0)
+  status      InvoiceStatus @default(DRAFT)
+  issuedAt    DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+}
+
+// ─── Notifications & audit ──────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String
+  title     String
+  body      String
+  payload   Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  actor     User     @relation("AdminActor", fields: [actorId], references: [id])
+  actorId   String
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
