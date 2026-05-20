@@ -201,7 +201,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
               borderColor: 'color-mix(in oklch, var(--gold) 30%, transparent)',
             }}
           >
-            <Btn kind="primary" full size="lg" icon={<Icon.bolt />} onClick={() => router.push(`/challenges/${params.id}/conversation`)}>
+            <Btn kind="primary" full size="lg" icon={<Icon.bolt />} onClick={() => router.push(`/play/${params.id}`)}>
               Start challenge
             </Btn>
             <Btn kind="ghost" full size="md" style={{ marginTop: 10 }}>Save for later</Btn>
