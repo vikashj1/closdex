@@ -9,7 +9,7 @@ import { AttemptStatus, ChallengeStatus, MessageSender, UserRole } from '@closde
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
 import { AiLeadService } from '../ai/ai-lead.service';
-import { ScoringService } from '../scoring/scoring.service';
+import { ScoringQueueService } from '../scoring/scoring-queue.service';
 
 @Injectable()
 export class AttemptsService {
@@ -18,7 +18,7 @@ export class AttemptsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiLead: AiLeadService,
-    private readonly scoring: ScoringService,
+    private readonly scoringQueue: ScoringQueueService,
   ) {}
 
   async start(user: AuthUser, challengeId: string) {
@@ -114,13 +114,9 @@ export class AttemptsService {
     });
 
     if (reachedCap) {
-      // Scoring failure shouldn't fail the salesperson's request — log + leave unscored
-      // (recoverable: re-run scoring later via admin or a follow-up GET-then-retry).
-      try {
-        await this.scoring.scoreAttempt(updated.id);
-      } catch (err) {
-        this.logger.error(`Scoring failed for attempt ${updated.id}: ${err}`);
-      }
+      // Async: enqueue scoring so the salesperson's request returns immediately
+      // (the LLM evaluator is the slowest hop). Worker lives in scoring/scoring.worker.ts.
+      await this.scoringQueue.enqueue(updated.id);
     }
 
     return { attempt: this.shape(updated), leadReply };
@@ -141,11 +137,7 @@ export class AttemptsService {
       },
     });
 
-    try {
-      await this.scoring.scoreAttempt(updated.id);
-    } catch (err) {
-      this.logger.error(`Scoring failed for abandoned attempt ${updated.id}: ${err}`);
-    }
+    await this.scoringQueue.enqueue(updated.id);
 
     return this.shape(updated);
   }

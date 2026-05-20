@@ -4,10 +4,18 @@ import { LeaderboardsModule } from '../leaderboards/leaderboards.module';
 import { RubricService } from './rubric.service';
 import { AiEvaluatorService } from './ai-evaluator.service';
 import { ScoringService } from './scoring.service';
+import { ScoringQueueService } from './scoring-queue.service';
+import { ScoringWorker } from './scoring.worker';
 
 @Module({
   imports: [AiModule, LeaderboardsModule],
-  providers: [RubricService, AiEvaluatorService, ScoringService],
-  exports: [ScoringService],
+  providers: [
+    RubricService,
+    AiEvaluatorService,
+    ScoringService,
+    ScoringQueueService,
+    ScoringWorker,
+  ],
+  exports: [ScoringService, ScoringQueueService],
 })
 export class ScoringModule {}

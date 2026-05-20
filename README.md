@@ -63,8 +63,9 @@ pnpm --filter @closdex/db seed  # loads rubric/rank/pricing config from the SOW
 - **M7 — Payments + Admin** Razorpay subscriptions & placement invoicing, admin/CMS
 - **M8 — Hardening** notifications, polish, tests, deploy
 
-Status: **M1–M7 (less Razorpay) + M8 (slice 1: notifications) in.** M2 less
-OAuth. Notifications wired into application transitions, hire flow, dispute
-resolution, and company verification — email goes through a swappable
-provider (LogEmailProvider until SES/Sendgrid lands). M7 slice 2 (Razorpay)
-paused on owner ack. M8 polish backlog: BullMQ async scoring, tests, deploy.
+Status: **M1–M7 (less Razorpay) + M8 slices 1-2 in.** M2 less OAuth.
+Notifications wired into application transitions, hire flow, dispute resolution,
+and company verification. **Scoring is async via BullMQ** — LLM evaluator runs in
+a worker, salesperson's send-message response returns immediately. M7 slice 2
+(Razorpay) paused on owner ack. Next planned: `apps/web` scaffold when the HTML
+design file lands.

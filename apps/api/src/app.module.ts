@@ -18,12 +18,14 @@ import { ShortlistsModule } from './shortlists/shortlists.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     RedisModule,
+    QueueModule,
     NotificationsModule,
     AuthModule,
     UsersModule,

@@ -285,9 +285,21 @@ Will replace the manual `POST /invoices/:id/mark-paid` with a webhook handler.
 - `POST /api/notifications/:id/read` — owner-only.
 - `POST /api/notifications/read-all` — mark all the viewer's notifications read.
 
+### M8 slice 2 — async scoring via BullMQ
+- `queue/queue.module.ts` — `@Global`. Dedicated ioredis connection for BullMQ
+  (`maxRetriesPerRequest: null` per the docs); separate from `REDIS_CLIENT` so
+  BullMQ's blocking commands don't stall leaderboard reads.
+- `scoring/scoring-queue.service.ts` — producer. `enqueue(attemptId)` adds a job
+  with 3 attempts + exponential backoff; enqueue failures are logged-not-thrown
+  so the salesperson's HTTP response stays fast even if Redis is down.
+- `scoring/scoring.worker.ts` — Worker on the same `scoring` queue, concurrency 5
+  (override via `SCORING_WORKER_CONCURRENCY`). Calls `ScoringService.scoreAttempt`.
+- `attempts.service` now enqueues on COMPLETED / ABANDONED instead of awaiting the
+  scoring call inline. The salesperson's `send` / `end` response no longer pays
+  for the LLM evaluator (~the slowest hop in the previous request path).
+
 ## Next (M8 polish backlog)
 
-- BullMQ async scoring (move the LLM evaluator off the salesperson's request path).
 - Location-based leaderboards.
 - Real GST classification.
 - OAuth providers (Google + LinkedIn) — pending frontend kickoff.
