@@ -13,7 +13,7 @@ Decisions made at scaffold time (the SOW left backend framework and ORM open):
 
 | Layer        | Choice                          | Note |
 |--------------|---------------------------------|------|
-| Frontend     | Next.js + TypeScript + Tailwind | mobile-responsive web (Phase 1) |
+| Frontend     | Next.js 14 + TypeScript (no Tailwind) | mobile-responsive web (Phase 1); themed via CSS custom properties from the designer's prototype |
 | Backend      | NestJS (Node + TypeScript)      | maps cleanly onto the 8-service split |
 | ORM          | Prisma                          | typed schema, migrations |
 | Database     | PostgreSQL                      | relational core: scoring, jobs, billing |
@@ -63,9 +63,10 @@ pnpm --filter @closdex/db seed  # loads rubric/rank/pricing config from the SOW
 - **M7 — Payments + Admin** Razorpay subscriptions & placement invoicing, admin/CMS
 - **M8 — Hardening** notifications, polish, tests, deploy
 
-Status: **M1–M7 (less Razorpay) + M8 slices 1-2 in.** M2 less OAuth.
-Notifications wired into application transitions, hire flow, dispute resolution,
-and company verification. **Scoring is async via BullMQ** — LLM evaluator runs in
-a worker, salesperson's send-message response returns immediately. M7 slice 2
-(Razorpay) paused on owner ack. Next planned: `apps/web` scaffold when the HTML
-design file lands.
+Status: **Backend M1–M7 (less Razorpay) + M8 slices 1-2 in. Frontend slice 1 in.**
+M2 less OAuth. Backend: notifications wired into application transitions, hire
+flow, dispute resolution, and company verification; scoring is async via BullMQ
+(LLM evaluator off the salesperson's request path). Frontend: `apps/web`
+scaffolded — Next.js 14 + TS, design tokens + 12 UI primitives ported from the
+designer's prototype, landing route live (header + hero with live leaderboard
+preview + how-it-works + footer). M7 slice 2 (Razorpay) paused on owner ack.
