@@ -11,6 +11,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
 import { JobsService } from '../jobs/jobs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ListPlacementsDto } from './dto/list-placements.dto';
 
 /** Flat 18% GST on services for now (real GST classification depends on
@@ -32,6 +33,7 @@ export class PlacementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobs: JobsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Confirm a hire. Application must be in OFFERED. Creates Placement + DRAFT Invoice
@@ -102,6 +104,30 @@ export class PlacementsService {
 
       return { placement, invoice };
     });
+
+    // Notify the hired salesperson.
+    const profile = await this.prisma.salespersonProfile.findUnique({
+      where: { id: application.salespersonId },
+      select: { userId: true },
+    });
+    const company = await this.prisma.company.findUnique({
+      where: { id: application.job.companyId },
+      select: { name: true },
+    });
+    if (profile && company) {
+      await this.notifications.notify({
+        userId: profile.userId,
+        type: 'HIRED',
+        title: `Congratulations — you've been hired`,
+        body: `${company.name} has hired you for "${application.job.title}". Welcome aboard.`,
+        payload: {
+          applicationId,
+          jobId: application.jobId,
+          placementId: result.placement.id,
+          annualCtc,
+        },
+      });
+    }
 
     return { ...result, applicationStatus: ApplicationStatus.HIRED };
   }

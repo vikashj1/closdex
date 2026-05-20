@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
 import { AuditService } from './audit.service';
 import { LeaderboardsService } from '../leaderboards/leaderboards.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { ResolveDisputeDto, DisputeAction } from './dto/resolve-dispute.dto';
 import { ListDisputesDto } from './dto/list-disputes.dto';
@@ -21,6 +22,7 @@ export class DisputesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly leaderboards: LeaderboardsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Salesperson flags a score for review. One open dispute per attempt. */
@@ -179,6 +181,24 @@ export class DisputesService {
       if (challenge && delta !== 0) {
         await this.leaderboards.recordScore(dispute.salespersonId, delta, challenge.category);
       }
+    }
+
+    // Notify the salesperson of the resolution.
+    const profile = await this.prisma.salespersonProfile.findUnique({
+      where: { id: dispute.salespersonId },
+      select: { userId: true },
+    });
+    if (profile) {
+      const isAdjust = dto.action === 'ADJUST';
+      await this.notifications.notify({
+        userId: profile.userId,
+        type: isAdjust ? 'DISPUTE_RESOLVED' : 'DISPUTE_REJECTED',
+        title: isAdjust ? 'Your score dispute was resolved' : 'Your score dispute was rejected',
+        body: isAdjust
+          ? `An admin adjusted your score to ${dto.newScore}. Note: ${dto.resolution}`
+          : `An admin reviewed your dispute and declined to adjust the score. Note: ${dto.resolution}`,
+        payload: { disputeId: id, attemptId: dispute.attemptId },
+      });
     }
 
     return updated;

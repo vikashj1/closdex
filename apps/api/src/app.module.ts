@@ -17,12 +17,14 @@ import { TalentModule } from './talent/talent.module';
 import { ShortlistsModule } from './shortlists/shortlists.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AdminModule } from './admin/admin.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     RedisModule,
+    NotificationsModule,
     AuthModule,
     UsersModule,
     CompaniesModule,

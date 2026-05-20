@@ -8,6 +8,7 @@ import { ApplicationStatus, CompanyRole, JobStatus, Rank, UserRole } from '@clos
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
 import { JobsService } from './jobs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const RANK_ORDER: Rank[] = [
   Rank.ROOKIE, Rank.BRONZE, Rank.SILVER, Rank.GOLD,
@@ -30,6 +31,7 @@ export class ApplicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobs: JobsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Salesperson one-click apply: profile + resume snapshot auto-attached. */
@@ -138,7 +140,25 @@ export class ApplicationsService {
     if (!(APPLICATION_TRANSITIONS[app.status] ?? []).includes(next)) {
       throw new BadRequestException(`Cannot transition application from ${app.status} to ${next}.`);
     }
-    return this.prisma.application.update({ where: { id }, data: { status: next } });
+    const updated = await this.prisma.application.update({
+      where: { id },
+      data: { status: next },
+      include: {
+        job: { include: { company: { select: { name: true } } } },
+        salesperson: { select: { userId: true } },
+      },
+    });
+    // Notify the applicant — HIRED is handled by the hire flow in PaymentsModule.
+    if (next !== ApplicationStatus.HIRED) {
+      await this.notifications.notify({
+        userId: updated.salesperson.userId,
+        type: 'APPLICATION_STATUS',
+        title: `Application update: ${next.toLowerCase()}`,
+        body: `Your application for "${updated.job.title}" at ${updated.job.company.name} is now ${next}.`,
+        payload: { applicationId: id, jobId: updated.jobId, status: next },
+      });
+    }
+    return updated;
   }
 
   private rankAtLeast(actual: Rank, required: Rank): boolean {

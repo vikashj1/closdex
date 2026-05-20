@@ -261,11 +261,41 @@ Audit (ADMIN):
 Razorpay subscriptions + webhook (needs KEY_ID + KEY_SECRET + webhook secret).
 Will replace the manual `POST /invoices/:id/mark-paid` with a webhook handler.
 
-## Next (M8 — Hardening)
+### M8 — Hardening (slice 1: notifications)
+- `notifications/` is `@Global` so any service can inject `NotificationsService`
+  without an explicit import.
+- `notify(userId, type, title, body, payload?)` always writes the in-app
+  Notification row; email is fire-and-forget through an `EMAIL_PROVIDER`
+  interface (current impl: `LogEmailProvider`, swap in SES/Sendgrid when
+  credentials land).
+- Wired into:
+  - `applications.service.updateStatus` — on every transition except HIRED
+    (the HIRED notify lives in the hire flow so it carries Placement details).
+  - `placements.service.hire` — congratulates the hired salesperson with
+    job/CTC context.
+  - `disputes.service.adminResolve` — tells the salesperson whether their
+    dispute was adjusted or rejected, with the admin's note.
+  - `verification.service` — notifies the company's ADMIN members on
+    approve/reject with the admin's note.
 
-Notifications (email + in-app), polish backlog (BullMQ async scoring,
-location-based leaderboards, real GST classification, OAuth providers,
-ScoreDispute conversation viewer enrichments), tests, deploy.
+### Endpoints (Bearer required)
+
+- `GET  /api/notifications/me?unread=true&page=&perPage=` — paginated; returns
+  `{ items, total, unreadCount, page, perPage }`.
+- `POST /api/notifications/:id/read` — owner-only.
+- `POST /api/notifications/read-all` — mark all the viewer's notifications read.
+
+## Next (M8 polish backlog)
+
+- BullMQ async scoring (move the LLM evaluator off the salesperson's request path).
+- Location-based leaderboards.
+- Real GST classification.
+- OAuth providers (Google + LinkedIn) — pending frontend kickoff.
+- Tests + deploy.
+
+## Next (M7 slice 2 — paused on owner ack)
+
+Razorpay subscriptions + webhook. Needs KEY_ID + KEY_SECRET + webhook secret.
 
 ## Run
 
