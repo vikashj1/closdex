@@ -78,11 +78,28 @@ NestJS (Node + TypeScript). The SOW's 8 system components become Nest modules.
   but wrapped in try/catch — AI failure leaves the attempt unscored (recoverable),
   not failed.
 
-## Next (M4 slice 2)
+### M4 — Scoring engine (slice 2: Redis leaderboards)
+- `redis/redis.module.ts` — global ioredis client behind a `REDIS_CLIENT` token.
+- `leaderboards/leaderboards.service.ts` — sorted-set updates per scoring event
+  (4 periods × 2 scopes = 8 ZINCRBY ops, pipelined). Period buckets computed in
+  IST so daily/weekly/monthly rotate at the boundaries the SOW specifies
+  (00:00 IST daily, Monday for weekly, 1st of month for monthly). TTLs: 48h daily,
+  14d weekly, 60d monthly, none for all-time. Read path enriches Redis IDs with
+  salesperson info from Postgres.
+- ScoringService now calls `LeaderboardsService.recordScore` after each persist.
+  Redis failures are logged but never throw — Postgres remains the source of
+  truth, leaderboards are a read-optimized projection.
+- `GET /api/leaderboards?period=&category=&limit=` — Bearer required.
 
-Redis client + sorted sets for daily / weekly / monthly / all-time leaderboards, plus
-endpoints to query them. Optional polish: move scoring to a BullMQ queue so the
-salesperson's last-message response doesn't wait on the evaluator.
+## Endpoints (additions)
+
+### Leaderboards (Bearer required)
+- `GET /api/leaderboards?period=daily|weekly|monthly|all-time&category=...&limit=50`
+
+## Next (M5)
+
+Learning library — tracks, tutorials, quizzes. Or polish backlog: BullMQ-backed
+async scoring, location-based leaderboards, ScoreDispute endpoints, admin moderation.
 
 ## Run
 

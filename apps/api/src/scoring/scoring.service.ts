@@ -3,6 +3,7 @@ import {
   AttemptStatus, DifficultyTier, PointsReason, Prisma, Rank,
 } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
+import { LeaderboardsService } from '../leaderboards/leaderboards.service';
 import { RubricService, ScoreBreakdown, ScoringRules } from './rubric.service';
 import { AiEvaluatorService, AiEvaluation } from './ai-evaluator.service';
 
@@ -32,6 +33,7 @@ export class ScoringService {
     private readonly prisma: PrismaService,
     private readonly rubric: RubricService,
     private readonly aiEvaluator: AiEvaluatorService,
+    private readonly leaderboards: LeaderboardsService,
   ) {}
 
   /** Idempotent. Skips if attempt is still in progress or already scored. */
@@ -106,6 +108,14 @@ export class ScoringService {
 
     await this.persistScore(attempt.id, attempt.salespersonId, breakdown, evaluation?.notes ?? null);
     await this.recomputeRank(attempt.salespersonId, rankConfigs);
+
+    // Update Redis leaderboards last — failures are logged inside, never thrown
+    // (Postgres is source of truth; leaderboards are a read-optimized projection).
+    await this.leaderboards.recordScore(
+      attempt.salespersonId,
+      breakdown.total,
+      attempt.challenge.category,
+    );
   }
 
   private rulesFromRows(rows: Array<{ key: string; value: number }>): ScoringRules {
