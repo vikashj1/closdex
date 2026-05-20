@@ -96,10 +96,31 @@ NestJS (Node + TypeScript). The SOW's 8 system components become Nest modules.
 ### Leaderboards (Bearer required)
 - `GET /api/leaderboards?period=daily|weekly|monthly|all-time&category=...&limit=50`
 
-## Next (M5)
+### M5 — Learning library (slice 1: admin CRUD)
+- `learning/` — tracks, tutorials, quizzes. Single LearningService, single
+  LearningController grouped under `/api/learning`.
+- Cross-field validation: video tutorials require `contentUrl`, article tutorials
+  require `body`. Quiz `answerIndex` is range-checked against `options.length`.
+- Visibility shaping: quiz `answerIndex` values are stripped for non-admin viewers
+  (salespeople take the quiz blind).
 
-Learning library — tracks, tutorials, quizzes. Or polish backlog: BullMQ-backed
-async scoring, location-based leaderboards, ScoreDispute endpoints, admin moderation.
+### Endpoints (learning, Bearer required)
+
+Public-to-authenticated:
+- `GET /api/learning/tracks` — list tracks + lightweight tutorial summaries
+- `GET /api/learning/tracks/:id` — track + nested tutorials (+ quiz, answer-stripped)
+- `GET /api/learning/tutorials/:id` — single tutorial (+ quiz, answer-stripped)
+
+ADMIN:
+- `POST   /api/learning/tracks` · `PATCH /api/learning/tracks/:id` · `DELETE /api/learning/tracks/:id`
+- `POST   /api/learning/tracks/:trackId/tutorials`
+- `PATCH  /api/learning/tutorials/:id` · `DELETE /api/learning/tutorials/:id`
+- `PUT    /api/learning/tutorials/:tutorialId/quiz` (upsert) · `DELETE` (same path)
+
+## Next (M5 slice 2)
+
+Salesperson-side consumption: mark tutorials complete (writes TrackProgress),
+take quizzes (writes QuizAttempt + PointsTransaction QUIZ_REWARD on pass).
 
 ## Run
 

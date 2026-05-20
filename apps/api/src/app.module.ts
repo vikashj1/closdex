@@ -11,6 +11,7 @@ import { ScoringModule } from './scoring/scoring.module';
 import { AttemptsModule } from './attempts/attempts.module';
 import { RedisModule } from './redis/redis.module';
 import { LeaderboardsModule } from './leaderboards/leaderboards.module';
+import { LearningModule } from './learning/learning.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { LeaderboardsModule } from './leaderboards/leaderboards.module';
     LeaderboardsModule,
     ScoringModule,
     AttemptsModule,
+    LearningModule,
   ],
 })
 export class AppModule {}

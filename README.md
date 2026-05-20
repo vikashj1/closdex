@@ -63,7 +63,7 @@ pnpm --filter @closdex/db seed  # loads rubric/rank/pricing config from the SOW
 - **M7 — Payments + Admin** Razorpay subscriptions & placement invoicing, admin/CMS
 - **M8 — Hardening** notifications, polish, tests, deploy
 
-Status: **M1–M4 in.** M2 less OAuth (deferred to frontend kickoff). M3 complete
-(challenges + AI lead loop). M4 complete: scoring engine + Redis leaderboards
-(daily / weekly / monthly / all-time, global + per-category, IST-aligned buckets).
-M5 next: learning library — tracks, tutorials, quizzes.
+Status: **M1–M4 in. M5 (slice 1) landed** — admin CRUD for learning tracks,
+tutorials, quizzes. M2 less OAuth (deferred to frontend kickoff). M5 slice 2
+next: salesperson-side consumption (TrackProgress writes + QuizAttempt + quiz
+reward via PointsTransaction).
