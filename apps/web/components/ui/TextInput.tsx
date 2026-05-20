@@ -8,15 +8,25 @@ interface Props {
   placeholder?: string;
   type?: string;
   style?: CSSProperties;
+  autoComplete?: string;
+  name?: string;
+  required?: boolean;
+  disabled?: boolean;
 }
 
-export function TextInput({ value, onChange, placeholder, type = 'text', style }: Props) {
+export function TextInput({
+  value, onChange, placeholder, type = 'text', style, autoComplete, name, required, disabled,
+}: Props) {
   return (
     <input
       type={type}
       value={value || ''}
       onChange={(e) => onChange && onChange(e.target.value)}
       placeholder={placeholder}
+      autoComplete={autoComplete}
+      name={name}
+      required={required}
+      disabled={disabled}
       style={{
         background: 'var(--bg-2)',
         border: '1px solid var(--border)',

@@ -1,16 +1,41 @@
 'use client';
 
+import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { Btn } from '@/components/ui/Btn';
 import { Field } from '@/components/ui/Field';
 import { TextInput } from '@/components/ui/TextInput';
 import { Icon } from '@/components/ui/Icon';
+import { ApiError } from '@/lib/api';
+import { landingPathFor, useAuth } from '@/lib/auth';
 
-/** Login route — not in the prototype source. Built to match the signup visual
- *  language. Wire to POST /api/auth/login in the API-integration slice. */
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      const user = await login(email.trim(), password);
+      router.replace(landingPathFor(user.role));
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.status === 401
+            ? 'Invalid email or password.'
+            : err.message
+          : 'Login failed. Please try again.',
+      );
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh' }}>
@@ -38,29 +63,68 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div style={{ padding: '56px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: 540 }}>
+      <form
+        onSubmit={onSubmit}
+        style={{
+          padding: '56px 56px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          maxWidth: 540,
+        }}
+      >
         <h2 className="display" style={{ fontSize: 28, margin: '0 0 24px', fontWeight: 700 }}>Log in</h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
-          <Btn kind="secondary" full icon={<Icon.linkedin />}>Continue with LinkedIn</Btn>
-          <Btn kind="secondary" full icon={<Icon.google />}>Continue with Google</Btn>
+          <Btn type="button" kind="secondary" full icon={<Icon.linkedin />}>Continue with LinkedIn</Btn>
+          <Btn type="button" kind="secondary" full icon={<Icon.google />}>Continue with Google</Btn>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text-mute)', fontSize: 11, margin: '8px 0 22px' }}>
           <div style={{ flex: 1, height: 1, background: 'var(--border-soft)' }} /> OR <div style={{ flex: 1, height: 1, background: 'var(--border-soft)' }} />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 22 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 14 }}>
           <Field label="Work email" required>
-            <TextInput placeholder="you@company.com" />
+            <TextInput
+              type="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
+              required
+            />
           </Field>
           <Field label="Password" required>
-            <TextInput type="password" placeholder="••••••••" />
+            <TextInput
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+              required
+            />
           </Field>
         </div>
 
-        <Btn kind="primary" full size="lg" icon={<Icon.arrow />} onClick={() => router.push('/dashboard')}>
-          Log in
+        {error && (
+          <div
+            style={{
+              marginBottom: 14,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'color-mix(in oklch, var(--d-expert) 12%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--d-expert) 35%, transparent)',
+              color: 'var(--d-expert)',
+              fontSize: 12.5,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <Btn type="submit" kind="primary" full size="lg" icon={<Icon.arrow />} disabled={submitting}>
+          {submitting ? 'Signing in…' : 'Log in'}
         </Btn>
 
         <div style={{ marginTop: 22, color: 'var(--text-mute)', fontSize: 12.5 }}>
@@ -72,7 +136,7 @@ export default function LoginPage() {
             Create an account
           </a>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

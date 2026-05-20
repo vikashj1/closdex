@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, useState } from 'react';
+import { CSSProperties, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -8,36 +8,50 @@ import { Chip } from '@/components/ui/Chip';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
 import { TextInput } from '@/components/ui/TextInput';
-import type { RankName } from '@/lib/constants';
-
-interface Candidate {
-  name: string;
-  city: string;
-  rank: RankName;
-  pts: number;
-  exp: number;
-  win: number;
-  top: string;
-  ctc: string;
-  open?: boolean;
-}
-
-const CANDIDATES: Candidate[] = [
-  { name: 'Aarav Sharma',    city: 'Bangalore',  rank: 'Master',   pts: 38420, exp: 6, win: 81, top: 'Discovery, Closing',      ctc: '₹28-36 LPA' },
-  { name: 'Priya Iyer',      city: 'Mumbai',     rank: 'Master',   pts: 36110, exp: 7, win: 76, top: 'Enterprise, MEDDIC',      ctc: '₹32-42 LPA' },
-  { name: 'Karan Mehta',     city: 'Pune',       rank: 'Diamond',  pts: 28940, exp: 5, win: 72, top: 'Discovery, Objection',    ctc: '₹22-28 LPA', open: true },
-  { name: 'Sneha Reddy',     city: 'Hyderabad',  rank: 'Diamond',  pts: 22180, exp: 4, win: 79, top: 'SaaS, Cold outbound',     ctc: '₹18-24 LPA', open: true },
-  { name: 'Rohan Gupta',     city: 'Delhi NCR',  rank: 'Platinum', pts: 17850, exp: 5, win: 68, top: 'Negotiation, Closing',    ctc: '₹20-26 LPA' },
-  { name: 'Anjali Nair',     city: 'Bangalore',  rank: 'Platinum', pts: 14210, exp: 3, win: 71, top: 'Cybersec, Mid-mkt',       ctc: '₹16-22 LPA', open: true },
-  { name: 'Shashank Khare',  city: 'Bangalore',  rank: 'Gold',     pts: 8376,  exp: 4, win: 73, top: 'Discovery, IT Services',  ctc: '₹16-22 LPA', open: true },
-  { name: 'Tanvi Joshi',     city: 'Pune',       rank: 'Gold',     pts: 8612,  exp: 3, win: 69, top: 'DevTools, SDR',           ctc: '₹12-16 LPA', open: true },
-];
+import { ApiError, TalentSummary, api } from '@/lib/api';
+import { useRequireAuth } from '@/lib/auth';
+import { rankFromEnum, type RankName } from '@/lib/constants';
 
 const RANK_OPTIONS: RankName[] = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master'];
 
 export default function TalentSearchPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useRequireAuth('COMPANY');
   const [minRank, setMinRank] = useState<RankName>('Gold');
+  const [openOnly, setOpenOnly] = useState(true);
+  const [items, setItems] = useState<TalentSummary[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    api.talent
+      .search({
+        minRank: minRank.toUpperCase(),
+        openToWork: openOnly || undefined,
+        perPage: 30,
+      })
+      .then((res) => {
+        if (cancelled) return;
+        setItems(res.items);
+        setTotal(res.total);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof ApiError ? err.message : 'Could not load talent.');
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [user, minRank, openOnly]);
+
+  if (authLoading || !user) {
+    return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
+  }
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr' }}>
@@ -78,20 +92,10 @@ export default function TalentSearchPage() {
         </div>
 
         <div>
-          <div style={FILTER_LBL}>Win rate</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-mute)', marginTop: 10 }}>
-            <span>0%</span>
-            <span style={{ color: 'var(--cool)', fontWeight: 700 }}>≥ 60%</span>
-            <span>100%</span>
-          </div>
-          <input type="range" min={0} max={100} defaultValue={60} style={{ width: '100%', accentColor: 'var(--cool)' }} />
-        </div>
-
-        <div>
           <div style={FILTER_LBL}>Location</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
             {['Bangalore', 'Mumbai', 'Delhi NCR', 'Pune', 'Hyderabad', 'Remote'].map((l) => (
-              <Chip key={l} active={l === 'Bangalore'} color="var(--cool)">{l}</Chip>
+              <Chip key={l} color="var(--cool)">{l}</Chip>
             ))}
           </div>
         </div>
@@ -105,21 +109,15 @@ export default function TalentSearchPage() {
         </div>
 
         <div>
-          <div style={FILTER_LBL}>Goal performance</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-            {['Discovery', 'Book Call', 'Proposal', 'Close'].map((g) => (
-              <Chip key={g} active={g === 'Discovery'} color="var(--cool)">{g}</Chip>
-            ))}
-          </div>
-        </div>
-
-        <div>
           <div style={FILTER_LBL}>Availability</div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, marginTop: 8 }}>
-            <input type="checkbox" defaultChecked style={{ accentColor: 'var(--cool)' }} /> Open to work only
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, marginTop: 6 }}>
-            <input type="checkbox" style={{ accentColor: 'var(--cool)' }} /> Notice ≤ 30 days
+            <input
+              type="checkbox"
+              checked={openOnly}
+              onChange={(e) => setOpenOnly(e.target.checked)}
+              style={{ accentColor: 'var(--cool)' }}
+            />{' '}
+            Open to work only
           </label>
         </div>
       </aside>
@@ -130,7 +128,9 @@ export default function TalentSearchPage() {
           <div>
             <h1 className="display" style={{ fontSize: 26, margin: 0, fontWeight: 700 }}>Talent search</h1>
             <p style={{ color: 'var(--text-mute)', fontSize: 12.5, margin: '4px 0 0' }}>
-              Showing <strong style={{ color: 'var(--text)' }}>{CANDIDATES.length}</strong> of 312 matching candidates · {minRank}+ · Bangalore · 60%+ win rate
+              {loading
+                ? 'Searching…'
+                : `Showing ${items.length} of ${total} candidates · ${minRank}+ ${openOnly ? '· open to work' : ''}`}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -143,84 +143,92 @@ export default function TalentSearchPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {CANDIDATES.map((c) => (
-            <Card
-              key={c.name}
-              hover
-              onClick={() => router.push(`/company/talent/${encodeURIComponent(c.name.toLowerCase().replace(/\s+/g, '-'))}`)}
-              padding={18}
-            >
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1.6fr 0.9fr 0.9fr 0.9fr auto', gap: 16, alignItems: 'center' }}>
-                <Avatar name={c.name} size={48} />
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 15, fontWeight: 700 }}>{c.name}</span>
-                    <RankBadge rank={c.rank} size={16} showLabel />
-                    {c.open && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          padding: '2px 7px',
-                          borderRadius: 4,
-                          background: 'color-mix(in oklch, var(--emerald) 18%, transparent)',
-                          color: 'var(--emerald)',
-                          fontWeight: 700,
-                        }}
-                      >
-                        ● OPEN TO WORK
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                    {c.city} · {c.exp} yrs experience · expects {c.ctc}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-mute)', marginTop: 4 }}>
-                    Strong in: <span style={{ color: 'var(--text-dim)' }}>{c.top}</span>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div className="display mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--gold)' }}>{c.pts.toLocaleString()}</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>total pts</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div className="display mono" style={{ fontSize: 18, fontWeight: 700, color: c.win >= 75 ? 'var(--emerald)' : 'var(--text)' }}>{c.win}%</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>win rate</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div className="display mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--cool)' }}>
-                    #{Math.floor(2500 - c.pts / 16)}
-                  </div>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>weekly rank</div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <Btn kind="primary" size="sm">View profile</Btn>
-                  <Btn kind="ghost" size="sm">Save</Btn>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        {error && (
+          <div
+            style={{
+              marginBottom: 14,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'color-mix(in oklch, var(--d-expert) 12%, transparent)',
+              color: 'var(--d-expert)',
+              fontSize: 12.5,
+            }}
+          >
+            {error}
+          </div>
+        )}
 
-        {/* Pagination */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 22 }}>
-          {[1, 2, 3, 4, 5, '…', 24].map((p, i) => (
-            <button
-              key={i}
-              style={{
-                padding: '6px 11px',
-                borderRadius: 6,
-                background: p === 1 ? 'var(--cool)' : 'var(--bg-2)',
-                color: p === 1 ? 'white' : 'var(--text-dim)',
-                border: '1px solid var(--border-soft)',
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+        {loading ? (
+          <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>Searching talent…</div>
+        ) : items.length === 0 ? (
+          <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>
+            No candidates match these filters.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {items.map((c) => {
+              const rank = rankFromEnum(c.rank);
+              return (
+                <Card
+                  key={c.id}
+                  hover
+                  onClick={() => router.push(`/company/talent/${encodeURIComponent(c.publicSlug)}`)}
+                  padding={18}
+                >
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto 1.6fr 0.9fr 0.9fr auto', gap: 16, alignItems: 'center' }}>
+                    <Avatar name={c.user.name} size={48} />
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 15, fontWeight: 700 }}>{c.user.name}</span>
+                        <RankBadge rank={rank} size={16} showLabel />
+                        {c.openToWork && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              padding: '2px 7px',
+                              borderRadius: 4,
+                              background: 'color-mix(in oklch, var(--emerald) 18%, transparent)',
+                              color: 'var(--emerald)',
+                              fontWeight: 700,
+                            }}
+                          >
+                            ● OPEN TO WORK
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                        {c.location ?? '—'}
+                        {c.experienceYears != null && ` · ${c.experienceYears} yrs experience`}
+                        {c.expectedCtc && ` · expects ${c.expectedCtc}`}
+                      </div>
+                      {c.specializationTags.length > 0 && (
+                        <div style={{ fontSize: 11.5, color: 'var(--text-mute)', marginTop: 4 }}>
+                          Strong in: <span style={{ color: 'var(--text-dim)' }}>{c.specializationTags.slice(0, 4).join(', ')}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div className="display mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--gold)' }}>
+                        {c.points.toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>total pts</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div className="display mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--cool)' }}>
+                        {rank}
+                      </div>
+                      <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>tier</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <Btn kind="primary" size="sm">View profile</Btn>
+                      <Btn kind="ghost" size="sm">Save</Btn>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,30 +1,87 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Icon } from '@/components/ui/Icon';
+import { ApiError, AttemptDetail, api } from '@/lib/api';
+import { useRequireAuth } from '@/lib/auth';
 
-const DIMS = [
-  { l: 'Discovery & Listening',     v: 4 },
-  { l: 'Objection Handling',        v: 5 },
-  { l: 'Value Articulation',        v: 4 },
-  { l: 'Conversational Quality',    v: 5 },
-  { l: 'Goal Execution',            v: 4 },
-];
+const DIM_LABELS: Record<string, string> = {
+  discovery: 'Discovery & Listening',
+  objectionHandling: 'Objection Handling',
+  valueArticulation: 'Value Articulation',
+  conversationalQuality: 'Conversational Quality',
+  goalExecution: 'Goal Execution',
+};
 
-export default function ResultPage() {
+interface RubricDim { key: string; label: string; v: number }
+
+function extractDims(rubricScores: Record<string, number> | null | undefined): RubricDim[] {
+  if (!rubricScores) {
+    return Object.entries(DIM_LABELS).map(([key, label]) => ({ key, label, v: 0 }));
+  }
+  return Object.entries(DIM_LABELS).map(([key, label]) => ({
+    key,
+    label,
+    v: typeof rubricScores[key] === 'number' ? rubricScores[key] : 0,
+  }));
+}
+
+export default function ResultPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const total = DIMS.reduce((s, d) => s + d.v, 0);
-  const qMult = total / 25;
-  const baseScore = Math.round(400 * 1.2 * qMult);
-  const speedBonus = 40;
-  const firstTryBonus = 60;
-  const final = baseScore + speedBonus + firstTryBonus;
+  const searchParams = useSearchParams();
+  const attemptId = searchParams.get('attempt');
+  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+
+  const [attempt, setAttempt] = useState<AttemptDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user || !attemptId) {
+      if (user && !attemptId) {
+        setError('No attempt id provided. Pick a challenge from the library to begin.');
+        setLoading(false);
+      }
+      return;
+    }
+    let cancelled = false;
+    api.attempts
+      .get(attemptId)
+      .then((a) => { if (!cancelled) { setAttempt(a); setLoading(false); } })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : 'Could not load attempt.');
+          setLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [user, attemptId]);
+
+  if (authLoading || !user || loading) {
+    return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading result…</div>;
+  }
+  if (!attempt) {
+    return (
+      <div style={{ padding: 32 }}>
+        <div style={{ color: 'var(--text-mute)' }}>{error ?? 'Result not available.'}</div>
+        <Btn kind="ghost" onClick={() => router.push('/challenges')} style={{ marginTop: 14 }}>
+          ← Back to challenges
+        </Btn>
+      </div>
+    );
+  }
+
+  const dims = extractDims(attempt.rubricScores);
+  const achieved = attempt.goalAchieved ?? false;
+  const finalPts = attempt.pointsAwarded ?? 0;
+  const score = attempt.score ?? 0;
+  const scoring = attempt.status === 'IN_PROGRESS' || (finalPts === 0 && score === 0 && !attempt.completedAt);
 
   return (
     <div style={{ padding: '32px 32px', maxWidth: 1100, margin: '0 auto' }}>
-      {/* Hero */}
       <div style={{ textAlign: 'center', padding: '16px 0 36px', animation: 'fadeUp 0.4s ease' }}>
         <div
           style={{
@@ -33,103 +90,88 @@ export default function ResultPage() {
             gap: 8,
             padding: '6px 14px',
             borderRadius: 999,
-            background: 'color-mix(in oklch, var(--emerald) 18%, transparent)',
-            color: 'var(--emerald)',
+            background: achieved
+              ? 'color-mix(in oklch, var(--emerald) 18%, transparent)'
+              : 'color-mix(in oklch, var(--text-mute) 14%, transparent)',
+            color: achieved ? 'var(--emerald)' : 'var(--text-mute)',
             fontSize: 12,
             fontWeight: 700,
             marginBottom: 18,
-            border: '1px solid color-mix(in oklch, var(--emerald) 35%, transparent)',
+            border: `1px solid color-mix(in oklch, ${achieved ? 'var(--emerald)' : 'var(--text-mute)'} 35%, transparent)`,
           }}
         >
-          <Icon.check /> GOAL ACHIEVED
+          <Icon.check /> {achieved ? 'GOAL ACHIEVED' : scoring ? 'SCORING…' : 'GOAL NOT MET'}
         </div>
         <div className="display" style={{ fontSize: 96, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--gold)' }}>
-          +{final}
+          +{finalPts}
         </div>
         <div style={{ fontSize: 14, color: 'var(--text-dim)', marginTop: 8 }}>
-          points earned · pushes you from #34 → #27 weekly
+          {scoring
+            ? 'Your conversation is being evaluated. Refresh in a moment to see the final score.'
+            : `points earned · ${attempt.challenge.title}`}
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
-        {/* Breakdown */}
         <Card padding={24}>
           <h3 className="display" style={{ fontSize: 16, margin: '0 0 16px', fontWeight: 600 }}>Score breakdown</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13.5 }}>
-            {[
-              { l: 'Base (Hard)',                   v: 400 },
-              { l: '× Goal multiplier (Book Call)', v: '1.2x' },
-              { l: '× Quality multiplier',          v: qMult.toFixed(2) + 'x' },
-              { l: '= Base score',                  v: baseScore, em: true },
-              { l: '+ Speed bonus (12/25 msgs)',    v: '+' + speedBonus },
-              { l: '+ First-try bonus',             v: '+' + firstTryBonus },
-              { l: '− Penalties',                   v: '0' },
-            ].map((r) => (
-              <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed var(--border-soft)' }}>
-                <span style={{ color: r.em ? 'var(--text)' : 'var(--text-dim)', fontWeight: r.em ? 700 : 400 }}>{r.l}</span>
-                <span className="mono" style={{ fontWeight: 700, color: r.em ? 'var(--gold)' : 'var(--text)' }}>{r.v}</span>
-              </div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10 }}>
-              <span style={{ fontWeight: 700 }}>Final score</span>
-              <span className="display mono" style={{ fontWeight: 700, color: 'var(--gold)', fontSize: 22 }}>{final}</span>
+            <Row k={`Base (${attempt.challenge.difficulty.toLowerCase()})`} v={attempt.challenge.pointsBase} />
+            <Row k="× Quality (score / 100)" v={score ? (score / 100).toFixed(2) + 'x' : '—'} />
+            <Row k="Goal achieved" v={achieved ? 'Yes' : 'No'} />
+            <Row k="Messages used" v={`${attempt.messagesUsed} / ${attempt.challenge.maxMessages}`} />
+            <Row k="Attempt #" v={attempt.attemptNumber} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, marginTop: 8, borderTop: '1px solid var(--border-soft)' }}>
+              <span style={{ fontWeight: 700 }}>Points awarded</span>
+              <span className="display mono" style={{ fontWeight: 700, color: 'var(--gold)', fontSize: 22 }}>{finalPts}</span>
             </div>
           </div>
         </Card>
 
-        {/* Radar */}
         <Card padding={24}>
           <h3 className="display" style={{ fontSize: 16, margin: '0 0 16px', fontWeight: 600 }}>Quality radar</h3>
-          <RubricRadar dims={DIMS} />
+          {dims.every((d) => d.v === 0) ? (
+            <div style={{ padding: 24, color: 'var(--text-mute)', fontSize: 13, textAlign: 'center' }}>
+              {scoring ? 'Waiting for evaluator…' : 'No rubric data available.'}
+            </div>
+          ) : (
+            <RubricRadar dims={dims} />
+          )}
         </Card>
       </div>
 
-      {/* AI feedback */}
       <Card padding={24}>
         <h3 className="display" style={{ fontSize: 16, margin: '0 0 18px', fontWeight: 600 }}>AI coach feedback</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--emerald)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-              What went well
-            </div>
-            {[
-              'Strong open: led with a specific pain (alert fatigue) instead of feature talk.',
-              "Handled the 'why not Datadog' objection with a concrete data point (log volume cost), no disparagement.",
-              'Proposed two specific time slots — exactly what Meera responds to.',
-            ].map((t) => (
-              <div key={t} style={{ display: 'flex', gap: 10, marginBottom: 10, fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                <span style={{ color: 'var(--emerald)', marginTop: 2 }}><Icon.check /></span>{t}
-              </div>
-            ))}
+        {attempt.feedback ? (
+          <div style={{ fontSize: 13.5, color: 'var(--text-dim)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+            {attempt.feedback}
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--d-hard)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-              Gaps to close
-            </div>
-            {[
-              "Missed an opening to dig into the SOC2 timeline — that's a procurement hook.",
-              "Used 'platform' twice. Meera explicitly flagged this. Watch for prospect-allergic words.",
-              "Didn't ask about her team's existing tool budget cycle — affects deal sizing later.",
-            ].map((t) => (
-              <div key={t} style={{ display: 'flex', gap: 10, marginBottom: 10, fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                <span style={{ color: 'var(--d-hard)', marginTop: 2 }}>→</span>{t}
-              </div>
-            ))}
+        ) : (
+          <div style={{ padding: 24, color: 'var(--text-mute)', fontSize: 13, textAlign: 'center' }}>
+            {scoring ? 'Feedback arrives once scoring completes.' : 'No feedback recorded for this attempt.'}
           </div>
-        </div>
+        )}
       </Card>
 
-      {/* CTAs */}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 28 }}>
-        <Btn kind="primary" size="lg" icon={<Icon.bolt />} onClick={() => router.push('/challenges')}>Next recommended</Btn>
+        <Btn kind="primary" size="lg" icon={<Icon.bolt />} onClick={() => router.push('/challenges')}>Next challenge</Btn>
         <Btn kind="secondary" size="lg" onClick={() => router.push('/dashboard')}>Back to dashboard</Btn>
-        <Btn kind="ghost" size="lg" icon={<Icon.linkedin />}>Share on LinkedIn</Btn>
+        <Btn kind="ghost" size="lg" onClick={() => router.refresh()}>Refresh score</Btn>
       </div>
     </div>
   );
 }
 
-function RubricRadar({ dims }: { dims: { l: string; v: number }[] }) {
+function Row({ k, v }: { k: string; v: string | number }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed var(--border-soft)' }}>
+      <span style={{ color: 'var(--text-dim)' }}>{k}</span>
+      <span className="mono" style={{ fontWeight: 700, color: 'var(--text)' }}>{v}</span>
+    </div>
+  );
+}
+
+function RubricRadar({ dims }: { dims: RubricDim[] }) {
   const cx = 130;
   const cy = 130;
   const r = 90;
@@ -165,9 +207,9 @@ function RubricRadar({ dims }: { dims: { l: string; v: number }[] }) {
       </svg>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
         {dims.map((d) => (
-          <div key={d.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--text-dim)' }}>
-            <span>{d.l}</span>
-            <span className="mono" style={{ color: 'var(--gold)', fontWeight: 700 }}>{d.v}/5</span>
+          <div key={d.key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--text-dim)' }}>
+            <span>{d.label}</span>
+            <span className="mono" style={{ color: 'var(--gold)', fontWeight: 700 }}>{d.v.toFixed(1)}/5</span>
           </div>
         ))}
       </div>

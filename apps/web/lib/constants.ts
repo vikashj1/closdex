@@ -25,3 +25,41 @@ export const RANKS: Record<RankName, { color: string; min: number }> = {
   Master:      { color: 'var(--r-master)',   min: 35000 },
   Grandmaster: { color: 'var(--r-gm)',       min: 70000 },
 };
+
+const RANK_ORDER: RankName[] = [
+  'Rookie', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster',
+];
+
+export function difficultyFromEnum(value: string | null | undefined): DifficultyLevel {
+  switch ((value ?? '').toUpperCase()) {
+    case 'ROOKIE': return 'Rookie';
+    case 'EASY':   return 'Easy';
+    case 'MEDIUM': return 'Medium';
+    case 'HARD':   return 'Hard';
+    case 'EXPERT': return 'Expert';
+    default:       return 'Easy';
+  }
+}
+
+export function rankFromEnum(value: string | null | undefined): RankName {
+  const v = (value ?? '').toUpperCase();
+  for (const name of RANK_ORDER) {
+    if (name.toUpperCase() === v) return name;
+  }
+  return 'Rookie';
+}
+
+export function nextRank(points: number): { name: RankName; min: number } | null {
+  for (const name of RANK_ORDER) {
+    if (points < RANKS[name].min) return { name, min: RANKS[name].min };
+  }
+  return null;
+}
+
+export function currentRank(points: number): RankName {
+  let current: RankName = 'Rookie';
+  for (const name of RANK_ORDER) {
+    if (points >= RANKS[name].min) current = name;
+  }
+  return current;
+}

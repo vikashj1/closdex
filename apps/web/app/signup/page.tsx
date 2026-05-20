@@ -1,18 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { Btn } from '@/components/ui/Btn';
 import { Field } from '@/components/ui/Field';
 import { TextInput } from '@/components/ui/TextInput';
 import { Icon } from '@/components/ui/Icon';
+import { ApiError } from '@/lib/api';
+import { landingPathFor, useAuth } from '@/lib/auth';
 
 type Side = 'salesperson' | 'company';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [tab, setTab] = useState<Side>('salesperson');
+  const [companyName, setCompanyName] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    if (tab === 'company' && !companyName.trim()) {
+      setError('Company name is required.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const user = await register({
+        email: email.trim(),
+        password,
+        name: name.trim(),
+        role: tab === 'salesperson' ? 'SALESPERSON' : 'COMPANY',
+        companyName: tab === 'company' ? companyName.trim() : undefined,
+      });
+      router.replace(tab === 'salesperson' ? '/onboarding' : landingPathFor(user.role));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Sign-up failed. Please try again.');
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh' }}>
@@ -53,7 +91,16 @@ export default function SignupPage() {
       </div>
 
       {/* Right: form */}
-      <div style={{ padding: '56px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: 540 }}>
+      <form
+        onSubmit={onSubmit}
+        style={{
+          padding: '56px 56px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          maxWidth: 540,
+        }}
+      >
         <div
           style={{
             display: 'inline-flex',
@@ -68,6 +115,7 @@ export default function SignupPage() {
         >
           {(['salesperson', 'company'] as Side[]).map((t) => (
             <button
+              type="button"
               key={t}
               onClick={() => setTab(t)}
               style={{
@@ -79,6 +127,7 @@ export default function SignupPage() {
                 color: tab === t ? 'oklch(0.18 0.02 75)' : 'var(--text-dim)',
                 border: 'none',
                 textTransform: 'capitalize',
+                cursor: 'pointer',
               }}
             >
               I&apos;m a {t}
@@ -91,39 +140,82 @@ export default function SignupPage() {
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
-          <Btn kind="secondary" full icon={<Icon.linkedin />}>Continue with LinkedIn</Btn>
-          <Btn kind="secondary" full icon={<Icon.google />}>Continue with Google</Btn>
+          <Btn type="button" kind="secondary" full icon={<Icon.linkedin />}>Continue with LinkedIn</Btn>
+          <Btn type="button" kind="secondary" full icon={<Icon.google />}>Continue with Google</Btn>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text-mute)', fontSize: 11, margin: '8px 0 22px' }}>
           <div style={{ flex: 1, height: 1, background: 'var(--border-soft)' }} /> OR <div style={{ flex: 1, height: 1, background: 'var(--border-soft)' }} />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 22 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 14 }}>
           {tab === 'company' && (
             <Field label="Company name" required>
-              <TextInput placeholder="e.g. Razorpay" />
+              <TextInput
+                placeholder="e.g. Razorpay"
+                value={companyName}
+                onChange={setCompanyName}
+                autoComplete="organization"
+                required
+              />
             </Field>
           )}
           <Field label="Full name" required>
-            <TextInput placeholder="Your name" />
+            <TextInput
+              placeholder="Your name"
+              value={name}
+              onChange={setName}
+              autoComplete="name"
+              required
+            />
           </Field>
           <Field label="Work email" required>
-            <TextInput placeholder="you@company.com" />
+            <TextInput
+              type="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
+              required
+            />
           </Field>
           <Field label="Password" required hint="At least 8 characters">
-            <TextInput type="password" placeholder="••••••••" />
+            <TextInput
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={setPassword}
+              autoComplete="new-password"
+              required
+            />
           </Field>
         </div>
 
+        {error && (
+          <div
+            style={{
+              marginBottom: 14,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'color-mix(in oklch, var(--d-expert) 12%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--d-expert) 35%, transparent)',
+              color: 'var(--d-expert)',
+              fontSize: 12.5,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
         <Btn
+          type="submit"
           kind="primary"
           full
           size="lg"
           icon={<Icon.arrow />}
-          onClick={() => router.push(tab === 'salesperson' ? '/onboarding' : '/company')}
+          disabled={submitting}
         >
-          Create account & start onboarding
+          {submitting ? 'Creating account…' : 'Create account & start onboarding'}
         </Btn>
 
         <div style={{ marginTop: 22, color: 'var(--text-mute)', fontSize: 12.5 }}>
@@ -135,7 +227,7 @@ export default function SignupPage() {
             Log in
           </a>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
