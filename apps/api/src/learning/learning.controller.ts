@@ -13,6 +13,7 @@ import { UpdateTrackDto } from './dto/update-track.dto';
 import { CreateTutorialDto } from './dto/create-tutorial.dto';
 import { UpdateTutorialDto } from './dto/update-tutorial.dto';
 import { UpsertQuizDto } from './dto/upsert-quiz.dto';
+import { AttemptQuizDto } from './dto/attempt-quiz.dto';
 
 @Controller('learning')
 @UseGuards(JwtAuthGuard)
@@ -97,5 +98,32 @@ export class LearningController {
   @HttpCode(204)
   deleteQuiz(@Param('tutorialId') tutorialId: string) {
     return this.learning.deleteQuiz(tutorialId);
+  }
+
+  // ─── Salesperson consumption ──────────────────────────────────────────
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SALESPERSON)
+  @Post('tutorials/:id/complete')
+  completeTutorial(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.learning.completeTutorial(user, id);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SALESPERSON)
+  @Post('quizzes/:id/attempt')
+  attemptQuiz(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AttemptQuizDto,
+  ) {
+    return this.learning.attemptQuiz(user, id, dto.answerIndices);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SALESPERSON)
+  @Get('me/progress')
+  getMyProgress(@CurrentUser() user: AuthUser) {
+    return this.learning.getMyProgress(user);
   }
 }

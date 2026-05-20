@@ -117,10 +117,21 @@ ADMIN:
 - `PATCH  /api/learning/tutorials/:id` · `DELETE /api/learning/tutorials/:id`
 - `PUT    /api/learning/tutorials/:tutorialId/quiz` (upsert) · `DELETE` (same path)
 
-## Next (M5 slice 2)
+### M5 slice 2 — salesperson consumption
+- `POST /api/learning/tutorials/:id/complete` — appends to TrackProgress
+  (idempotent — same tutorial twice doesn't double-count).
+- `POST /api/learning/quizzes/:id/attempt` — body `{ answerIndices: number[] }`.
+  Scored server-side; pass threshold 70% (constant). Writes QuizAttempt. On
+  the salesperson's **first** passing attempt, awards `quiz.rewardPoints` via
+  PointsTransaction QUIZ_REWARD + updates leaderboards (scoped to the track's
+  category). Subsequent passes don't re-award — prevents farming.
+- `GET /api/learning/me/progress` — TrackProgress for the authed salesperson.
 
-Salesperson-side consumption: mark tutorials complete (writes TrackProgress),
-take quizzes (writes QuizAttempt + PointsTransaction QUIZ_REWARD on pass).
+## Next (M6)
+
+Talent marketplace — company profiles + job posting + talent search + basic ATS.
+Polish backlog: BullMQ async scoring, ScoreDispute endpoints, admin moderation,
+location-based leaderboards.
 
 ## Run
 
