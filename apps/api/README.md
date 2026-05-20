@@ -179,11 +179,51 @@ Shortlists:
 - `POST   /api/shortlists/:id/entries` — body `{ salespersonId }` (idempotent)
 - `DELETE /api/shortlists/:id/entries/:salespersonId`
 
-## Next (M7)
+### M7 — Payments (slice 1: placement commission scaffold, no Razorpay network)
+- `payments/placements.service.ts` — the `hire` flow. From Application(OFFERED),
+  takes `{ annualCtc, commissionRate }` (rate must be 0.10-0.15 per SOW), creates
+  Placement(CONFIRMED) + Invoice(DRAFT, type PLACEMENT_COMMISSION) atomically,
+  transitions Application → HIRED. Amounts: Placement.annualCtc and
+  commissionAmount are rupees; Invoice.amount is paise. GST is a flat 18% for
+  now — real classification (intra/inter state, customer GSTIN) comes in polish.
+- `payments/invoices.service.ts` — invoice lifecycle: DRAFT → ISSUED → PAID, or
+  DRAFT → VOID. Issue assigns an invoice number `CLX-INV-YYYYMM-XXXXXX` and
+  sets `issuedAt`; flips paired Placement to INVOICED. Mark-paid flips paired
+  Placement to PAID. (Slice 2 replaces manual mark-paid with a Razorpay webhook.)
+- Cross-module wiring: PaymentsModule imports JobsModule for company-member
+  checks; the `hire` flow lives in PaymentsModule (POST /api/applications/:id/hire)
+  rather than JobsModule to avoid a circular dep — application transition to
+  HIRED is treated as a side-effect of the placement-commercial step.
 
-Payments + admin: Razorpay subscriptions for company tiers, placement commission
-flow (HIRED transition triggers Placement record + Invoice + GST line), admin/CMS
-surfaces (challenge & persona moderation, verification queue, audit log).
+### Endpoints (Bearer required)
+
+Placement / hire:
+- `POST /api/applications/:id/hire` — company ADMIN/RECRUITER; body `{ annualCtc, commissionRate }`
+- `GET  /api/placements?companyId=&status=&page=&perPage=`
+- `GET  /api/placements/:id`
+
+Invoices:
+- `GET  /api/invoices?companyId=&status=&type=&page=&perPage=`
+- `GET  /api/invoices/:id`
+- `POST /api/invoices/:id/issue` (company ADMIN; DRAFT → ISSUED)
+- `POST /api/invoices/:id/mark-paid` (company ADMIN; ISSUED → PAID — manual until slice 2)
+- `POST /api/invoices/:id/void` (company ADMIN; DRAFT → VOID)
+
+## Next (M7 slice 2)
+
+Razorpay integration:
+- Company subscription tiers (Free/Starter/Growth/Scale/Enterprise per SOW T7).
+- Razorpay webhook handler for subscription state + payment confirmations.
+- Replace manual `mark-paid` with webhook-driven status updates.
+
+⚠️ Needs Razorpay credentials (KEY_ID + KEY_SECRET) before the network calls go
+live. Per HEARTBEAT.md guardrail (no spending without an explicit ask), waiting on
+an owner ack before wiring secrets.
+
+## Next (M7 slice 3)
+
+Admin/CMS: ScoreDispute resolution endpoints, company verification queue,
+rubric/rank/pricing config admin endpoints, AdminAuditLog writes.
 
 ## Run
 

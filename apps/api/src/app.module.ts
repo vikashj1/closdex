@@ -15,6 +15,7 @@ import { LearningModule } from './learning/learning.module';
 import { JobsModule } from './jobs/jobs.module';
 import { TalentModule } from './talent/talent.module';
 import { ShortlistsModule } from './shortlists/shortlists.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ShortlistsModule } from './shortlists/shortlists.module';
     JobsModule,
     TalentModule,
     ShortlistsModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}
