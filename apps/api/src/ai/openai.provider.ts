@@ -14,7 +14,10 @@ export class OpenAiProvider implements LlmProvider {
     if (!apiKey) {
       this.logger.warn('OPENAI_API_KEY not set — provider will fail at call time.');
     }
-    this.client = new OpenAI({ apiKey: apiKey ?? 'missing' });
+    // OPENAI_BASE_URL lets us point at any OpenAI-compatible endpoint
+    // (NVIDIA NIM, OpenRouter, vLLM, etc.). Omit to use api.openai.com.
+    const baseURL = config.get<string>('OPENAI_BASE_URL');
+    this.client = new OpenAI({ apiKey: apiKey ?? 'missing', ...(baseURL ? { baseURL } : {}) });
     // SOW T2 names GPT-4o-mini as the primary LLM.
     this.model = config.get<string>('OPENAI_MODEL') ?? 'gpt-4o-mini';
   }
