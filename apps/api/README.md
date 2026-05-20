@@ -156,12 +156,34 @@ Applications:
 - `GET  /api/applications/:id` — salesperson owner OR company member
 - `PATCH /api/applications/:id` — company ADMIN/RECRUITER; validates state transition
 
-## Next (M6 slice 2)
+### M6 slice 2 — talent search + shortlists
+- `talent/talent.service.ts` — company-side discovery (COMPANY or ADMIN only).
+  Only PUBLIC profiles returned. Filters: minRank (≥ tier), minPoints,
+  category (salespeople with ≥1 attempt in that category), location (case-
+  insensitive `contains`), minExperienceYears, openToWork, specializationTags
+  (`hasSome`). Ordered by totalPoints DESC.
+- `shortlists/shortlists.service.ts` — company-scoped CRUD + entries.
+  Visibility: any company role reads; ADMIN/RECRUITER write. Entry add is
+  idempotent via the (shortlistId, salespersonId) unique constraint.
 
-Talent search/filter (company-side discovery): rank, points, category performance,
-location, experience, availability. Shortlists CRUD. Then M7 (payments + admin):
-Razorpay subscriptions, placement commission flow (HIRED triggers Placement
-record + invoice), admin/CMS surfaces.
+### Endpoints (Bearer required)
+
+Talent:
+- `GET /api/talent?minRank=&minPoints=&category=&location=&minExperienceYears=&openToWork=&specializationTags[]=&page=&perPage=`
+
+Shortlists:
+- `GET    /api/shortlists?companyId=...`
+- `GET    /api/shortlists/:id`
+- `POST   /api/shortlists` — body `{ companyId, name }` (ADMIN/RECRUITER)
+- `DELETE /api/shortlists/:id` (ADMIN/RECRUITER)
+- `POST   /api/shortlists/:id/entries` — body `{ salespersonId }` (idempotent)
+- `DELETE /api/shortlists/:id/entries/:salespersonId`
+
+## Next (M7)
+
+Payments + admin: Razorpay subscriptions for company tiers, placement commission
+flow (HIRED transition triggers Placement record + Invoice + GST line), admin/CMS
+surfaces (challenge & persona moderation, verification queue, audit log).
 
 ## Run
 

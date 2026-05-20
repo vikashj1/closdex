@@ -63,8 +63,6 @@ pnpm --filter @closdex/db seed  # loads rubric/rank/pricing config from the SOW
 - **M7 — Payments + Admin** Razorpay subscriptions & placement invoicing, admin/CMS
 - **M8 — Hardening** notifications, polish, tests, deploy
 
-Status: **M1–M5 in. M6 (slice 1) landed** — jobs CRUD with lifecycle, salesperson
-one-click apply (rank/deadline/uniqueness gated), company-side ATS with state-
-transition enforcement. M2 less OAuth (deferred to frontend kickoff). M6 slice 2
-next: talent search/filter + shortlists. M7 (Razorpay + placement commissions +
-admin) after that.
+Status: **M1–M6 in.** M2 less OAuth (deferred to frontend kickoff). M6 complete:
+jobs + ATS + talent search + shortlists. M7 next: Razorpay company subscriptions,
+placement commission flow (HIRED → Placement + Invoice), admin/CMS surfaces.

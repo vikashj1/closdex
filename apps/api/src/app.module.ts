@@ -13,6 +13,8 @@ import { RedisModule } from './redis/redis.module';
 import { LeaderboardsModule } from './leaderboards/leaderboards.module';
 import { LearningModule } from './learning/learning.module';
 import { JobsModule } from './jobs/jobs.module';
+import { TalentModule } from './talent/talent.module';
+import { ShortlistsModule } from './shortlists/shortlists.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { JobsModule } from './jobs/jobs.module';
     AttemptsModule,
     LearningModule,
     JobsModule,
+    TalentModule,
+    ShortlistsModule,
   ],
 })
 export class AppModule {}
