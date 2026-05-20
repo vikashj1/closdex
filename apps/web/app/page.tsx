@@ -9,6 +9,13 @@ import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
 import { Icon } from '@/components/ui/Icon';
 import type { RankName } from '@/lib/constants';
+import { ProductShowcase } from '@/components/landing/ProductShowcase';
+import { PersonaShowcase } from '@/components/landing/PersonaShowcase';
+import { AudienceTabs } from '@/components/landing/AudienceTabs';
+import { OutcomesStrip } from '@/components/landing/OutcomesStrip';
+import { SocialProofStrip } from '@/components/landing/SocialProofStrip';
+import { FAQSection } from '@/components/landing/FAQSection';
+import { FinalCTABanner } from '@/components/landing/FinalCTABanner';
 
 /** Ported from the prototype's LandingScreen. Extended sections
  *  (ProductShowcase / PersonaShowcase / AudienceTabs / OutcomesStrip /
@@ -116,6 +123,15 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* Extended landing sections */}
+      <ProductShowcase go={go} />
+      <PersonaShowcase go={go} />
+      <AudienceTabs go={go} />
+      <OutcomesStrip />
+      <SocialProofStrip />
+      <FAQSection />
+      <FinalCTABanner go={go} />
 
       {/* Footer */}
       <footer style={{ padding: '40px 64px', borderTop: '1px solid var(--border-soft)', display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 40, color: 'var(--text-mute)', fontSize: 12.5 }}>
