@@ -127,11 +127,41 @@ ADMIN:
   category). Subsequent passes don't re-award — prevents farming.
 - `GET /api/learning/me/progress` — TrackProgress for the authed salesperson.
 
-## Next (M6)
+### M6 — Talent marketplace (slice 1: jobs + applications + ATS)
+- `jobs/` — Jobs CRUD with lifecycle (DRAFT → LIVE ⇄ PAUSED → CLOSED → LIVE).
+  Company-member-aware visibility: non-members see LIVE only, members see all
+  their company's jobs in any status.
+- `jobs/applications.service.ts` — salesperson apply (one-click; resume URL
+  snapshotted at apply time; min-rank gated; deadline-gated; uniqueness on
+  `(jobId, salespersonId)`). Company-side application listing (any company role
+  including VIEWER). ATS state transitions enforced — APPLIED→VIEWED/SHORTLISTED/
+  REJECTED, VIEWED→SHORTLISTED/REJECTED, SHORTLISTED→INTERVIEW/REJECTED,
+  INTERVIEW→OFFERED/REJECTED, OFFERED→HIRED/REJECTED. HIRED and REJECTED terminal.
+- ADMIN/RECRUITER write jobs; VIEWER reads applications. Platform-level ADMIN
+  overrides company-role checks.
 
-Talent marketplace — company profiles + job posting + talent search + basic ATS.
-Polish backlog: BullMQ async scoring, ScoreDispute endpoints, admin moderation,
-location-based leaderboards.
+### Endpoints (jobs, Bearer required)
+
+Jobs:
+- `GET    /api/jobs` — list, filtered + paginated. Non-members see LIVE only.
+- `GET    /api/jobs/:id`
+- `POST   /api/jobs` — company ADMIN/RECRUITER (companyId in body, ownership checked)
+- `PATCH  /api/jobs/:id` — company ADMIN/RECRUITER
+- `POST   /api/jobs/:id/publish` · `pause` · `close` · `repost`
+
+Applications:
+- `POST /api/jobs/:id/apply` — SALESPERSON; enforces min-rank, deadline, uniqueness
+- `GET  /api/jobs/:id/applications` — company member (any role)
+- `GET  /api/applications/me` — SALESPERSON
+- `GET  /api/applications/:id` — salesperson owner OR company member
+- `PATCH /api/applications/:id` — company ADMIN/RECRUITER; validates state transition
+
+## Next (M6 slice 2)
+
+Talent search/filter (company-side discovery): rank, points, category performance,
+location, experience, availability. Shortlists CRUD. Then M7 (payments + admin):
+Razorpay subscriptions, placement commission flow (HIRED triggers Placement
+record + invoice), admin/CMS surfaces.
 
 ## Run
 

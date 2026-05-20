@@ -12,6 +12,7 @@ import { AttemptsModule } from './attempts/attempts.module';
 import { RedisModule } from './redis/redis.module';
 import { LeaderboardsModule } from './leaderboards/leaderboards.module';
 import { LearningModule } from './learning/learning.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { LearningModule } from './learning/learning.module';
     ScoringModule,
     AttemptsModule,
     LearningModule,
+    JobsModule,
   ],
 })
 export class AppModule {}
