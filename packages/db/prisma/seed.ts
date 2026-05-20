@@ -76,6 +76,122 @@ async function main() {
     await prisma.scoringRuleConfig.upsert({ where: { key: s.key }, update: s, create: s });
   }
   console.log('Seeded: 5 difficulty tiers, 6 goal types, 5 rubric dimensions, 8 ranks, 10 scoring rules.');
+
+  // Demo content — personas + published challenges so /challenges isn't empty
+  // for a fresh tenant. Idempotent: skips if at least one challenge already exists.
+  const existingChallenges = await prisma.challenge.count();
+  if (existingChallenges > 0) {
+    console.log(`Skipping demo content (${existingChallenges} challenges already exist).`);
+    return;
+  }
+
+  const personas = await Promise.all([
+    prisma.leadPersona.create({
+      data: {
+        name: 'Meera Krishnan',
+        role: 'CTO',
+        company: 'Vector Pay (Series B Fintech, 180 engineers)',
+        contextSnippet: 'Time-poor, replies in 1-2 sentences. Comparison-shops vs Datadog. SOC2 audit in 8 weeks.',
+        personalityPrompt:
+          'You are Meera Krishnan, CTO at Vector Pay, a Series B fintech with 180 engineers. Personality: direct, time-poor, allergic to marketing slop, comparison-shops aggressively. You reply in 1-2 sentences max. You have a SOC2 audit in 8 weeks. You ARE busy, but if the salesperson earns a discovery call by being specific (concrete pain, data-backed claims, proposes a specific time slot), agree to it. Reject vague meetings, jargon ("platform", "revolutionary"), or disparaging competitors. Stay in character; never break the fourth wall.',
+      },
+    }),
+    prisma.leadPersona.create({
+      data: {
+        name: 'Rajesh Iyer',
+        role: 'Procurement Head',
+        company: 'Aditya Birla Capital',
+        contextSnippet: 'Detail-oriented, asks about pricing tiers, vendor lock-in, SLAs. Compliance-conscious.',
+        personalityPrompt:
+          'You are Rajesh Iyer, Procurement Head at Aditya Birla Capital. Personality: detail-oriented, slow to commit, compliance-conscious, asks pointed questions about pricing tiers, vendor lock-in, MSAs, and SLAs. You will not commit to a proposal unless the salesperson addresses at least two of: implementation timeline, exit clause, data residency. Polite but firm. Stay in character.',
+      },
+    }),
+    prisma.leadPersona.create({
+      data: {
+        name: 'Anjali Desai',
+        role: 'VP of Marketing',
+        company: 'TrueBridge Skincare (D2C, 80 staff)',
+        contextSnippet: 'Friendly, curious, easily distracted. Will buy if convinced of ROI in plain language.',
+        personalityPrompt:
+          'You are Anjali Desai, VP Marketing at TrueBridge Skincare, a D2C brand with 80 staff. Personality: friendly, curious, easily sidetracked into tangents about the latest tools. You respond well to ROI framed in plain language (revenue lift, hours saved per week) and storytelling case studies. You hate jargon and 50-page PDFs. If the salesperson keeps it concrete and human, you will book a call. Stay in character.',
+      },
+    }),
+    prisma.leadPersona.create({
+      data: {
+        name: 'Vikram Singh',
+        role: 'Head of Engineering',
+        company: 'NextWave Logistics (Series A, ~40 engineers)',
+        contextSnippet: 'Skeptical of new tools after a botched migration last quarter. Wants proof, not promises.',
+        personalityPrompt:
+          'You are Vikram Singh, Head of Engineering at NextWave Logistics. Personality: friendly but burned — your team did a botched migration last quarter and you are now allergic to vendor promises. You respond to: specific integration timelines, references from comparable customers, free trial offers. Will not engage with anything that smells like a generic pitch. Stay in character.',
+      },
+    }),
+  ]);
+
+  const [meera, rajesh, anjali, vikram] = personas;
+
+  await prisma.challenge.createMany({
+    data: [
+      {
+        title: 'The Skeptical CTO',
+        brief: 'Pitch a DevOps observability platform to a busy Series B fintech CTO who is comparison-shopping vs Datadog. She has burned cycles on two prior tools. Book a 30-minute discovery call.',
+        category: 'IT Sales',
+        difficulty: 'HARD',
+        goalType: 'BOOK_DISCOVERY_CALL',
+        goalDescription: 'Get Meera to agree to a specific 30-minute time slot for a discovery call this week. Vague "let me think about it" does not count.',
+        basePoints: 400,
+        maxMessages: 25,
+        estimatedMinutes: 15,
+        attemptsAllowed: 3,
+        status: 'PUBLISHED',
+        personaId: meera.id,
+      },
+      {
+        title: 'Procurement Maze',
+        brief: 'Navigate a procurement-led conversation at a large Indian financial conglomerate. The buyer cares about SLAs, vendor lock-in, and compliance. Send a tailored proposal.',
+        category: 'IT Sales',
+        difficulty: 'EXPERT',
+        goalType: 'SEND_PROPOSAL',
+        goalDescription: 'Send a tailored proposal that explicitly addresses implementation timeline, exit clause, and data residency. Rajesh must confirm he will review it.',
+        basePoints: 800,
+        maxMessages: 30,
+        estimatedMinutes: 20,
+        attemptsAllowed: 3,
+        status: 'PUBLISHED',
+        personaId: rajesh.id,
+      },
+      {
+        title: 'Warm Reply, Cold Lead',
+        brief: 'A marketing-qualified lead replied positively to your outreach. Convert her interest into a follow-up meeting before her attention drifts.',
+        category: 'SaaS',
+        difficulty: 'EASY',
+        goalType: 'BOOK_DISCOVERY_CALL',
+        goalDescription: 'Get Anjali to confirm a discovery call with a specific day/time. ROI framing helps.',
+        basePoints: 100,
+        maxMessages: 15,
+        estimatedMinutes: 8,
+        attemptsAllowed: 3,
+        status: 'PUBLISHED',
+        personaId: anjali.id,
+      },
+      {
+        title: 'Win Back the Burned Buyer',
+        brief: 'A Series A logistics startup just survived a botched tooling migration. The Head of Engineering is wary of vendor pitches. Earn back trust enough for a free-trial commitment.',
+        category: 'IT Sales',
+        difficulty: 'MEDIUM',
+        goalType: 'BOOK_DISCOVERY_CALL',
+        goalDescription: 'Vikram commits to scoping a free trial. He must name a use case he wants to validate.',
+        basePoints: 200,
+        maxMessages: 20,
+        estimatedMinutes: 12,
+        attemptsAllowed: 3,
+        status: 'PUBLISHED',
+        personaId: vikram.id,
+      },
+    ],
+  });
+
+  console.log(`Seeded demo content: ${personas.length} personas, 4 challenges.`);
 }
 
 main()

@@ -175,7 +175,7 @@ export default function ChallengesPage() {
                     </div>
                     <div>
                       <h3 className="display" style={{ fontSize: 17, margin: '0 0 6px', fontWeight: 600, letterSpacing: '-0.01em' }}>{c.title}</h3>
-                      <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>{c.description}</p>
+                      <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>{c.brief}</p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 8, borderTop: '1px solid var(--border-soft)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-mute)' }}>
@@ -189,7 +189,7 @@ export default function ChallengesPage() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
                       <div>
-                        <div className="display mono" style={{ fontWeight: 700, color: 'var(--gold)', fontSize: 22 }}>+{c.pointsBase}</div>
+                        <div className="display mono" style={{ fontWeight: 700, color: 'var(--gold)', fontSize: 22 }}>+{c.basePoints}</div>
                         <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>base points</div>
                       </div>
                       <Btn kind="secondary" size="sm" icon={<Icon.arrow />}>Start</Btn>

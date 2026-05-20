@@ -107,7 +107,7 @@ export interface MeResponse {
   email: string;
   name: string;
   role: UserRole;
-  salespersonProfile?: {
+  salesperson?: {
     id: string;
     publicSlug: string;
     headline?: string | null;
@@ -115,7 +115,7 @@ export interface MeResponse {
     location?: string | null;
     experienceYears?: number | null;
     rank: string;
-    points: number;
+    totalPoints: number;
     openToWork: boolean;
     expectedCtc?: string | null;
     noticePeriodDays?: number | null;
@@ -131,15 +131,17 @@ export interface MeResponse {
 export interface ChallengeSummary {
   id: string;
   title: string;
-  description: string;
+  brief: string;
   category: string;
   difficulty: 'ROOKIE' | 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
   goalType: string;
-  pointsBase: number;
+  goalDescription: string;
+  basePoints: number;
   maxMessages: number;
+  estimatedMinutes: number;
   attemptsAllowed: number | null;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  persona: { id: string; name: string; role?: string | null; industry?: string | null };
+  persona: { id: string; name: string; role?: string | null; company?: string | null; contextSnippet?: string | null };
 }
 
 export interface ChallengeMessage {

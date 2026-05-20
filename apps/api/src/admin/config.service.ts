@@ -97,7 +97,7 @@ export class ConfigService {
       });
       await this.audit.log({
         actorId: actor.id, action: 'CONFIG_RULE_UPDATED',
-        entity: 'ScoringRuleConfig', entityId: key, metadata: dto as Record<string, unknown>,
+        entity: 'ScoringRuleConfig', entityId: key, metadata: dto as unknown as Record<string, unknown>,
       });
       return updated;
     } catch {

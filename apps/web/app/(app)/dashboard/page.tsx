@@ -60,8 +60,8 @@ export default function DashboardPage() {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading dashboard…</div>;
   }
 
-  const profile = user.salespersonProfile;
-  const points = profile?.points ?? 0;
+  const profile = user.salesperson;
+  const points = profile?.totalPoints ?? 0;
   const rank = profile ? rankFromEnum(profile.rank) : currentRank(points);
   const next = nextRank(points);
   const progressPct = next ? Math.min(100, Math.round((points / next.min) * 100)) : 100;
@@ -173,7 +173,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div className="mono display" style={{ fontWeight: 700, color: 'var(--gold)', fontSize: 16 }}>+{c.pointsBase}</div>
+                      <div className="mono display" style={{ fontWeight: 700, color: 'var(--gold)', fontSize: 16 }}>+{c.basePoints}</div>
                       <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>{c.maxMessages} msgs</div>
                     </div>
                   </div>

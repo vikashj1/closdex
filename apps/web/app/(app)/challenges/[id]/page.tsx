@@ -97,12 +97,12 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
               {challenge.title}
             </h1>
             <p style={{ color: 'var(--text-dim)', margin: 0, fontSize: 14.5, lineHeight: 1.5, maxWidth: 720 }}>
-              {challenge.description}
+              {challenge.brief}
             </p>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div className="display mono" style={{ fontSize: 38, fontWeight: 700, color: 'var(--gold)', letterSpacing: '-0.02em' }}>
-              +{challenge.pointsBase}
+              +{challenge.basePoints}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>base × goal mult</div>
           </div>
@@ -118,7 +118,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
               <div>
                 <div style={{ fontWeight: 700, fontSize: 16 }}>{challenge.persona?.name ?? 'Lead'}</div>
                 <div style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
-                  {[challenge.persona?.role, challenge.persona?.industry].filter(Boolean).join(' · ') || 'Persona profile'}
+                  {[challenge.persona?.role, challenge.persona?.company].filter(Boolean).join(' · ') || 'Persona profile'}
                 </div>
               </div>
             </div>
@@ -177,7 +177,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
             <h3 className="display" style={DET_H}><Icon.bolt /> Scoring breakdown</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
               {[
-                { l: 'Base points',          v: `${challenge.pointsBase}`, note: `${level} tier` },
+                { l: 'Base points',          v: `${challenge.basePoints}`, note: `${level} tier` },
                 { l: '× Goal multiplier',    v: '1.0 – 2.0x',              note: 'Goal-dependent' },
                 { l: '× Quality multiplier', v: '0.0 – 1.0',               note: '5-dimension AI rubric' },
                 { l: '+ Speed bonus',        v: '+10% base',               note: 'If < 60% messages used' },

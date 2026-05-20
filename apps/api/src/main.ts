@@ -11,8 +11,9 @@ async function bootstrap() {
   app.enableCors();
 
   const port = process.env.PORT ?? 4000;
-  await app.listen(port);
-  console.log(`Closdex API listening on :${port}`);
+  const host = process.env.HOST ?? '127.0.0.1';
+  await app.listen(port, host);
+  console.log(`Closdex API listening on ${host}:${port}`);
 }
 
 bootstrap();

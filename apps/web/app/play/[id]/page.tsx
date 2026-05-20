@@ -275,7 +275,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
           <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.55 }}>
             <strong style={{ color: 'var(--text)' }}>{persona?.name ?? 'Lead'}</strong>
             {persona?.role && <> · {persona.role}</>}
-            {persona?.industry && <> · {persona.industry}</>}.
+            {persona?.company && <> · {persona.company}</>}.
             Personality is hidden — uncover it through the conversation.
           </div>
         </div>
