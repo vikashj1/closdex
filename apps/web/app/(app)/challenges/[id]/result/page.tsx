@@ -116,7 +116,7 @@ export default function ResultPage({ params }: { params: { id: string } }) {
         <Card padding={24}>
           <h3 className="display" style={{ fontSize: 16, margin: '0 0 16px', fontWeight: 600 }}>Score breakdown</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13.5 }}>
-            <Row k={`Base (${attempt.challenge.difficulty.toLowerCase()})`} v={attempt.challenge.pointsBase} />
+            <Row k={`Base (${attempt.challenge.difficulty.toLowerCase()})`} v={attempt.challenge.basePoints} />
             <Row k="× Quality (score / 100)" v={score ? (score / 100).toFixed(2) + 'x' : '—'} />
             <Row k="Goal achieved" v={achieved ? 'Yes' : 'No'} />
             <Row k="Messages used" v={`${attempt.messagesUsed} / ${attempt.challenge.maxMessages}`} />

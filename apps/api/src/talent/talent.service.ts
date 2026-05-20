@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ProfileVisibility, Rank, UserRole } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
@@ -71,5 +71,48 @@ export class TalentService {
     ]);
 
     return { items, total, page, perPage };
+  }
+
+  async getBySlug(viewer: AuthUser, slug: string) {
+    if (viewer.role !== UserRole.COMPANY && viewer.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only company users can view talent profiles.');
+    }
+
+    const profile = await this.prisma.salespersonProfile.findFirst({
+      where: { publicSlug: slug, visibility: ProfileVisibility.PUBLIC },
+      select: {
+        id: true,
+        publicSlug: true,
+        rank: true,
+        totalPoints: true,
+        experienceYears: true,
+        specializationTags: true,
+        openToWork: true,
+        currentCompany: true,
+        currentStreakDays: true,
+        resumeUrl: true,
+        user: { select: { name: true, photoUrl: true, location: true } },
+        attempts: {
+          where: { status: { in: ['COMPLETED', 'IN_PROGRESS'] } },
+          select: { status: true, goalAchieved: true },
+        },
+      },
+    });
+
+    if (!profile) throw new NotFoundException('Talent profile not found.');
+
+    const completed = profile.attempts.filter((a) => a.status === 'COMPLETED');
+    const wins = completed.filter((a) => a.goalAchieved === true);
+    const winRate = completed.length > 0 ? Math.round((wins.length / completed.length) * 100) : 0;
+
+    const { attempts, ...rest } = profile;
+    return {
+      ...rest,
+      _stats: {
+        totalAttempts: profile.attempts.length,
+        completedAttempts: completed.length,
+        winRate,
+      },
+    };
   }
 }

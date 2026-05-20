@@ -1,57 +1,49 @@
 'use client';
 
-import { CSSProperties, useState } from 'react';
+import { CSSProperties, useEffect, useState } from 'react';
+import { api, ApiError, LeaderboardEntry } from '@/lib/api';
+import { useRequireAuth } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
-import type { RankName } from '@/lib/constants';
+import { rankFromEnum } from '@/lib/constants';
 
-type Period = 'Daily' | 'Weekly' | 'Monthly' | 'All-time';
-const PERIODS: Period[] = ['Daily', 'Weekly', 'Monthly', 'All-time'];
-
-interface PodiumRow {
-  r: 1 | 2 | 3;
-  name: string;
-  city: string;
-  rank: RankName;
-  pts: number;
-}
-
-// Order is [2nd, 1st, 3rd] so the centre column renders #1 on the tallest plinth.
-const TOP3: PodiumRow[] = [
-  { r: 2, name: 'Priya Iyer',    city: 'Mumbai',    rank: 'Master',  pts: 36110 },
-  { r: 1, name: 'Aarav Sharma',  city: 'Bangalore', rank: 'Master',  pts: 38420 },
-  { r: 3, name: 'Karan Mehta',   city: 'Pune',      rank: 'Diamond', pts: 28940 },
+type Period = 'daily' | 'weekly' | 'monthly' | 'all-time';
+const PERIODS: { key: Period; label: string }[] = [
+  { key: 'daily',    label: 'Daily'    },
+  { key: 'weekly',   label: 'Weekly'   },
+  { key: 'monthly',  label: 'Monthly'  },
+  { key: 'all-time', label: 'All-time' },
 ];
-
-const NAMES = [
-  'Sneha Reddy', 'Rohan Gupta', 'Anjali Nair', 'Vivaan Kapoor',
-  'Tanvi Joshi', 'Vikram Singh', 'You (Shashank)', 'Arjun Pal',
-  'Pooja Verma', 'Nikhil Rao', 'Aditi Bose', 'Ishaan Roy',
-];
-const CITIES = [
-  'Hyderabad', 'Delhi NCR', 'Bangalore', 'Mumbai',
-  'Pune', 'Bangalore', 'Bangalore', 'Delhi NCR',
-  'Chennai', 'Bangalore', 'Kolkata', 'Mumbai',
-];
-const RANKS: RankName[] = [
-  'Diamond', 'Platinum', 'Platinum', 'Platinum',
-  'Gold', 'Gold', 'Gold', 'Gold',
-  'Gold', 'Gold', 'Gold', 'Silver',
-];
-const PTS = [22180, 17850, 14210, 11340, 8612, 8488, 8376, 8201, 8095, 7842, 7560, 7320];
-
-const REST = Array.from({ length: 12 }, (_, i) => ({
-  r: i + 4,
-  name: NAMES[i],
-  city: CITIES[i],
-  rank: RANKS[i],
-  pts: PTS[i],
-  you: i === 6,
-}));
 
 export default function LeaderboardPage() {
-  const [period, setPeriod] = useState<Period>('Weekly');
+  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const [period, setPeriod] = useState<Period>('weekly');
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    api.leaderboards.list({ period, limit: 50 })
+      .then(res => { if (!cancelled) { setEntries(res.entries); setLoading(false); } })
+      .catch(err => { if (!cancelled) { setError(err instanceof ApiError ? err.message : 'Failed to load leaderboard.'); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [user, period]);
+
+  if (authLoading) return null;
+
+  const top3Raw = entries.filter(e => e.rank <= 3);
+  const podium: LeaderboardEntry[] = [
+    top3Raw.find(e => e.rank === 2),
+    top3Raw.find(e => e.rank === 1),
+    top3Raw.find(e => e.rank === 3),
+  ].filter((e): e is LeaderboardEntry => !!e);
+  const rest = entries.filter(e => e.rank > 3);
+  const myEntry = entries.find(e => e.userId === user?.id);
 
   return (
     <div style={{ padding: '28px 32px' }}>
@@ -75,7 +67,6 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* Period tabs */}
       <div
         style={{
           display: 'inline-flex',
@@ -89,112 +80,131 @@ export default function LeaderboardPage() {
       >
         {PERIODS.map((p) => (
           <button
-            key={p}
-            onClick={() => setPeriod(p)}
+            key={p.key}
+            onClick={() => setPeriod(p.key)}
             style={{
               padding: '8px 16px',
               borderRadius: 7,
               fontSize: 13,
               fontWeight: 600,
-              background: period === p ? 'var(--gold)' : 'transparent',
-              color: period === p ? 'oklch(0.18 0.02 75)' : 'var(--text-dim)',
+              background: period === p.key ? 'var(--gold)' : 'transparent',
+              color: period === p.key ? 'oklch(0.18 0.02 75)' : 'var(--text-dim)',
               border: 'none',
+              cursor: 'pointer',
             }}
           >
-            {p}
+            {p.label}
           </button>
         ))}
       </div>
 
-      {/* Podium */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: 16, alignItems: 'end', marginBottom: 24 }}>
-        {TOP3.map((p) => (
-          <PodiumCard key={p.r} {...p} height={p.r === 1 ? 240 : p.r === 2 ? 200 : 180} />
-        ))}
-      </div>
-
-      {/* Table */}
-      <Card padding={0}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '60px 1fr 130px 100px 130px 80px',
-            padding: '12px 18px',
-            fontSize: 11,
-            color: 'var(--text-mute)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            fontWeight: 600,
-            borderBottom: '1px solid var(--border-soft)',
-          }}
-        >
-          <div>Rank</div><div>Salesperson</div><div>City</div><div>Tier</div><div>Points</div><div>Trend</div>
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-mute)', fontSize: 14 }}>
+          Loading leaderboard…
         </div>
-        {REST.map((row) => (
-          <div
-            key={row.r}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '60px 1fr 130px 100px 130px 80px',
-              padding: '12px 18px',
-              alignItems: 'center',
-              borderBottom: '1px solid var(--border-soft)',
-              background: row.you ? 'color-mix(in oklch, var(--gold) 10%, transparent)' : 'transparent',
-            }}
-          >
-            <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: row.you ? 'var(--gold)' : 'var(--text-mute)' }}>
-              #{row.r}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Avatar name={row.name} size={32} />
-              <div>
-                <div style={{ fontSize: 13.5, fontWeight: row.you ? 700 : 500, color: row.you ? 'var(--gold)' : 'var(--text)' }}>
-                  {row.name}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>{row.r === 11 ? 'Open to work' : ''}</div>
-              </div>
-            </div>
-            <div style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>{row.city}</div>
-            <RankBadge rank={row.rank} size={18} showLabel />
-            <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>{row.pts.toLocaleString()}</div>
-            <div className="mono" style={{ fontSize: 11.5, color: row.r % 4 === 0 ? 'var(--d-expert)' : 'var(--emerald)' }}>
-              {row.r % 4 === 0 ? '↓ -2' : '↑ +' + (3 + (row.r % 5))}
-            </div>
-          </div>
-        ))}
-      </Card>
+      )}
 
-      {/* Sticky "your row" */}
-      <div style={{ position: 'sticky', bottom: 16, marginTop: 16 }}>
-        <Card
-          padding={14}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '60px 1fr 130px 100px 130px 80px',
-            alignItems: 'center',
-            borderColor: 'var(--gold)',
-            background: 'color-mix(in oklch, var(--gold) 14%, var(--surface))',
-          }}
-        >
-          <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>#27</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Avatar name="Shashank Khare" size={32} />
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 700 }}>You · Shashank Khare</div>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>624 pts to Platinum</div>
+      {error && (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--d-expert)', fontSize: 14 }}>
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
+          {podium.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: 16, alignItems: 'end', marginBottom: 24 }}>
+              {podium.map((e) => (
+                <PodiumCard
+                  key={e.userId}
+                  entry={e}
+                  height={e.rank === 1 ? 240 : e.rank === 2 ? 200 : 180}
+                  isMe={e.userId === user?.id}
+                />
+              ))}
             </div>
-          </div>
-          <div style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>Bangalore</div>
-          <RankBadge rank="Gold" size={18} showLabel />
-          <div className="mono" style={{ fontSize: 13.5, fontWeight: 700 }}>8,376</div>
-          <div className="mono" style={{ fontSize: 11.5, color: 'var(--emerald)' }}>↑ +7</div>
-        </Card>
-      </div>
+          )}
+
+          {rest.length > 0 && (
+            <Card padding={0}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '60px 1fr 100px 130px 80px',
+                  padding: '12px 18px',
+                  fontSize: 11,
+                  color: 'var(--text-mute)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  fontWeight: 600,
+                  borderBottom: '1px solid var(--border-soft)',
+                }}
+              >
+                <div>Rank</div><div>Salesperson</div><div>Tier</div><div>Points</div><div>Change</div>
+              </div>
+              {rest.map((entry) => {
+                const isMe = entry.userId === user?.id;
+                return (
+                  <div
+                    key={entry.userId}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '60px 1fr 100px 130px 80px',
+                      padding: '12px 18px',
+                      alignItems: 'center',
+                      borderBottom: '1px solid var(--border-soft)',
+                      background: isMe ? 'color-mix(in oklch, var(--gold) 10%, transparent)' : 'transparent',
+                    }}
+                  >
+                    <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text-mute)' }}>
+                      #{entry.rank}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <Avatar name={entry.name} size={32} />
+                      <div style={{ fontSize: 13.5, fontWeight: isMe ? 700 : 500, color: isMe ? 'var(--gold)' : 'var(--text)' }}>
+                        {entry.name}
+                      </div>
+                    </div>
+                    <RankBadge rank={rankFromEnum(entry.rankBadge ?? 'ROOKIE')} size={18} showLabel />
+                    <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>{entry.points.toLocaleString()}</div>
+                    <div />
+                  </div>
+                );
+              })}
+            </Card>
+          )}
+
+          {myEntry && myEntry.rank > 3 && (
+            <div style={{ position: 'sticky', bottom: 16, marginTop: 16 }}>
+              <Card
+                padding={14}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '60px 1fr 100px 130px 80px',
+                  alignItems: 'center',
+                  borderColor: 'var(--gold)',
+                  background: 'color-mix(in oklch, var(--gold) 14%, var(--surface))',
+                }}
+              >
+                <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>#{myEntry.rank}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar name={myEntry.name} size={32} />
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>You · {myEntry.name}</div>
+                </div>
+                <RankBadge rank={rankFromEnum(myEntry.rankBadge ?? 'ROOKIE')} size={18} showLabel />
+                <div className="mono" style={{ fontSize: 13.5, fontWeight: 700 }}>{myEntry.points.toLocaleString()}</div>
+                <div />
+              </Card>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
-function PodiumCard({ r, name, city, rank, pts, height }: PodiumRow & { height: number }) {
+function PodiumCard({ entry, height, isMe }: { entry: LeaderboardEntry; height: number; isMe: boolean }) {
+  const r = entry.rank as 1 | 2 | 3;
   const colors: Record<1 | 2 | 3, string> = {
     1: 'var(--r-gold)',
     2: 'var(--r-silver)',
@@ -206,7 +216,7 @@ function PodiumCard({ r, name, city, rank, pts, height }: PodiumRow & { height: 
       padding={20}
       style={{
         borderColor: `color-mix(in oklch, ${colors[r]} 40%, var(--border))`,
-        background: `linear-gradient(180deg, color-mix(in oklch, ${colors[r]} 12%, var(--surface)) 0%, var(--surface) 70%)`,
+        background: `linear-gradient(180deg, color-mix(in oklch, ${colors[r]} ${isMe ? 20 : 12}%, var(--surface)) 0%, var(--surface) 70%)`,
         textAlign: 'center',
         height,
         display: 'flex',
@@ -216,13 +226,12 @@ function PodiumCard({ r, name, city, rank, pts, height }: PodiumRow & { height: 
       }}
     >
       <div style={{ fontSize: 32 }}>{medal[r]}</div>
-      <Avatar name={name} size={56} />
+      <Avatar name={entry.name} size={56} />
       <div>
-        <div className="display" style={{ fontSize: 17, fontWeight: 700 }}>{name}</div>
-        <div style={{ fontSize: 11.5, color: 'var(--text-mute)' }}>{city}</div>
+        <div className="display" style={{ fontSize: 17, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text)' }}>{entry.name}</div>
       </div>
-      <RankBadge rank={rank} size={22} showLabel />
-      <div className="display mono" style={{ fontSize: 22, fontWeight: 700, color: colors[r] }}>{pts.toLocaleString()}</div>
+      <RankBadge rank={rankFromEnum(entry.rankBadge ?? 'ROOKIE')} size={22} showLabel />
+      <div className="display mono" style={{ fontSize: 22, fontWeight: 700, color: colors[r] }}>{entry.points.toLocaleString()}</div>
     </Card>
   );
 }

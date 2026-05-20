@@ -187,11 +187,38 @@ export interface TalentSummary {
   location?: string | null;
   experienceYears?: number | null;
   rank: string;
-  points: number;
+  totalPoints: number;
   openToWork: boolean;
   expectedCtc?: string | null;
   specializationTags: string[];
   user: { name: string };
+}
+
+export interface TalentDetail {
+  id: string;
+  publicSlug: string;
+  rank: string;
+  totalPoints: number;
+  experienceYears: number;
+  specializationTags: string[];
+  openToWork: boolean;
+  currentCompany?: string | null;
+  currentStreakDays: number;
+  resumeUrl?: string | null;
+  user: { name: string; photoUrl?: string | null; location?: string | null };
+  _stats: { totalAttempts: number; completedAttempts: number; winRate: number };
+}
+
+export interface CompanyDetail {
+  id: string;
+  name: string;
+  logoUrl?: string | null;
+  industry?: string | null;
+  size?: string | null;
+  locations: string[];
+  website?: string | null;
+  about?: string | null;
+  verification: string;
 }
 
 export interface LeaderboardEntry {
@@ -222,14 +249,15 @@ export const api = {
     updateMe: (dto: Partial<Pick<MeResponse, 'name'>>) =>
       request<MeResponse>('PATCH', '/users/me', { body: dto }),
     updateSalesperson: (dto: {
-      headline?: string;
-      bio?: string;
-      location?: string;
       experienceYears?: number;
-      openToWork?: boolean;
-      expectedCtc?: string;
-      noticePeriodDays?: number;
+      currentCompany?: string;
       specializationTags?: string[];
+      skillSelfAssessment?: number;
+      resumeUrl?: string;
+      openToWork?: boolean;
+      preferredLocations?: string[];
+      salaryExpectation?: number;
+      visibility?: 'PUBLIC' | 'PRIVATE' | 'CONNECTIONS_ONLY';
     }) => request<MeResponse>('PATCH', '/users/me/salesperson', { body: dto }),
   },
 
@@ -264,7 +292,7 @@ export const api = {
   },
 
   jobs: {
-    list: (query: { location?: string; specializationTag?: string; page?: number; perPage?: number } = {}) =>
+    list: (query: { location?: string; specializationTag?: string; companyId?: string; page?: number; perPage?: number } = {}) =>
       request<{ items: JobSummary[]; total: number; page: number; perPage: number }>(
         'GET',
         '/jobs',
@@ -272,6 +300,23 @@ export const api = {
       ),
     get: (id: string) => request<JobSummary>('GET', `/jobs/${id}`),
     apply: (id: string) => request<{ id: string; status: string }>('POST', `/jobs/${id}/apply`),
+    create: (dto: {
+      title: string;
+      description?: string;
+      location?: string;
+      workMode?: string;
+      ctcMin?: number;
+      ctcMax?: number;
+      minRank?: string;
+      specializationTags?: string[];
+      experienceMin?: number;
+      experienceMax?: number;
+    }) => request<JobSummary>('POST', '/jobs', { body: dto }),
+    publish: (id: string) => request<JobSummary>('POST', `/jobs/${id}/publish`),
+    listApplications: (id: string) =>
+      request<Array<{ id: string; status: string; salesperson: { id: string; publicSlug: string; rank: string; totalPoints: number; user: { name: string } } }>>(
+        'GET', `/jobs/${id}/applications`,
+      ),
   },
 
   applications: {
@@ -299,6 +344,12 @@ export const api = {
         '/talent',
         { query },
       ),
+    getBySlug: (slug: string) =>
+      request<TalentDetail>('GET', `/talent/${encodeURIComponent(slug)}`),
+  },
+
+  companies: {
+    get: (id: string) => request<CompanyDetail>('GET', `/companies/${id}`),
   },
 
   leaderboards: {

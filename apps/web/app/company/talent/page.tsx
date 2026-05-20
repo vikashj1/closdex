@@ -209,7 +209,7 @@ export default function TalentSearchPage() {
                     </div>
                     <div style={{ textAlign: 'center' }}>
                       <div className="display mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--gold)' }}>
-                        {c.points.toLocaleString()}
+                        {c.totalPoints.toLocaleString()}
                       </div>
                       <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>total pts</div>
                     </div>
