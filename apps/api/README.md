@@ -220,10 +220,52 @@ Razorpay integration:
 live. Per HEARTBEAT.md guardrail (no spending without an explicit ask), waiting on
 an owner ack before wiring secrets.
 
-## Next (M7 slice 3)
+### M7 slice 3 — Admin / CMS
+- `admin/disputes.service.ts` — salespeople file disputes on scored attempts
+  (`POST /disputes`, `GET /disputes/me`); admins resolve via ADJUST (writes a
+  ADMIN_ADJUSTMENT PointsTransaction = newScore − oldScore + leaderboard sync) or
+  REJECT. Every resolution writes to AdminAuditLog.
+- `admin/verification.service.ts` — company KYC review. List PENDING, approve,
+  reject. Each transition writes an audit entry.
+- `admin/config.service.ts` — list + edit DifficultyTierConfig / GoalTypeConfig /
+  RankConfig / ScoringRuleConfig / RubricDimensionConfig. Every edit audited.
+- `admin/audit.service.ts` — append-only logger used by everyone above.
+  `GET /admin/audit` exposes the log for admins (filter by entity/action/actor).
 
-Admin/CMS: ScoreDispute resolution endpoints, company verification queue,
-rubric/rank/pricing config admin endpoints, AdminAuditLog writes.
+### Endpoints (Bearer required)
+
+Disputes:
+- `POST /api/disputes` — SALESPERSON; body `{ attemptId, reason }`
+- `GET  /api/disputes/me` — SALESPERSON
+- `GET  /api/admin/disputes?status=&page=` — ADMIN
+- `GET  /api/admin/disputes/:id` — ADMIN
+- `POST /api/admin/disputes/:id/resolve` — ADMIN; body `{ action: ADJUST|REJECT, resolution, newScore? }`
+
+Company verification (ADMIN):
+- `GET  /api/admin/verification/pending`
+- `POST /api/admin/verification/companies/:id/approve` — body `{ notes? }`
+- `POST /api/admin/verification/companies/:id/reject`  — body `{ notes? }`
+
+Admin config (ADMIN):
+- `GET /api/admin/config/difficulty-tiers` · `PATCH .../:tier`
+- `GET /api/admin/config/goal-types` · `PATCH .../:goalType`
+- `GET /api/admin/config/ranks` · `PATCH .../:rank`
+- `GET /api/admin/config/scoring-rules` · `PATCH .../:key`
+- `GET /api/admin/config/rubric-dimensions` · `PATCH .../:id`
+
+Audit (ADMIN):
+- `GET /api/admin/audit?entity=&actorId=&action=&page=&perPage=`
+
+## Next (M7 slice 2 — paused on owner ack)
+
+Razorpay subscriptions + webhook (needs KEY_ID + KEY_SECRET + webhook secret).
+Will replace the manual `POST /invoices/:id/mark-paid` with a webhook handler.
+
+## Next (M8 — Hardening)
+
+Notifications (email + in-app), polish backlog (BullMQ async scoring,
+location-based leaderboards, real GST classification, OAuth providers,
+ScoreDispute conversation viewer enrichments), tests, deploy.
 
 ## Run
 
