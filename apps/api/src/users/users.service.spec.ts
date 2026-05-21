@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -164,6 +165,67 @@ describe('UsersService', () => {
       );
 
       expect(mockPrisma.salespersonProfile.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── changePassword ───────────────────────────────────────────────────────
+
+  describe('changePassword', () => {
+    it('throws NotFoundException when user does not exist', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.changePassword('missing', { currentPassword: 'old', newPassword: 'newpass1' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws UnauthorizedException when current password is wrong', async () => {
+      const hash = await bcrypt.hash('correct-pw', 10);
+      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, passwordHash: hash });
+
+      await expect(
+        service.changePassword('user-1', { currentPassword: 'wrong-pw', newPassword: 'newpass1' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when passwordHash is null', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, passwordHash: null });
+
+      await expect(
+        service.changePassword('user-1', { currentPassword: 'any', newPassword: 'newpass1' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('updates passwordHash and returns { success: true } when current password matches', async () => {
+      const hash = await bcrypt.hash('correct-pw', 10);
+      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, passwordHash: hash });
+      mockPrisma.user.update.mockResolvedValue({});
+
+      const result = await service.changePassword('user-1', {
+        currentPassword: 'correct-pw',
+        newPassword: 'new-secure-pw',
+      });
+
+      expect(result).toEqual({ success: true });
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'user-1' } }),
+      );
+    });
+
+    it('stores a bcrypt hash of the new password (not plaintext)', async () => {
+      const hash = await bcrypt.hash('correct-pw', 10);
+      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, passwordHash: hash });
+      mockPrisma.user.update.mockResolvedValue({});
+
+      await service.changePassword('user-1', {
+        currentPassword: 'correct-pw',
+        newPassword: 'new-secure-pw',
+      });
+
+      const updateCall = mockPrisma.user.update.mock.calls[0][0];
+      const storedHash = updateCall.data.passwordHash;
+      expect(storedHash).not.toBe('new-secure-pw');
+      expect(await bcrypt.compare('new-secure-pw', storedHash)).toBe(true);
     });
   });
 });

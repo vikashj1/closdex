@@ -20,7 +20,7 @@ closdex/
 | Web | Next.js 14 App Router, React 18, no Tailwind — inline style={{}} only |
 | Auth | JWT in localStorage (`closdex.token`), `useRequireAuth(role)` guards pages |
 | LLM | OpenAI-compatible via NVIDIA NIM (`nvapi-…`); `LlmProvider` injectable |
-| Tests | Jest + ts-jest in `apps/api`; 406 specs, 24 suites |
+| Tests | Jest + ts-jest in `apps/api`; 411 specs, 24 suites |
 
 ## Running locally
 
@@ -92,6 +92,7 @@ LLM_MODEL=meta/llama-3.1-8b-instruct
 - NIM API key was posted publicly — **rotation required**
 - Email delivery credentials (SES/Sendgrid) not yet configured
 
-## Slice history (slices 1–32 committed on `main`)
+## Slice history (slices 1–37 committed on `main`)
 
-All UI pages complete through slice 31. Full test coverage achieved at slice 32 (406 specs).
+All UI pages complete through slice 36. Full test coverage at slice 37 (411 specs, 24 suites).
+Pending: badges system, profile viewer tracking, config edit UI, extra specialization verticals.
