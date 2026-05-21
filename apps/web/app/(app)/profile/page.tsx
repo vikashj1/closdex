@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useState } from 'react';
 import { api, ApiError, AttemptDetail, MeResponse } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 import { Avatar } from '@/components/ui/Avatar';
@@ -31,6 +31,7 @@ export default function ProfilePage() {
   const [attemptsLoading, setAttemptsLoading] = useState(true);
   const [openToWork, setOpenToWork] = useState<boolean>(false);
   const [toggling, setToggling] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Edit mode
   const [editing, setEditing] = useState(false);
@@ -104,6 +105,19 @@ export default function ProfilePage() {
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
     .slice(0, 5);
 
+  const activityData = useMemo(() => {
+    const counts = new Array(182).fill(0);
+    const now = Date.now();
+    attempts.forEach((a) => {
+      if (a.completedAt) {
+        const daysAgo = Math.floor((now - new Date(a.completedAt).getTime()) / 86400000);
+        const idx = 181 - daysAgo;
+        if (idx >= 0 && idx < 182) counts[idx]++;
+      }
+    });
+    return counts;
+  }, [attempts]);
+
   const next = nextRank(sp.totalPoints);
   const pointsToNext = next ? next.min - sp.totalPoints : 0;
 
@@ -168,7 +182,18 @@ export default function ProfilePage() {
             >
               {openToWork ? 'Remove open to work' : 'Set open to work'}
             </Btn>
-            <Btn kind="primary" size="sm">Share profile</Btn>
+            <Btn
+              kind="primary"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(`https://closdex.in/u/${sp.publicSlug}`).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                });
+              }}
+            >
+              {copied ? 'Link copied!' : 'Share profile'}
+            </Btn>
           </div>
         </div>
 
@@ -203,7 +228,7 @@ export default function ProfilePage() {
               </p>
             </div>
           </div>
-          <ActivityHeatmap weeks={26} seed={101} />
+          <ActivityHeatmap weeks={26} activityData={activityData} />
         </Card>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 18, marginTop: 22 }}>

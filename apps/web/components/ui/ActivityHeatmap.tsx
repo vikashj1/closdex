@@ -46,13 +46,18 @@ interface Props {
   seed?: number;
   showLabels?: boolean;
   showLegend?: boolean;
+  /** Real per-day counts indexed from oldest (0) to newest (days-1). When provided,
+   *  overrides the PRNG-generated placeholder data. */
+  activityData?: number[];
 }
 
 export function ActivityHeatmap({
   weeks = 26, compact = false, seed = 42, showLabels = true, showLegend = true,
+  activityData,
 }: Props) {
   const days = weeks * 7;
-  const data = useMemo(() => generateActivityData(days, seed), [days, seed]);
+  const generatedData = useMemo(() => generateActivityData(days, seed), [days, seed]);
+  const data = activityData ?? generatedData;
   const cell = compact ? 9 : 12;
   const gap = compact ? 2 : 3;
   const radius = compact ? 2 : 3;
