@@ -11,7 +11,8 @@ async function bootstrap() {
   app.enableCors();
 
   const port = process.env.PORT ?? 4000;
-  const host = process.env.HOST ?? '127.0.0.1';
+  // Bind to 0.0.0.0 in production/containers; localhost for local dev
+  const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
   await app.listen(port, host);
   console.log(`Closdex API listening on ${host}:${port}`);
 }

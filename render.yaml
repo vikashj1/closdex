@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: closdex-api
+    runtime: docker
+    dockerfilePath: apps/api/Dockerfile
+    # Build context = repo root (needed for monorepo)
+    dockerContext: .
+    plan: free          # change to "starter" ($7/mo) to prevent sleep
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false     # paste your Supabase connection string in Render dashboard
+      - key: REDIS_URL
+        sync: false     # paste your Upstash Redis URL
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AI_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: SCORING_WORKER_CONCURRENCY
+        value: 2        # keep low on free tier (limited RAM)
