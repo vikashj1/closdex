@@ -11,7 +11,7 @@
  * a stale session.
  */
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 const TOKEN_KEY = 'closdex.token';
 
 // ─── token storage ──────────────────────────────────────────────────────
