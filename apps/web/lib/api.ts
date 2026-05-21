@@ -516,6 +516,12 @@ export const api = {
     myProgress: () => request<TrackProgress[]>('GET', '/learning/me/progress'),
   },
 
+  disputes: {
+    create: (attemptId: string, reason: string) =>
+      request<DisputeSummary>('POST', '/disputes', { body: { attemptId, reason } }),
+    listMine: () => request<DisputeSummary[]>('GET', '/disputes/me'),
+  },
+
   admin: {
     audit: {
       list: (query: { entity?: string; actorId?: string; action?: string; page?: number; perPage?: number } = {}) =>

@@ -38,6 +38,10 @@ export default function ResultPage({ params }: { params: { id: string } }) {
   const [attempt, setAttempt] = useState<AttemptDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [submittingDispute, setSubmittingDispute] = useState(false);
+  const [disputeDone, setDisputeDone] = useState(false);
 
   useEffect(() => {
     if (!user || !attemptId) {
@@ -158,6 +162,71 @@ export default function ResultPage({ params }: { params: { id: string } }) {
         <Btn kind="secondary" size="lg" onClick={() => router.push('/dashboard')}>Back to dashboard</Btn>
         <Btn kind="ghost" size="lg" onClick={() => router.refresh()}>Refresh score</Btn>
       </div>
+
+      {/* Dispute section */}
+      {attempt.status === 'COMPLETED' && !disputeDone && (
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          {!disputeOpen ? (
+            <button
+              onClick={() => setDisputeOpen(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Disagree with the score? Raise a dispute
+            </button>
+          ) : (
+            <Card padding={20} style={{ maxWidth: 560, margin: '0 auto', textAlign: 'left' }}>
+              <h4 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 10px' }}>Raise a dispute</h4>
+              <p style={{ fontSize: 12.5, color: 'var(--text-mute)', margin: '0 0 12px' }}>
+                Describe why you believe the scoring is incorrect. Our team reviews disputes within 48h.
+              </p>
+              <textarea
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                placeholder="e.g. I clearly handled the objection at message 5 but it wasn't reflected in the score…"
+                rows={4}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-2)',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  resize: 'vertical',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
+                <Btn kind="ghost" size="sm" onClick={() => setDisputeOpen(false)}>Cancel</Btn>
+                <Btn
+                  kind="primary"
+                  size="sm"
+                  disabled={submittingDispute || disputeReason.trim().length < 10}
+                  onClick={async () => {
+                    setSubmittingDispute(true);
+                    try {
+                      await api.disputes.create(attempt!.id, disputeReason.trim());
+                      setDisputeDone(true);
+                      setDisputeOpen(false);
+                    } catch {
+                      // silently ignore — keep form open
+                    } finally {
+                      setSubmittingDispute(false);
+                    }
+                  }}
+                >
+                  {submittingDispute ? 'Submitting…' : 'Submit dispute'}
+                </Btn>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+      {disputeDone && (
+        <div style={{ marginTop: 20, textAlign: 'center', fontSize: 12.5, color: 'var(--emerald)' }}>
+          ✓ Dispute submitted. We&apos;ll review it within 48 hours.
+        </div>
+      )}
     </div>
   );
 }

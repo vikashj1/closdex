@@ -19,6 +19,7 @@ const PERIODS: { key: Period; label: string }[] = [
 export default function LeaderboardPage() {
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
   const [period, setPeriod] = useState<Period>('weekly');
+  const [category, setCategory] = useState('');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +29,11 @@ export default function LeaderboardPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    api.leaderboards.list({ period, limit: 50 })
+    api.leaderboards.list({ period, limit: 50, category: category || undefined })
       .then(res => { if (!cancelled) { setEntries(res.entries); setLoading(false); } })
       .catch(err => { if (!cancelled) { setError(err instanceof ApiError ? err.message : 'Failed to load leaderboard.'); setLoading(false); } });
     return () => { cancelled = true; };
-  }, [user, period]);
+  }, [user, period, category]);
 
   if (authLoading) return null;
 
@@ -55,9 +56,15 @@ export default function LeaderboardPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <select style={SELECT_STYLE}>
-            <option>All categories</option>
-            <option>IT Sales</option>
+          <select style={SELECT_STYLE} value={category} onChange={(e) => { setCategory(e.target.value); }}>
+            <option value="">All categories</option>
+            <option value="IT Sales">IT Sales</option>
+            <option value="Cloud">Cloud</option>
+            <option value="SaaS">SaaS</option>
+            <option value="DevTools">DevTools</option>
+            <option value="Cybersec">Cybersec</option>
+            <option value="FinTech">FinTech</option>
+            <option value="Healthcare">Healthcare</option>
           </select>
           <select style={SELECT_STYLE}>
             <option>All India</option>

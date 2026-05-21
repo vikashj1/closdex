@@ -1,8 +1,8 @@
 'use client';
 
-import { CSSProperties, ReactNode, useEffect, useState } from 'react';
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { api, ApiError, TalentDetail } from '@/lib/api';
+import { api, ApiError, TalentDetail, ShortlistSummary } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 import { rankFromEnum } from '@/lib/constants';
 import { Card } from '@/components/ui/Card';
@@ -17,12 +17,21 @@ export default function CandidateProfilePage() {
   const params = useParams();
   const slug = params?.id as string;
 
-  const { loading: authLoading } = useRequireAuth('COMPANY');
+  const { user, loading: authLoading } = useRequireAuth('COMPANY');
 
   const [profile, setProfile] = useState<TalentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [shortlistOpen, setShortlistOpen] = useState(false);
+  const [shortlists, setShortlists] = useState<ShortlistSummary[]>([]);
+  const [shortlistsLoaded, setShortlistsLoaded] = useState(false);
+  const [addingTo, setAddingTo] = useState<string | null>(null);
+  const [addedTo, setAddedTo] = useState<Set<string>>(new Set());
+  const [newListName, setNewListName] = useState('');
+  const [creatingList, setCreatingList] = useState(false);
+  const shortlistRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (authLoading || !slug) return;
@@ -42,6 +51,18 @@ export default function CandidateProfilePage() {
       })
       .finally(() => setLoading(false));
   }, [authLoading, slug]);
+
+  // Close shortlist popover on outside click
+  useEffect(() => {
+    if (!shortlistOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (shortlistRef.current && !shortlistRef.current.contains(e.target as Node)) {
+        setShortlistOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [shortlistOpen]);
 
   if (authLoading || loading) {
     return (
@@ -74,6 +95,22 @@ export default function CandidateProfilePage() {
   }
 
   if (!profile) return null;
+
+  async function handleCreateAndAdd() {
+    if (!newListName.trim() || !profile || !user?.companyMemberships?.[0]?.companyId) return;
+    setCreatingList(true);
+    try {
+      const newList = await api.shortlists.create(user.companyMemberships[0].companyId, newListName.trim());
+      await api.shortlists.addEntry(newList.id, profile.id);
+      setShortlists((prev) => [...prev, newList]);
+      setAddedTo((prev) => new Set(prev).add(newList.id));
+      setNewListName('');
+    } catch {
+      // silently ignore
+    } finally {
+      setCreatingList(false);
+    }
+  }
 
   const rankName = rankFromEnum(profile.rank);
   const rankVar = `var(--r-${profile.rank.toLowerCase()})`;
@@ -148,7 +185,108 @@ export default function CandidateProfilePage() {
             )}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Btn kind="ghost" size="md">Save to shortlist</Btn>
+            <div ref={shortlistRef} style={{ position: 'relative' }}>
+              <Btn
+                kind="ghost"
+                size="md"
+                onClick={() => {
+                  setShortlistOpen(true);
+                  if (!shortlistsLoaded && user?.companyMemberships?.[0]?.companyId) {
+                    api.shortlists.list(user.companyMemberships[0].companyId)
+                      .then((sl) => { setShortlists(sl); setShortlistsLoaded(true); })
+                      .catch(() => {});
+                  }
+                }}
+              >
+                Save to shortlist
+              </Btn>
+              {shortlistOpen && profile && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    right: 0,
+                    width: 260,
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-soft)',
+                    borderRadius: 10,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                    zIndex: 50,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ padding: '12px 14px 8px', borderBottom: '1px solid var(--border-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>Add to shortlist</span>
+                    <button onClick={() => setShortlistOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', padding: 2 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                  <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                    {!shortlistsLoaded ? (
+                      <div style={{ padding: '14px 14px', fontSize: 12.5, color: 'var(--text-mute)' }}>Loading…</div>
+                    ) : shortlists.length === 0 ? (
+                      <div style={{ padding: '12px 14px', fontSize: 12.5, color: 'var(--text-mute)' }}>No shortlists yet.</div>
+                    ) : shortlists.map((sl) => {
+                      const added = addedTo.has(sl.id);
+                      return (
+                        <button
+                          key={sl.id}
+                          disabled={!!addingTo || added}
+                          onClick={async () => {
+                            if (added || !profile) return;
+                            setAddingTo(sl.id);
+                            try {
+                              await api.shortlists.addEntry(sl.id, profile.id);
+                              setAddedTo((prev) => new Set(prev).add(sl.id));
+                            } catch {
+                              // silently ignore duplicate-entry errors
+                            } finally {
+                              setAddingTo(null);
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            background: 'none',
+                            border: 'none',
+                            textAlign: 'left',
+                            cursor: added ? 'default' : 'pointer',
+                            fontSize: 12.5,
+                            color: added ? 'var(--emerald)' : 'var(--text)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            borderBottom: '1px solid var(--border-soft)',
+                          }}
+                        >
+                          <span>{sl.name}</span>
+                          <span style={{ fontSize: 11, color: added ? 'var(--emerald)' : 'var(--text-mute)' }}>
+                            {added ? '✓ Added' : addingTo === sl.id ? '…' : `${sl._count.entries}`}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Create new shortlist inline */}
+                  <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border-soft)', display: 'flex', gap: 6 }}>
+                    <input
+                      placeholder="New shortlist name…"
+                      value={newListName}
+                      onChange={(e) => setNewListName(e.target.value)}
+                      style={{ flex: 1, padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-2)', fontSize: 12, color: 'var(--text)' }}
+                      onKeyDown={(e) => e.key === 'Enter' && !creatingList && newListName.trim() && handleCreateAndAdd()}
+                    />
+                    <button
+                      disabled={creatingList || !newListName.trim()}
+                      onClick={handleCreateAndAdd}
+                      style={{ padding: '6px 10px', borderRadius: 6, background: 'var(--cool)', color: 'white', border: 'none', fontSize: 12, fontWeight: 600, cursor: creatingList ? 'not-allowed' : 'pointer', opacity: creatingList ? 0.5 : 1 }}
+                    >
+                      {creatingList ? '…' : 'Create'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <Btn kind="primary" size="md" style={{ background: 'var(--cool)', color: 'white' }}>
               Contact
             </Btn>
