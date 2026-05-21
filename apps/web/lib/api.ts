@@ -221,6 +221,51 @@ export interface CompanyDetail {
   verification: string;
 }
 
+export interface ShortlistSummary {
+  id: string;
+  name: string;
+  companyId: string;
+  createdAt: string;
+  _count: { entries: number };
+}
+
+export interface ShortlistDetail {
+  id: string;
+  name: string;
+  companyId: string;
+  createdAt: string;
+  entries: Array<{
+    id: string;
+    createdAt: string;
+    salesperson: {
+      id: string;
+      publicSlug: string;
+      rank: string;
+      totalPoints: number;
+      experienceYears?: number | null;
+      specializationTags: string[];
+      openToWork: boolean;
+      user: { name: string; photoUrl?: string | null; location?: string | null };
+    };
+  }>;
+}
+
+export interface PlacementSummary {
+  id: string;
+  status: string;
+  annualCtc: number;
+  commissionAmount: number;
+  confirmedAt: string;
+  job: { id: string; title: string };
+  salesperson: {
+    id: string;
+    publicSlug: string;
+    rank: string;
+    user: { name: string };
+  };
+  invoice?: { id: string; number: string; status: string; amount: number } | null;
+}
+
 export interface LeaderboardEntry {
   rank: number;
   userId: string;
@@ -350,6 +395,29 @@ export const api = {
 
   companies: {
     get: (id: string) => request<CompanyDetail>('GET', `/companies/${id}`),
+    update: (id: string, dto: Partial<Pick<CompanyDetail, 'name' | 'industry' | 'size' | 'website' | 'about'> & { locations?: string[] }>) =>
+      request<CompanyDetail>('PATCH', `/companies/${id}`, { body: dto }),
+  },
+
+  shortlists: {
+    list: (companyId: string) =>
+      request<ShortlistSummary[]>('GET', '/shortlists', { query: { companyId } }),
+    get: (id: string) => request<ShortlistDetail>('GET', `/shortlists/${id}`),
+    create: (companyId: string, name: string) =>
+      request<ShortlistSummary>('POST', '/shortlists', { body: { companyId, name } }),
+    delete: (id: string) => request<void>('DELETE', `/shortlists/${id}`),
+    addEntry: (id: string, salespersonId: string) =>
+      request<{ id: string }>('POST', `/shortlists/${id}/entries`, { body: { salespersonId } }),
+    removeEntry: (id: string, salespersonId: string) =>
+      request<void>('DELETE', `/shortlists/${id}/entries/${salespersonId}`),
+  },
+
+  placements: {
+    list: (query: { companyId: string; status?: string; page?: number; perPage?: number }) =>
+      request<{ items: PlacementSummary[]; total: number; page: number; perPage: number }>(
+        'GET', '/placements', { query },
+      ),
+    get: (id: string) => request<PlacementSummary>('GET', `/placements/${id}`),
   },
 
   leaderboards: {
