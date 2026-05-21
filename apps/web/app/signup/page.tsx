@@ -8,7 +8,7 @@ import { Field } from '@/components/ui/Field';
 import { TextInput } from '@/components/ui/TextInput';
 import { Icon } from '@/components/ui/Icon';
 import { ApiError } from '@/lib/api';
-import { landingPathFor, useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 
 type Side = 'salesperson' | 'company';
 
@@ -45,7 +45,7 @@ export default function SignupPage() {
         role: tab === 'salesperson' ? 'SALESPERSON' : 'COMPANY',
         companyName: tab === 'company' ? companyName.trim() : undefined,
       });
-      router.replace(tab === 'salesperson' ? '/onboarding' : landingPathFor(user.role));
+      router.replace(tab === 'salesperson' ? '/onboarding' : '/company/onboarding');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Sign-up failed. Please try again.');
       setSubmitting(false);
