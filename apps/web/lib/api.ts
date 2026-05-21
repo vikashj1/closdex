@@ -266,6 +266,42 @@ export interface PlacementSummary {
   invoice?: { id: string; number: string; status: string; amount: number } | null;
 }
 
+export interface LearningTrackSummary {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  order: number;
+  tutorials: Array<{ id: string; title: string; type: 'VIDEO' | 'ARTICLE'; order: number }>;
+}
+
+export interface TutorialDetail {
+  id: string;
+  title: string;
+  type: 'VIDEO' | 'ARTICLE';
+  contentUrl?: string | null;
+  body?: string | null;
+  order: number;
+  trackId: string;
+  track: { id: string; title: string; category: string };
+  quiz?: {
+    id: string;
+    rewardPoints: number;
+    questions: Array<{ q: string; options: string[] }>;
+  } | null;
+}
+
+export interface TrackProgress {
+  trackId: string;
+  completedTutorialIds: string[];
+  track: {
+    id: string;
+    title: string;
+    category: string;
+    tutorials: Array<{ id: string }>;
+  };
+}
+
 export interface LeaderboardEntry {
   rank: number;
   userId: string;
@@ -425,6 +461,18 @@ export const api = {
       request<{ entries: LeaderboardEntry[] }>('GET', '/leaderboards', {
         query: { period: query.period ?? 'all-time', category: query.category, limit: query.limit },
       }),
+  },
+
+  learning: {
+    listTracks: () => request<LearningTrackSummary[]>('GET', '/learning/tracks'),
+    getTrack: (id: string) => request<LearningTrackSummary & { tutorials: TutorialDetail[] }>('GET', `/learning/tracks/${id}`),
+    getTutorial: (id: string) => request<TutorialDetail>('GET', `/learning/tutorials/${id}`),
+    completeTutorial: (id: string) => request<TrackProgress>('POST', `/learning/tutorials/${id}/complete`),
+    attemptQuiz: (id: string, answerIndices: number[]) =>
+      request<{ attempt: { id: string; passed: boolean; score: number }; score: number; total: number; passed: boolean; rewardPointsAwarded: number }>(
+        'POST', `/learning/quizzes/${id}/attempt`, { body: { answerIndices } },
+      ),
+    myProgress: () => request<TrackProgress[]>('GET', '/learning/me/progress'),
   },
 };
 
