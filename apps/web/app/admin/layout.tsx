@@ -13,11 +13,13 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { id: 'overview',     label: 'Overview',     path: '/admin',              },
-  { id: 'disputes',     label: 'Disputes',     path: '/admin/disputes',     prefix: '/admin/disputes' },
-  { id: 'verification', label: 'Verification', path: '/admin/verification', prefix: '/admin/verification' },
-  { id: 'audit',        label: 'Audit Log',    path: '/admin/audit',        prefix: '/admin/audit' },
-  { id: 'config',       label: 'Config',       path: '/admin/config',       prefix: '/admin/config' },
+  { id: 'overview',     label: 'Overview',     path: '/admin',                  },
+  { id: 'challenges',   label: 'Challenges',   path: '/admin/challenges',       prefix: '/admin/challenges' },
+  { id: 'personas',     label: 'Personas',     path: '/admin/personas',         prefix: '/admin/personas' },
+  { id: 'disputes',     label: 'Disputes',     path: '/admin/disputes',         prefix: '/admin/disputes' },
+  { id: 'verification', label: 'Verification', path: '/admin/verification',     prefix: '/admin/verification' },
+  { id: 'audit',        label: 'Audit Log',    path: '/admin/audit',            prefix: '/admin/audit' },
+  { id: 'config',       label: 'Config',       path: '/admin/config',           prefix: '/admin/config' },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

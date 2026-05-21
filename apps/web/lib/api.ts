@@ -523,6 +523,33 @@ export const api = {
   },
 
   admin: {
+    challenges: {
+      list: (query: { status?: string; page?: number; perPage?: number } = {}) =>
+        request<{ items: ChallengeSummary[]; total: number; page: number; perPage: number }>(
+          'GET', '/challenges', { query: { ...query, perPage: query.perPage ?? 50 } },
+        ),
+      create: (dto: {
+        title: string; brief: string; category: string;
+        difficulty: string; goalType: string; goalDescription: string;
+        basePoints: number; maxMessages: number; estimatedMinutes: number;
+        attemptsAllowed?: number; personaId: string;
+      }) => request<ChallengeSummary>('POST', '/challenges', { body: dto }),
+      update: (id: string, dto: Partial<{
+        title: string; brief: string; category: string;
+        difficulty: string; goalType: string; goalDescription: string;
+        basePoints: number; maxMessages: number; estimatedMinutes: number;
+        attemptsAllowed?: number; personaId: string;
+      }>) => request<ChallengeSummary>('PATCH', `/challenges/${id}`, { body: dto }),
+      publish: (id: string) => request<ChallengeSummary>('POST', `/challenges/${id}/publish`),
+      archive: (id: string) => request<ChallengeSummary>('POST', `/challenges/${id}/archive`),
+    },
+    personas: {
+      list: () => request<Array<{ id: string; name: string; role: string; company: string; contextSnippet: string }>>('GET', '/personas'),
+      create: (dto: { name: string; role: string; company: string; contextSnippet: string; personalityPrompt: string }) =>
+        request<{ id: string; name: string; role: string; company: string; contextSnippet: string }>('POST', '/personas', { body: dto }),
+      update: (id: string, dto: Partial<{ name: string; role: string; company: string; contextSnippet: string; personalityPrompt: string }>) =>
+        request<{ id: string; name: string; role: string; company: string; contextSnippet: string }>('PATCH', `/personas/${id}`, { body: dto }),
+    },
     audit: {
       list: (query: { entity?: string; actorId?: string; action?: string; page?: number; perPage?: number } = {}) =>
         request<{ items: AuditLogEntry[]; total: number; page: number; perPage: number }>(
