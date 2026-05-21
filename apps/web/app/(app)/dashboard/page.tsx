@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Btn } from '@/components/ui/Btn';
 import { Card } from '@/components/ui/Card';
@@ -10,7 +10,7 @@ import { Stat } from '@/components/ui/Stat';
 import { DifficultyTag } from '@/components/ui/DifficultyTag';
 import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
 import { Icon } from '@/components/ui/Icon';
-import { api, ChallengeSummary, LeaderboardEntry } from '@/lib/api';
+import { api, AttemptDetail, ChallengeSummary, LeaderboardEntry } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 import {
   currentRank,
@@ -19,19 +19,13 @@ import {
   rankFromEnum,
 } from '@/lib/constants';
 
-const RECENT_ACTIVITY = [
-  { t: "Cleared 'Cold call → demo'",         time: '2h ago', color: 'var(--emerald)',  pts: '+312' },
-  { t: 'Profile viewed by Razorpay',          time: '5h ago', color: 'var(--cool)',     pts: null },
-  { t: 'New job match: SDR @ Zoho',           time: '1d ago', color: 'var(--gold)',     pts: null },
-  { t: "Badge earned: 'First Objection'",     time: '2d ago', color: 'var(--r-master)', pts: null },
-];
-
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
 
   const [recommended, setRecommended] = useState<ChallengeSummary[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [attempts, setAttempts] = useState<AttemptDetail[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
 
@@ -43,10 +37,12 @@ export default function DashboardPage() {
     Promise.allSettled([
       api.challenges.list({ perPage: 4 }),
       api.leaderboards.list({ period: 'weekly', limit: 5 }),
-    ]).then(([cRes, lRes]) => {
+      api.attempts.listMine(),
+    ]).then(([cRes, lRes, aRes]) => {
       if (cancelled) return;
       if (cRes.status === 'fulfilled') setRecommended(cRes.value.items);
       if (lRes.status === 'fulfilled') setLeaderboard(lRes.value.entries);
+      if (aRes.status === 'fulfilled') setAttempts(aRes.value);
       if (cRes.status === 'rejected' && lRes.status === 'rejected') {
         setDataError('Could not reach the API. Showing your profile only.');
       }
@@ -55,6 +51,48 @@ export default function DashboardPage() {
 
     return () => { cancelled = true; };
   }, [user]);
+
+  const activityData = useMemo(() => {
+    const counts = new Array(182).fill(0);
+    const now = Date.now();
+    attempts.forEach((a) => {
+      if (a.completedAt) {
+        const daysAgo = Math.floor((now - new Date(a.completedAt).getTime()) / 86400000);
+        const idx = 181 - daysAgo;
+        if (idx >= 0 && idx < 182) counts[idx]++;
+      }
+    });
+    return counts;
+  }, [attempts]);
+
+  const weeklyPoints = useMemo(() => {
+    const cutoff = Date.now() - 7 * 86400000;
+    return attempts
+      .filter((a) => a.status === 'COMPLETED' && a.completedAt && new Date(a.completedAt).getTime() > cutoff)
+      .reduce((sum, a) => sum + (a.pointsAwarded ?? 0), 0);
+  }, [attempts]);
+
+  const recentActivity = useMemo(() => {
+    const now = Date.now();
+    const timeAgo = (d: string) => {
+      const diff = now - new Date(d).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      return `${Math.floor(hrs / 24)}d ago`;
+    };
+    return [...attempts]
+      .filter((a) => a.status === 'COMPLETED' && a.completedAt)
+      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
+      .slice(0, 5)
+      .map((a) => ({
+        t: a.goalAchieved ? `Cleared '${a.challenge.title}'` : `Attempted '${a.challenge.title}'`,
+        time: timeAgo(a.completedAt!),
+        color: a.goalAchieved ? 'var(--emerald)' : 'var(--text-mute)',
+        pts: a.pointsAwarded && a.pointsAwarded > 0 ? `+${a.pointsAwarded}` : null,
+      }));
+  }, [attempts]);
 
   if (authLoading || !user) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading dashboard…</div>;
@@ -100,8 +138,8 @@ export default function DashboardPage() {
             </div>
           </div>
           <Stat label="Total points" value={points.toLocaleString()} accent="var(--text)" icon={<Icon.bolt />} />
-          <Stat label="This week"    value="—" sub="last 7 days" accent="var(--emerald)" icon={<Icon.trend />} />
-          <Stat label="Streak"       value="—" sub="best to come"  accent="var(--gold)"    icon={<Icon.fire />} />
+          <Stat label="This week"    value={weeklyPoints > 0 ? `+${weeklyPoints.toLocaleString()}` : '—'} sub="last 7 days" accent="var(--emerald)" icon={<Icon.trend />} />
+          <Stat label="Challenges"  value={String(attempts.filter(a => a.status === 'COMPLETED').length)} sub="completed" accent="var(--gold)" icon={<Icon.fire />} />
           <Stat label="Open to work" value={profile?.openToWork ? 'Yes' : 'No'} icon={<Icon.trophy />} />
         </div>
         {next && (
@@ -117,17 +155,14 @@ export default function DashboardPage() {
         )}
       </Card>
 
-      {/* Activity heatmap (still mock data — needs a backend endpoint) */}
       <Card padding={22}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
           <div>
             <h3 className="display" style={{ fontSize: 16, margin: 0, fontWeight: 600 }}>Your challenge activity</h3>
-            <p style={{ fontSize: 12, color: 'var(--text-mute)', margin: '4px 0 0' }}>
-              Last 26 weeks
-            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-mute)', margin: '4px 0 0' }}>Last 26 weeks</p>
           </div>
         </div>
-        <ActivityHeatmap weeks={26} seed={101} />
+        <ActivityHeatmap weeks={26} activityData={activityData} />
       </Card>
 
       {/* Recommended / mini-leaderboard / recent activity */}
@@ -225,20 +260,26 @@ export default function DashboardPage() {
 
         <Card padding={20}>
           <h3 className="display" style={{ fontSize: 16, margin: '0 0 16px', fontWeight: 600 }}>Recent activity</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {RECENT_ACTIVITY.map((a, i) => (
-              <div key={i} style={{ display: 'flex', gap: 10 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 999, background: a.color, marginTop: 6, flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12.5 }}>{a.t}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 2 }}>{a.time}</div>
+          {dataLoading ? (
+            <div style={EMPTY_HINT}>Loading…</div>
+          ) : recentActivity.length === 0 ? (
+            <div style={EMPTY_HINT}>Complete a challenge to see activity here.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {recentActivity.map((a, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 999, background: a.color, marginTop: 6, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12.5 }}>{a.t}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 2 }}>{a.time}</div>
+                  </div>
+                  {a.pts && (
+                    <span className="mono" style={{ color: 'var(--emerald)', fontWeight: 700, fontSize: 12 }}>{a.pts}</span>
+                  )}
                 </div>
-                {a.pts && (
-                  <span className="mono" style={{ color: 'var(--emerald)', fontWeight: 700, fontSize: 12 }}>{a.pts}</span>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>
