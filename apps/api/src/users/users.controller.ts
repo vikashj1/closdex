@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserRole } from '@closdex/db';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -8,6 +8,7 @@ import { AuthUser } from '../auth/jwt.strategy';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateSalespersonDto } from './dto/update-salesperson.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -34,5 +35,11 @@ export class UsersController {
     @Body() dto: UpdateSalespersonDto,
   ) {
     return this.users.updateSalespersonProfile(user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/password')
+  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
+    return this.users.changePassword(user.id, dto);
   }
 }

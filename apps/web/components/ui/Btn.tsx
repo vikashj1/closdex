@@ -15,6 +15,7 @@ interface Props {
   full?: boolean;
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
+  loading?: boolean;
 }
 
 const SIZES: Record<Size, { padY: number; padX: number; fs: number; gap: number }> = {
@@ -32,15 +33,16 @@ const VARIANTS: Record<Kind, { bg: string; color: string; border: string }> = {
 };
 
 export function Btn({
-  kind = 'primary', size = 'md', icon, children, onClick, style = {}, full, type = 'button', disabled,
+  kind = 'primary', size = 'md', icon, children, onClick, style = {}, full, type = 'button', disabled, loading,
 }: Props) {
   const s = SIZES[size];
   const v = VARIANTS[kind];
+  const isDisabled = disabled || loading;
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
+      disabled={isDisabled}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -54,16 +56,21 @@ export function Btn({
         fontWeight: 600,
         fontSize: s.fs,
         width: full ? '100%' : 'auto',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.55 : 1,
+        cursor: isDisabled ? 'not-allowed' : 'pointer',
+        opacity: isDisabled ? 0.55 : 1,
         transition: 'transform 0.08s ease, filter 0.15s, opacity 0.15s',
         ...style,
       }}
-      onMouseDown={(e) => { if (!disabled) e.currentTarget.style.transform = 'scale(0.98)'; }}
+      onMouseDown={(e) => { if (!isDisabled) e.currentTarget.style.transform = 'scale(0.98)'; }}
       onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
     >
-      {icon}
+      {loading ? (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          style={{ animation: 'spin 0.8s linear infinite' }}>
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+        </svg>
+      ) : icon}
       {children}
     </button>
   );

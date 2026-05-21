@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { id: 'learn',       label: 'Learn',       icon: <Icon.book />,      path: '/learn',       prefix: '/learn' },
   { id: 'jobs',        label: 'Jobs',        icon: <Icon.briefcase />, path: '/jobs' },
   { id: 'profile',     label: 'Profile',     icon: <Icon.user />,      path: '/profile' },
+  { id: 'settings',    label: 'Settings',    icon: <Icon.settings />,  path: '/settings' },
 ];
 
 /** Sidebar + topbar shell for authenticated salesperson screens. Lives in

@@ -121,6 +121,10 @@ export interface MeResponse {
     noticePeriodDays?: number | null;
     specializationTags: string[];
     currentStreakDays: number;
+    resumeUrl?: string | null;
+    visibility?: string | null;
+    salaryExpectation?: number | null;
+    preferredLocations?: string[];
   } | null;
   companyMemberships?: Array<{
     companyId: string;
@@ -219,6 +223,9 @@ export interface CompanyDetail {
   locations: string[];
   website?: string | null;
   about?: string | null;
+  perks?: string | null;
+  culture?: string | null;
+  incentiveStructure?: string | null;
   verification: string;
 }
 
@@ -381,6 +388,8 @@ export const api = {
       salaryExpectation?: number;
       visibility?: 'PUBLIC' | 'PRIVATE' | 'CONNECTIONS_ONLY';
     }) => request<MeResponse>('PATCH', '/users/me/salesperson', { body: dto }),
+    changePassword: (dto: { currentPassword: string; newPassword: string }) =>
+      request<{ success: boolean }>('POST', '/users/me/password', { body: dto }),
   },
 
   challenges: {
@@ -472,7 +481,7 @@ export const api = {
 
   companies: {
     get: (id: string) => request<CompanyDetail>('GET', `/companies/${id}`),
-    update: (id: string, dto: Partial<Pick<CompanyDetail, 'name' | 'industry' | 'size' | 'website' | 'about'> & { locations?: string[] }>) =>
+    update: (id: string, dto: Partial<Pick<CompanyDetail, 'name' | 'logoUrl' | 'industry' | 'size' | 'website' | 'about' | 'perks' | 'culture' | 'incentiveStructure'> & { locations?: string[] }>) =>
       request<CompanyDetail>('PATCH', `/companies/${id}`, { body: dto }),
   },
 
