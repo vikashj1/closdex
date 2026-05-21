@@ -311,6 +311,16 @@ export interface LeaderboardEntry {
   rankBadge?: string;
 }
 
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
+  payload?: Record<string, unknown> | null;
+}
+
 // ─── public API surface ─────────────────────────────────────────────────
 
 export const api = {
@@ -474,6 +484,15 @@ export const api = {
         'POST', `/learning/quizzes/${id}/attempt`, { body: { answerIndices } },
       ),
     myProgress: () => request<TrackProgress[]>('GET', '/learning/me/progress'),
+  },
+
+  notifications: {
+    listMine: (unread?: boolean) =>
+      request<{ items: NotificationItem[]; total: number; page: number; perPage: number }>(
+        'GET', '/notifications/me', { query: { unread, perPage: 20 } },
+      ),
+    markRead: (id: string) => request<NotificationItem>('POST', `/notifications/${id}/read`),
+    markAllRead: () => request<void>('POST', '/notifications/read-all'),
   },
 };
 
