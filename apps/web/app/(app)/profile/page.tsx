@@ -8,9 +8,12 @@ import { RankBadge } from '@/components/ui/RankBadge';
 import { Btn } from '@/components/ui/Btn';
 import { Card } from '@/components/ui/Card';
 import { Stat } from '@/components/ui/Stat';
+import { TextInput } from '@/components/ui/TextInput';
 import { DifficultyTag } from '@/components/ui/DifficultyTag';
 import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
 import { rankFromEnum, difficultyFromEnum, nextRank } from '@/lib/constants';
+
+const SPEC_OPTIONS = ['IT Sales', 'Cloud', 'DevTools', 'Cybersec', 'SaaS', 'FinTech', 'Healthcare'];
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -29,9 +32,19 @@ export default function ProfilePage() {
   const [openToWork, setOpenToWork] = useState<boolean>(false);
   const [toggling, setToggling] = useState(false);
 
+  // Edit mode
+  const [editing, setEditing] = useState(false);
+  const [editExp, setEditExp] = useState('');
+  const [editResume, setEditResume] = useState('');
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+
   useEffect(() => {
     if (user?.salesperson) {
       setOpenToWork(user.salesperson.openToWork);
+      setEditExp(user.salesperson.experienceYears != null ? String(user.salesperson.experienceYears) : '');
+      setEditTags(user.salesperson.specializationTags ?? []);
     }
   }, [user]);
 
@@ -53,6 +66,23 @@ export default function ProfilePage() {
       setOpenToWork(!newValue);
     } finally {
       setToggling(false);
+    }
+  }
+
+  async function handleSaveProfile() {
+    setSaving(true);
+    setSaveErr(null);
+    try {
+      await api.users.updateSalesperson({
+        experienceYears: editExp ? parseInt(editExp, 10) : undefined,
+        specializationTags: editTags.length > 0 ? editTags : undefined,
+        resumeUrl: editResume || undefined,
+      });
+      setEditing(false);
+    } catch (err) {
+      setSaveErr(err instanceof ApiError ? err.message : 'Failed to save.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -236,24 +266,85 @@ export default function ProfilePage() {
             </Card>
 
             <Card padding={22}>
-              <h3 className="display" style={{ fontSize: 16, margin: '0 0 14px', fontWeight: 600 }}>Career preferences</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 12.5 }}>
-                <Row
-                  k="Open to work"
-                  v={
-                    <span style={{ color: openToWork ? 'var(--emerald)' : 'var(--text-mute)', fontWeight: 600 }}>
-                      {openToWork ? '● Yes' : '● No'}
-                    </span>
-                  }
-                />
-                {sp.location && <Row k="Location" v={sp.location} />}
-                {sp.experienceYears != null && <Row k="Experience" v={`${sp.experienceYears} years`} />}
-                {sp.expectedCtc && <Row k="Expected CTC" v={sp.expectedCtc} />}
-                {sp.noticePeriodDays != null && <Row k="Notice period" v={`${sp.noticePeriodDays} days`} />}
-                {sp.specializationTags.length > 0 && (
-                  <Row k="Specialization" v={sp.specializationTags.join(', ')} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <h3 className="display" style={{ fontSize: 16, margin: 0, fontWeight: 600 }}>Career preferences</h3>
+                {!editing && (
+                  <Btn kind="ghost" size="sm" onClick={() => { setEditing(true); setSaveErr(null); }}>Edit</Btn>
                 )}
               </div>
+
+              {editing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 5, fontWeight: 600 }}>Years of experience</div>
+                    <TextInput type="number" placeholder="4" value={editExp} onChange={(v) => setEditExp(v)} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 5, fontWeight: 600 }}>Resume / portfolio URL</div>
+                    <TextInput placeholder="https://..." value={editResume} onChange={(v) => setEditResume(v)} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 8, fontWeight: 600 }}>Specializations</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {SPEC_OPTIONS.map((tag) => {
+                        const active = editTags.includes(tag);
+                        return (
+                          <button
+                            key={tag}
+                            onClick={() => setEditTags(active ? editTags.filter((t) => t !== tag) : [...editTags, tag])}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: 999,
+                              border: `1px solid ${active ? 'var(--gold)' : 'var(--border)'}`,
+                              background: active ? 'color-mix(in oklch, var(--gold) 14%, transparent)' : 'var(--bg-2)',
+                              color: active ? 'var(--gold)' : 'var(--text-dim)',
+                              fontSize: 12.5,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {tag}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {saveErr && (
+                    <div style={{ fontSize: 12.5, color: 'var(--r-master)', padding: '8px 10px', borderRadius: 6, background: 'color-mix(in oklch, var(--r-master) 10%, transparent)' }}>
+                      {saveErr}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+                    <Btn kind="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Btn>
+                    <Btn kind="primary" size="sm" disabled={saving} onClick={handleSaveProfile}>
+                      {saving ? 'Saving…' : 'Save changes'}
+                    </Btn>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 12.5 }}>
+                  <Row
+                    k="Open to work"
+                    v={
+                      <span style={{ color: openToWork ? 'var(--emerald)' : 'var(--text-mute)', fontWeight: 600 }}>
+                        {openToWork ? '● Yes' : '● No'}
+                      </span>
+                    }
+                  />
+                  {sp.location && <Row k="Location" v={sp.location} />}
+                  {sp.experienceYears != null && <Row k="Experience" v={`${sp.experienceYears} years`} />}
+                  {sp.expectedCtc && <Row k="Expected CTC" v={sp.expectedCtc} />}
+                  {sp.noticePeriodDays != null && <Row k="Notice period" v={`${sp.noticePeriodDays} days`} />}
+                  {sp.specializationTags.length > 0 && (
+                    <Row k="Specialization" v={sp.specializationTags.join(', ')} />
+                  )}
+                  {!sp.experienceYears && !sp.specializationTags.length && (
+                    <div style={{ fontSize: 12, color: 'var(--text-mute)', fontStyle: 'italic' }}>
+                      Click Edit to fill in your career details.
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
 
             <Card padding={22}>
