@@ -120,6 +120,7 @@ export interface MeResponse {
     expectedCtc?: string | null;
     noticePeriodDays?: number | null;
     specializationTags: string[];
+    currentStreakDays: number;
   } | null;
   companyMemberships?: Array<{
     companyId: string;

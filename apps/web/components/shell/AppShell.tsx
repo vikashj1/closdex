@@ -6,6 +6,7 @@ import { Logo } from '@/components/ui/Logo';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { TopBar } from './TopBar';
+import { useAuth } from '@/lib/auth';
 
 interface NavItem {
   id: string;
@@ -31,6 +32,8 @@ const NAV: NavItem[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() || '';
+  const { user } = useAuth();
+  const streak = user?.salesperson?.currentStreakDays ?? 0;
 
   const isActive = (n: NavItem) =>
     n.prefix ? pathname.startsWith(n.prefix) : pathname === n.path;
@@ -114,10 +117,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               gap: 6,
             }}
           >
-            <Icon.fire /> 5-day streak
+            <Icon.fire /> {streak > 0 ? `${streak}-day streak` : 'Start a streak'}
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.45 }}>
-            Complete 1 challenge today to keep your streak alive.
+            {streak > 0
+              ? 'Complete 1 challenge today to keep your streak alive.'
+              : 'Complete a challenge today to start your streak.'}
           </div>
         </Card>
       </aside>
