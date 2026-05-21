@@ -1,9 +1,31 @@
 // Seeds the admin-tunable config straight from the SOW (docs/SOW.md tables T3–T7
 // + the §6.3 scoring rules). Re-runnable: every write is an upsert.
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole, CompanyRole, VerificationStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
+
+// Demo accounts — all share password "Demo1234!"
+// These are seeded only once (skip if any salesperson profile already exists).
+const DEMO_PASSWORD = 'Demo1234!';
+
+const DEMO_SALESPERSONS = [
+  { name: 'Arjun Mehta',     email: 'arjun@demo.closdex.in',    rank: 'GOLD',     pts: 6200,  exp: 5,  tags: ['IT Sales', 'Cloud'],           slug: 'arjun-mehta' },
+  { name: 'Priya Sharma',    email: 'priya@demo.closdex.in',    rank: 'PLATINUM', pts: 11400, exp: 7,  tags: ['SaaS', 'FinTech'],             slug: 'priya-sharma' },
+  { name: 'Kabir Nair',      email: 'kabir@demo.closdex.in',    rank: 'SILVER',   pts: 2800,  exp: 3,  tags: ['IT Sales', 'Cybersec'],        slug: 'kabir-nair' },
+  { name: 'Rhea Kapoor',     email: 'rhea@demo.closdex.in',     rank: 'DIAMOND',  pts: 22000, exp: 9,  tags: ['Cloud', 'DevTools'],           slug: 'rhea-kapoor' },
+  { name: 'Ankit Joshi',     email: 'ankit@demo.closdex.in',    rank: 'BRONZE',   pts: 950,   exp: 1,  tags: ['IT Sales'],                    slug: 'ankit-joshi' },
+  { name: 'Sneha Pillai',    email: 'sneha@demo.closdex.in',    rank: 'MASTER',   pts: 42000, exp: 12, tags: ['SaaS', 'Healthcare', 'Cloud'], slug: 'sneha-pillai' },
+] as const;
+
+const DEMO_COMPANY = {
+  name: 'TechBridge Solutions',
+  industry: 'B2B SaaS',
+  size: '51-200',
+  about: 'We build workflow automation tools for mid-market enterprises. 80+ paying customers, Series A closed.',
+  website: 'https://techbridge.example.com',
+};
 
 // T3 — Difficulty tiers
 const DIFFICULTY_TIERS = [
@@ -191,7 +213,129 @@ async function main() {
     ],
   });
 
-  console.log(`Seeded demo content: ${personas.length} personas, 4 challenges.`);
+  // Add ROOKIE challenge (for first-time users)
+  const [rookie] = personas; // use Anjali — she's friendly
+  await prisma.challenge.create({
+    data: {
+      title: 'First Contact',
+      brief: 'A warm SaaS lead replied "sounds interesting" to your LinkedIn message. Convert the interest into a quick intro call — no pressure, keep it human.',
+      category: 'SaaS',
+      difficulty: 'ROOKIE',
+      goalType: 'BOOK_DISCOVERY_CALL',
+      goalDescription: 'Get Anjali to confirm a 20-minute intro call with a specific time slot. She just needs to feel it\'s worth her 20 minutes.',
+      basePoints: 50,
+      maxMessages: 10,
+      estimatedMinutes: 5,
+      attemptsAllowed: null,
+      status: 'PUBLISHED',
+      personaId: rookie.id,
+    },
+  });
+
+  console.log(`Seeded demo content: ${personas.length} personas, 5 challenges.`);
+
+  // ── Demo users ────────────────────────────────────────────────────────────
+  const existingDemo = await prisma.salespersonProfile.count();
+  if (existingDemo > 0) {
+    console.log(`Skipping demo users (${existingDemo} salesperson profiles already exist).`);
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+
+  for (const sp of DEMO_SALESPERSONS) {
+    const user = await prisma.user.create({
+      data: {
+        email: sp.email,
+        name: sp.name,
+        passwordHash,
+        role: UserRole.SALESPERSON,
+        salesperson: {
+          create: {
+            publicSlug: sp.slug,
+            rank: sp.rank,
+            totalPoints: sp.pts,
+            experienceYears: sp.exp,
+            specializationTags: sp.tags as unknown as string[],
+            openToWork: sp.pts < 15000,
+            currentStreakDays: Math.floor(Math.random() * 8),
+          },
+        },
+      },
+    });
+    void user;
+  }
+
+  // ── Demo company + jobs ────────────────────────────────────────────────
+  const companyAdmin = await prisma.user.create({
+    data: {
+      email: 'hr@demo.closdex.in',
+      name: 'Nisha Verma',
+      passwordHash,
+      role: UserRole.COMPANY,
+    },
+  });
+
+  const company = await prisma.company.create({
+    data: {
+      name: DEMO_COMPANY.name,
+      industry: DEMO_COMPANY.industry,
+      size: DEMO_COMPANY.size,
+      about: DEMO_COMPANY.about,
+      website: DEMO_COMPANY.website,
+      verification: VerificationStatus.VERIFIED,
+      memberships: {
+        create: { userId: companyAdmin.id, companyRole: CompanyRole.ADMIN },
+      },
+    },
+  });
+
+  await prisma.jobPosting.createMany({
+    data: [
+      {
+        title: 'Senior Account Executive — Cloud Infra',
+        description: 'Own the full sales cycle for cloud infrastructure accounts. 5+ years B2B sales, IT Sales background preferred.',
+        location: 'Bangalore',
+        workMode: 'Hybrid',
+        ctcMin: 22,
+        ctcMax: 35,
+        minRank: 'SILVER',
+        experienceMin: 4,
+        specializationTags: ['IT Sales', 'Cloud'],
+        status: 'PUBLISHED',
+        companyId: company.id,
+      },
+      {
+        title: 'SDR — SaaS Vertical',
+        description: 'High-volume outbound prospecting. We move fast. Ideal for Bronze–Gold tier with SaaS/FinTech background.',
+        location: 'Remote',
+        workMode: 'Remote',
+        ctcMin: 8,
+        ctcMax: 14,
+        minRank: 'BRONZE',
+        experienceMin: 1,
+        specializationTags: ['SaaS', 'FinTech'],
+        status: 'PUBLISHED',
+        companyId: company.id,
+      },
+      {
+        title: 'Enterprise Sales Manager — Healthcare',
+        description: 'Lead enterprise accounts in healthcare tech. 7+ years, strong CXO relationships, Platinum+ tier.',
+        location: 'Mumbai',
+        workMode: 'On-site',
+        ctcMin: 40,
+        ctcMax: 60,
+        minRank: 'PLATINUM',
+        experienceMin: 7,
+        specializationTags: ['Healthcare', 'SaaS'],
+        status: 'PUBLISHED',
+        companyId: company.id,
+      },
+    ],
+  });
+
+  console.log(`Seeded demo users: ${DEMO_SALESPERSONS.length} salespersons, 1 company, 3 job postings.`);
+  console.log(`Demo login: any @demo.closdex.in email / password: ${DEMO_PASSWORD}`);
 }
 
 main()
