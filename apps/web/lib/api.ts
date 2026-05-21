@@ -321,6 +321,36 @@ export interface NotificationItem {
   payload?: Record<string, unknown> | null;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  entity: string;
+  entityId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+  actor: { id: string; name: string; email: string };
+}
+
+export interface DisputeSummary {
+  id: string;
+  status: 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED';
+  reason: string;
+  resolution?: string | null;
+  createdAt: string;
+  resolvedAt?: string | null;
+  attempt: { id: string; challenge: { id: string; title: string } };
+  salesperson: { id: string; publicSlug: string; user: { name: string } };
+}
+
+export interface VerificationCompany {
+  id: string;
+  name: string;
+  industry?: string | null;
+  website?: string | null;
+  verification: string;
+  createdAt?: string;
+}
+
 // ─── public API surface ─────────────────────────────────────────────────
 
 export const api = {
@@ -484,6 +514,45 @@ export const api = {
         'POST', `/learning/quizzes/${id}/attempt`, { body: { answerIndices } },
       ),
     myProgress: () => request<TrackProgress[]>('GET', '/learning/me/progress'),
+  },
+
+  admin: {
+    audit: {
+      list: (query: { entity?: string; actorId?: string; action?: string; page?: number; perPage?: number } = {}) =>
+        request<{ items: AuditLogEntry[]; total: number; page: number; perPage: number }>(
+          'GET', '/admin/audit', { query },
+        ),
+    },
+    disputes: {
+      list: (query: { status?: string; page?: number; perPage?: number } = {}) =>
+        request<{ items: DisputeSummary[]; total: number; page: number; perPage: number }>(
+          'GET', '/admin/disputes', { query },
+        ),
+      get: (id: string) => request<DisputeSummary>('GET', `/admin/disputes/${id}`),
+      resolve: (id: string, resolution: string, status: 'RESOLVED' | 'REJECTED') =>
+        request<DisputeSummary>('POST', `/admin/disputes/${id}/resolve`, { body: { resolution, status } }),
+    },
+    verification: {
+      listPending: () => request<VerificationCompany[]>('GET', '/admin/verification/pending'),
+      approve: (companyId: string, notes?: string) =>
+        request<VerificationCompany>('POST', `/admin/verification/companies/${companyId}/approve`, { body: { notes } }),
+      reject: (companyId: string, notes?: string) =>
+        request<VerificationCompany>('POST', `/admin/verification/companies/${companyId}/reject`, { body: { notes } }),
+    },
+    config: {
+      difficultyTiers: () => request<unknown[]>('GET', '/admin/config/difficulty-tiers'),
+      updateTier: (tier: string, dto: Record<string, unknown>) =>
+        request<unknown>('PATCH', `/admin/config/difficulty-tiers/${tier}`, { body: dto }),
+      ranks: () => request<unknown[]>('GET', '/admin/config/ranks'),
+      updateRank: (rank: string, dto: Record<string, unknown>) =>
+        request<unknown>('PATCH', `/admin/config/ranks/${rank}`, { body: dto }),
+      scoringRules: () => request<unknown[]>('GET', '/admin/config/scoring-rules'),
+      updateRule: (key: string, dto: Record<string, unknown>) =>
+        request<unknown>('PATCH', `/admin/config/scoring-rules/${key}`, { body: dto }),
+      rubricDimensions: () => request<unknown[]>('GET', '/admin/config/rubric-dimensions'),
+      updateDimension: (id: string, dto: Record<string, unknown>) =>
+        request<unknown>('PATCH', `/admin/config/rubric-dimensions/${id}`, { body: dto }),
+    },
   },
 
   notifications: {
