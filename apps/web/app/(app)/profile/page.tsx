@@ -1,7 +1,7 @@
 'use client';
 
 import { CSSProperties, useEffect, useMemo, useState } from 'react';
-import { api, ApiError, AttemptDetail, MeResponse } from '@/lib/api';
+import { api, ApiError, AttemptDetail, EarnedBadge, MeResponse } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
@@ -29,6 +29,7 @@ export default function ProfilePage() {
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
   const [attempts, setAttempts] = useState<AttemptDetail[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(true);
+  const [badges, setBadges] = useState<EarnedBadge[]>([]);
   const [openToWork, setOpenToWork] = useState<boolean>(false);
   const [toggling, setToggling] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -54,6 +55,7 @@ export default function ProfilePage() {
       .then(setAttempts)
       .catch(() => {})
       .finally(() => setAttemptsLoading(false));
+    api.badges.listEarned().then(setBadges).catch(() => {});
   }, []);
 
   async function handleToggleOpenToWork() {
@@ -274,20 +276,50 @@ export default function ProfilePage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <Card padding={22}>
-              <h3 className="display" style={{ fontSize: 16, margin: '0 0 14px', fontWeight: 600 }}>Badges · coming soon</h3>
-              <div
-                style={{
-                  padding: '24px 0',
-                  borderRadius: 10,
-                  background: 'var(--bg-2)',
-                  textAlign: 'center',
-                  color: 'var(--text-mute)',
-                  fontSize: 12.5,
-                  border: '1px dashed var(--border-soft)',
-                }}
-              >
-                Earned badges will appear here once the system is live.
-              </div>
+              <h3 className="display" style={{ fontSize: 16, margin: '0 0 14px', fontWeight: 600 }}>
+                Badges {badges.length > 0 && <span style={{ color: 'var(--text-mute)', fontWeight: 400 }}>· {badges.length}</span>}
+              </h3>
+              {badges.length === 0 ? (
+                <div
+                  style={{
+                    padding: '24px 0',
+                    borderRadius: 10,
+                    background: 'var(--bg-2)',
+                    textAlign: 'center',
+                    color: 'var(--text-mute)',
+                    fontSize: 12.5,
+                    border: '1px dashed var(--border-soft)',
+                  }}
+                >
+                  No badges yet — complete challenges to earn them.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  {badges.map(b => (
+                    <div
+                      key={b.id}
+                      title={b.description}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        background: 'color-mix(in oklch, var(--gold) 10%, var(--bg-2))',
+                        border: '1px solid color-mix(in oklch, var(--gold) 30%, var(--border-soft))',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 7,
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>{b.iconUrl ?? '🏅'}</span>
+                      <div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--gold)' }}>{b.name}</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--text-mute)', marginTop: 1 }}>
+                          {new Date(b.awardedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             <Card padding={22}>

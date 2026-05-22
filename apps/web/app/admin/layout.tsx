@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { id: 'personas',     label: 'Personas',     path: '/admin/personas',         prefix: '/admin/personas' },
   { id: 'disputes',     label: 'Disputes',     path: '/admin/disputes',         prefix: '/admin/disputes' },
   { id: 'verification', label: 'Verification', path: '/admin/verification',     prefix: '/admin/verification' },
+  { id: 'badges',       label: 'Badges',       path: '/admin/badges',           prefix: '/admin/badges' },
   { id: 'audit',        label: 'Audit Log',    path: '/admin/audit',            prefix: '/admin/audit' },
   { id: 'config',       label: 'Config',       path: '/admin/config',           prefix: '/admin/config' },
 ];

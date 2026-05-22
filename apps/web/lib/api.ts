@@ -328,6 +328,18 @@ export interface NotificationItem {
   payload?: Record<string, unknown> | null;
 }
 
+export interface BadgeDefinition {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  iconUrl?: string | null;
+}
+
+export interface EarnedBadge extends BadgeDefinition {
+  awardedAt: string;
+}
+
 export interface AuditLogEntry {
   id: string;
   action: string;
@@ -607,6 +619,18 @@ export const api = {
       ),
     markRead: (id: string) => request<NotificationItem>('POST', `/notifications/${id}/read`),
     markAllRead: () => request<void>('POST', '/notifications/read-all'),
+  },
+
+  badges: {
+    listDefinitions: () => request<BadgeDefinition[]>('GET', '/badges'),
+    listEarned: () => request<EarnedBadge[]>('GET', '/badges/earned'),
+    listEarnedForUser: (userId: string) => request<EarnedBadge[]>('GET', `/badges/user/${userId}`),
+    createDefinition: (dto: { code: string; name: string; description: string; iconUrl?: string }) =>
+      request<BadgeDefinition>('POST', '/badges/admin', { body: dto }),
+    award: (badgeId: string, userId: string) =>
+      request<EarnedBadge>('POST', `/badges/admin/${badgeId}/award`, { body: { userId } }),
+    revoke: (badgeId: string, userId: string) =>
+      request<{ success: boolean }>('DELETE', `/badges/admin/${badgeId}/revoke/${userId}`),
   },
 };
 

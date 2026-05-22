@@ -20,6 +20,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { QueueModule } from './queue/queue.module';
+import { BadgesModule } from './badges/badges.module';
 
 @Module({
   controllers: [HealthController],
@@ -44,6 +45,7 @@ import { QueueModule } from './queue/queue.module';
     ShortlistsModule,
     PaymentsModule,
     AdminModule,
+    BadgesModule,
   ],
 })
 export class AppModule {}

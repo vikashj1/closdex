@@ -336,6 +336,20 @@ async function main() {
 
   console.log(`Seeded demo users: ${DEMO_SALESPERSONS.length} salespersons, 1 company, 3 job postings.`);
   console.log(`Demo login: any @demo.closdex.in email / password: ${DEMO_PASSWORD}`);
+
+  // ── Demo badges ───────────────────────────────────────────────────────────
+  const demoBadges = [
+    { code: 'FIRST_WIN', name: 'First Win', description: 'Completed your very first challenge successfully.' },
+    { code: 'STREAK_7',  name: '7-Day Streak', description: 'Maintained a 7-day challenge completion streak.' },
+    { code: 'SPEED_DEMON', name: 'Speed Demon', description: 'Finished a challenge in under 5 minutes with a perfect score.' },
+    { code: 'DEAL_CLOSER', name: 'Deal Closer', description: 'Achieved the Close the Deal goal type in a Hard or Expert challenge.' },
+    { code: 'RANK_UP',   name: 'Rank Up', description: 'Advanced to Gold rank or above.' },
+    { code: 'COMEBACK',  name: 'Comeback King', description: 'Won a challenge after failing it at least twice before.' },
+  ];
+  for (const b of demoBadges) {
+    await prisma.badge.upsert({ where: { code: b.code }, update: {}, create: b });
+  }
+  console.log(`Seeded ${demoBadges.length} badge definitions.`);
 }
 
 main()
