@@ -340,6 +340,15 @@ export interface EarnedBadge extends BadgeDefinition {
   awardedAt: string;
 }
 
+export interface ProfileViewItem {
+  id: string;
+  viewedAt: string;
+  viewerCompany: string | null;
+  viewerName: string | null;
+  viewerRole: string | null;
+  viewerPhotoUrl: string | null;
+}
+
 export interface AuditLogEntry {
   id: string;
   action: string;
@@ -489,6 +498,7 @@ export const api = {
       ),
     getBySlug: (slug: string) =>
       request<TalentDetail>('GET', `/talent/${encodeURIComponent(slug)}`),
+    myViewers: () => request<ProfileViewItem[]>('GET', '/talent/me/viewers'),
   },
 
   companies: {

@@ -12,9 +12,10 @@ git pull origin main
 echo "→ Installing dependencies..."
 pnpm install --frozen-lockfile 2>/dev/null || npm install --legacy-peer-deps
 
-echo "→ Running DB migrations..."
+echo "→ Syncing DB schema (prisma db push — no migrations folder yet)..."
 cd packages/db
-pnpm migrate:deploy 2>/dev/null || npx prisma migrate deploy
+pnpm exec prisma generate 2>/dev/null || npx prisma generate
+pnpm exec prisma db push 2>/dev/null || npx prisma db push
 cd "$REPO_DIR"
 
 echo "→ Building API..."

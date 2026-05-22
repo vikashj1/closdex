@@ -1,7 +1,7 @@
 'use client';
 
 import { CSSProperties, useEffect, useMemo, useState } from 'react';
-import { api, ApiError, AttemptDetail, EarnedBadge, MeResponse } from '@/lib/api';
+import { api, ApiError, AttemptDetail, EarnedBadge, MeResponse, ProfileViewItem } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const [attempts, setAttempts] = useState<AttemptDetail[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(true);
   const [badges, setBadges] = useState<EarnedBadge[]>([]);
+  const [viewers, setViewers] = useState<ProfileViewItem[]>([]);
   const [openToWork, setOpenToWork] = useState<boolean>(false);
   const [toggling, setToggling] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -56,6 +57,7 @@ export default function ProfilePage() {
       .catch(() => {})
       .finally(() => setAttemptsLoading(false));
     api.badges.listEarned().then(setBadges).catch(() => {});
+    api.talent.myViewers().then(setViewers).catch(() => {});
   }, []);
 
   async function handleToggleOpenToWork() {
@@ -405,20 +407,64 @@ export default function ProfilePage() {
             </Card>
 
             <Card padding={22}>
-              <h3 className="display" style={{ fontSize: 16, margin: '0 0 14px', fontWeight: 600 }}>Who viewed your profile · coming soon</h3>
-              <div
-                style={{
-                  padding: '24px 0',
-                  borderRadius: 10,
-                  background: 'var(--bg-2)',
-                  textAlign: 'center',
-                  color: 'var(--text-mute)',
-                  fontSize: 12.5,
-                  border: '1px dashed var(--border-soft)',
-                }}
-              >
-                Profile viewer data will be available soon.
-              </div>
+              <h3 className="display" style={{ fontSize: 16, margin: '0 0 14px', fontWeight: 600 }}>
+                Who viewed your profile
+                {viewers.length > 0 && (
+                  <span style={{ color: 'var(--text-mute)', fontWeight: 400, marginLeft: 6 }}>· {viewers.length}</span>
+                )}
+              </h3>
+              {viewers.length === 0 ? (
+                <div
+                  style={{
+                    padding: '24px 0',
+                    borderRadius: 10,
+                    background: 'var(--bg-2)',
+                    textAlign: 'center',
+                    color: 'var(--text-mute)',
+                    fontSize: 12.5,
+                    border: '1px dashed var(--border-soft)',
+                  }}
+                >
+                  No profile views yet. Share your profile link to get noticed.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {viewers.map(v => (
+                    <div
+                      key={v.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 0',
+                        borderBottom: '1px solid var(--border-soft)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 32, height: 32, borderRadius: '50%',
+                          background: 'var(--bg-2)', border: '1px solid var(--border-soft)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 13, color: 'var(--text-mute)', flexShrink: 0,
+                        }}
+                      >
+                        {v.viewerName ? v.viewerName[0].toUpperCase() : '?'}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {v.viewerCompany ?? v.viewerName ?? 'Anonymous'}
+                        </div>
+                        {v.viewerName && v.viewerCompany && (
+                          <div style={{ fontSize: 11.5, color: 'var(--text-mute)', marginTop: 1 }}>{v.viewerName}</div>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-mute)', whiteSpace: 'nowrap' }}>
+                        {timeAgo(v.viewedAt)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
         </div>

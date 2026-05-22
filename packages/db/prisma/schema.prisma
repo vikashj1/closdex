@@ -193,6 +193,7 @@ model User {
   companyMemberships CompanyMembership[]
   notifications      Notification[]
   adminAuditLogs     AdminAuditLog[]     @relation("AdminActor")
+  profileViewsMade   ProfileView[]
 }
 
 model OAuthAccount {
@@ -235,6 +236,19 @@ model SalespersonProfile {
   quizAttempts        QuizAttempt[]
   disputes            ScoreDispute[]
   placements          Placement[]
+  profileViews        ProfileView[]
+}
+
+model ProfileView {
+  id            String             @id @default(cuid())
+  salesperson   SalespersonProfile @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  salespersonId String
+  viewerUser    User?              @relation(fields: [viewerUserId], references: [id], onDelete: SetNull)
+  viewerUserId  String?
+  viewerCompany String?            // snapshot of company name at view time
+  viewedAt      DateTime           @default(now())
+
+  @@index([salespersonId])
 }
 
 // ─── Company ────────────────────────────────────────────────────────────

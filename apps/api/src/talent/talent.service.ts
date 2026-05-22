@@ -3,6 +3,7 @@ import { Prisma, ProfileVisibility, Rank, UserRole } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
 import { SearchTalentDto } from './dto/search-talent.dto';
+import { ProfileViewsService } from './profile-views.service';
 
 const RANK_ORDER: Rank[] = [
   Rank.ROOKIE, Rank.BRONZE, Rank.SILVER, Rank.GOLD,
@@ -11,7 +12,10 @@ const RANK_ORDER: Rank[] = [
 
 @Injectable()
 export class TalentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly profileViews: ProfileViewsService,
+  ) {}
 
   /** Company-side talent discovery. Only PUBLIC profiles are returned. */
   async search(viewer: AuthUser, query: SearchTalentDto) {
@@ -100,6 +104,9 @@ export class TalentService {
     });
 
     if (!profile) throw new NotFoundException('Talent profile not found.');
+
+    // Record the view — fire and forget, never block the response
+    void this.profileViews.recordView(profile.id, viewer);
 
     const completed = profile.attempts.filter((a) => a.status === 'COMPLETED');
     const wins = completed.filter((a) => a.goalAchieved === true);
