@@ -3,7 +3,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProfileVisibility, Rank, UserRole } from '@closdex/db';
 import { TalentService } from './talent.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProfileViewsService } from './profile-views.service';
 import { AuthUser } from '../auth/jwt.strategy';
+
+const mockProfileViews = {
+  recordView: jest.fn().mockResolvedValue(undefined),
+  listForMe: jest.fn().mockResolvedValue([]),
+  countRecent: jest.fn().mockResolvedValue(0),
+};
 
 const mockPrisma = {
   salespersonProfile: {
@@ -42,6 +49,7 @@ describe('TalentService', () => {
       providers: [
         TalentService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: ProfileViewsService, useValue: mockProfileViews },
       ],
     }).compile();
 
