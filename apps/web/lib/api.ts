@@ -585,6 +585,9 @@ export const api = {
       difficultyTiers: () => request<unknown[]>('GET', '/admin/config/difficulty-tiers'),
       updateTier: (tier: string, dto: Record<string, unknown>) =>
         request<unknown>('PATCH', `/admin/config/difficulty-tiers/${tier}`, { body: dto }),
+      goalTypes: () => request<unknown[]>('GET', '/admin/config/goal-types'),
+      updateGoal: (goalType: string, dto: Record<string, unknown>) =>
+        request<unknown>('PATCH', `/admin/config/goal-types/${goalType}`, { body: dto }),
       ranks: () => request<unknown[]>('GET', '/admin/config/ranks'),
       updateRank: (rank: string, dto: Record<string, unknown>) =>
         request<unknown>('PATCH', `/admin/config/ranks/${rank}`, { body: dto }),
