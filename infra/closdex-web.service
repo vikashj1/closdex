@@ -1,0 +1,22 @@
+[Unit]
+Description=Closdex Web (Next.js)
+After=network.target closdex-api.service
+Wants=closdex-api.service
+
+[Service]
+Type=simple
+User=closdex
+WorkingDirectory=/opt/closdex/apps/web
+# NEXT_PUBLIC_API_URL must NOT be set here — Next.js rewrites proxy /api/* to localhost:4000
+Environment="NODE_ENV=production"
+Environment="PORT=3001"
+Environment="HOSTNAME=0.0.0.0"
+ExecStart=/usr/bin/node .next/standalone/server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=closdex-web
+
+[Install]
+WantedBy=multi-user.target

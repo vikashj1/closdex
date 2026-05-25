@@ -1,0 +1,19 @@
+[Unit]
+Description=Closdex API (NestJS)
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=closdex
+WorkingDirectory=/opt/closdex/apps/api
+EnvironmentFile=/opt/closdex/.env
+ExecStart=/usr/bin/node dist/main.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=closdex-api
+
+[Install]
+WantedBy=multi-user.target
