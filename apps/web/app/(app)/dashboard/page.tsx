@@ -11,7 +11,7 @@ import { DifficultyTag } from '@/components/ui/DifficultyTag';
 import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
 import { Icon } from '@/components/ui/Icon';
 import { api, AttemptDetail, ChallengeSummary, LeaderboardEntry } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth, useRequireAuth } from '@/lib/auth';
 import {
   currentRank,
   difficultyFromEnum,
@@ -21,6 +21,7 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
 
   const [recommended, setRecommended] = useState<ChallengeSummary[]>([]);
@@ -35,10 +36,11 @@ export default function DashboardPage() {
     setDataLoading(true);
 
     Promise.allSettled([
+      refresh(),
       api.challenges.list({ perPage: 4 }),
       api.leaderboards.list({ period: 'weekly', limit: 5 }),
       api.attempts.listMine(),
-    ]).then(([cRes, lRes, aRes]) => {
+    ]).then(([, cRes, lRes, aRes]) => {
       if (cancelled) return;
       if (cRes.status === 'fulfilled') setRecommended(cRes.value.items);
       if (lRes.status === 'fulfilled') setLeaderboard(lRes.value.entries);
