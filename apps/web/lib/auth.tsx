@@ -109,7 +109,7 @@ export function useRequireAuth(role?: UserRole) {
   useEffect(() => {
     if (loading) return;
     if (!user) router.replace('/login');
-    else if (role && user.role !== role) router.replace('/dashboard');
+    else if (role && user.role !== role) router.replace(landingPathFor(user.role));
   }, [user, loading, role, router]);
   return { user, loading };
 }
@@ -117,6 +117,6 @@ export function useRequireAuth(role?: UserRole) {
 /** Default-landing target derived from a user's role. */
 export function landingPathFor(role: UserRole): string {
   if (role === 'COMPANY') return '/company';
-  if (role === 'ADMIN') return '/dashboard';
+  if (role === 'ADMIN') return '/admin';
   return '/dashboard';
 }
