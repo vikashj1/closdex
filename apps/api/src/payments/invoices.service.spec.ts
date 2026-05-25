@@ -183,10 +183,21 @@ describe('InvoicesService', () => {
       expect(result.status).toBe(InvoiceStatus.VOID);
     });
 
-    it('14. throws BadRequestException when status is not DRAFT', async () => {
+    it('14. throws BadRequestException when status is ISSUED', async () => {
       mockPrisma.invoice.findUnique.mockResolvedValue({ ...draftInvoice, status: InvoiceStatus.ISSUED });
       mockJobs.assertCompanyMember.mockResolvedValue(undefined);
       await expect(service.void(adminViewer, 'inv-1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('15. throws BadRequestException when status is PAID', async () => {
+      mockPrisma.invoice.findUnique.mockResolvedValue({ ...draftInvoice, status: InvoiceStatus.PAID });
+      mockJobs.assertCompanyMember.mockResolvedValue(undefined);
+      await expect(service.void(adminViewer, 'inv-1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('16. throws NotFoundException when invoice not found', async () => {
+      mockPrisma.invoice.findUnique.mockResolvedValue(null);
+      await expect(service.void(adminViewer, 'inv-999')).rejects.toThrow(NotFoundException);
     });
   });
 });

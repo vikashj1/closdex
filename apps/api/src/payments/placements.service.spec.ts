@@ -123,6 +123,30 @@ describe('PlacementsService', () => {
       );
     });
 
+    it('7a. zero CTC produces zero commission and zero invoice amount', async () => {
+      const placement = { id: 'pl-1' };
+      const invoice = { id: 'inv-1' };
+      mockPrisma.application.findUnique.mockResolvedValue(baseApplication);
+      mockJobs.assertCompanyMember.mockResolvedValue(undefined);
+      mockPrisma.placement.findUnique.mockResolvedValue(null);
+      mockTx.placement.create.mockResolvedValue(placement);
+      mockTx.invoice.create.mockResolvedValue(invoice);
+      mockTx.application.update.mockResolvedValue({});
+      mockPrisma.$transaction.mockImplementation((cb: any) => cb(mockTx));
+      mockPrisma.salespersonProfile.findUnique.mockResolvedValue(null);
+      mockPrisma.company.findUnique.mockResolvedValue(null);
+
+      await service.hire(recruiterViewer, 'app-1', 0, 0.1);
+      expect(mockTx.placement.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ commissionAmount: 0 }) }),
+      );
+      expect(mockTx.invoice.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ amount: 0, gstAmount: 0 }),
+        }),
+      );
+    });
+
     it('7. commission math: annualCtc=100 rate=0.1 → commissionAmount=10, invoiceAmountPaise=1000, gstAmountPaise=180', async () => {
       const placement = { id: 'pl-1' };
       const invoice = { id: 'inv-1' };

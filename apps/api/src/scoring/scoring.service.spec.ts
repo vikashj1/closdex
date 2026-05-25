@@ -221,6 +221,16 @@ describe('ScoringService', () => {
       );
     });
 
+    it('propagates error when aiEvaluator.evaluate rejects (no silent swallow)', async () => {
+      mockPrisma.challengeAttempt.findUnique.mockResolvedValue(makeAttempt());
+      mockAiEvaluator.evaluate.mockRejectedValue(new Error('AI service unavailable'));
+      const svc = makeSvc();
+
+      await expect(svc.scoreAttempt('attempt-1')).rejects.toThrow('AI service unavailable');
+      expect(mockRubric.compute).not.toHaveBeenCalled();
+      expect(mockPrisma.salespersonProfile.update).not.toHaveBeenCalled();
+    });
+
     it('calls rubric.compute with correct inputs derived from configs and attempt', async () => {
       mockPrisma.challengeAttempt.findUnique.mockResolvedValue(makeAttempt({
         messagesUsed: 8,
