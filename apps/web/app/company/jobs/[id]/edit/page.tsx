@@ -41,7 +41,6 @@ export default function JobEditPage() {
     api.jobs.get(jobId)
       .then((j) => {
         setJob(j);
-        const raw = j as any;
         setForm({
           title: j.title ?? '',
           location: j.location ?? '',
