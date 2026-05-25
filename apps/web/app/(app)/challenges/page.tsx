@@ -7,7 +7,7 @@ import { Btn } from '@/components/ui/Btn';
 import { Chip } from '@/components/ui/Chip';
 import { DifficultyTag } from '@/components/ui/DifficultyTag';
 import { Icon } from '@/components/ui/Icon';
-import { ApiError, ChallengeSummary, api } from '@/lib/api';
+import { ApiError, ChallengeSummary, api, AttemptDetail } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 import { DIFFICULTY, type DifficultyLevel, difficultyFromEnum } from '@/lib/constants';
 
@@ -32,6 +32,18 @@ export default function ChallengesPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+
+  // Load completed challenge IDs once on mount (independent of diff filter)
+  useEffect(() => {
+    if (!user) return;
+    api.attempts.listMine().then((attempts: AttemptDetail[]) => {
+      const done = new Set(
+        attempts.filter((a) => a.status === 'COMPLETED').map((a) => a.challenge.id),
+      );
+      setCompletedIds(done);
+    }).catch(() => {}); // non-critical
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -157,21 +169,38 @@ export default function ChallengesPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {items.map((c) => {
               const level = difficultyFromEnum(c.difficulty);
+              const done = completedIds.has(c.id);
               return (
                 <Card
                   key={c.id}
                   hover
                   onClick={() => router.push(`/challenges/${c.id}`)}
                   padding={0}
-                  style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+                  style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', opacity: done ? 0.82 : 1 }}
                 >
-                  <div style={{ height: 4, background: DIFFICULTY[level].color }} />
+                  <div style={{ height: 4, background: done ? 'var(--emerald)' : DIFFICULTY[level].color }} />
                   <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <DifficultyTag level={level} size="sm" />
-                      <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700, letterSpacing: '0.06em' }}>
-                        {c.category.toUpperCase()}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {done && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 10.5, fontWeight: 700, color: 'var(--emerald)',
+                            background: 'color-mix(in oklch, var(--emerald) 14%, transparent)',
+                            border: '1px solid color-mix(in oklch, var(--emerald) 35%, transparent)',
+                            padding: '3px 8px', borderRadius: 999,
+                          }}>
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Completed
+                          </span>
+                        )}
+                        <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700, letterSpacing: '0.06em' }}>
+                          {c.category.toUpperCase()}
+                        </span>
+                      </div>
                     </div>
                     <div>
                       <h3 className="display" style={{ fontSize: 17, margin: '0 0 6px', fontWeight: 600, letterSpacing: '-0.01em' }}>{c.title}</h3>
@@ -189,10 +218,25 @@ export default function ChallengesPage() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
                       <div>
-                        <div className="display mono" style={{ fontWeight: 700, color: 'var(--gold)', fontSize: 22 }}>+{c.basePoints}</div>
+                        <div className="display mono" style={{ fontWeight: 700, color: done ? 'var(--emerald)' : 'var(--gold)', fontSize: 22 }}>+{c.basePoints}</div>
                         <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>base points</div>
                       </div>
-                      <Btn kind="secondary" size="sm" icon={<Icon.arrow />}>Start</Btn>
+                      {done ? (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          padding: '7px 14px', borderRadius: 10,
+                          background: 'color-mix(in oklch, var(--emerald) 14%, transparent)',
+                          border: '1px solid color-mix(in oklch, var(--emerald) 35%, transparent)',
+                          color: 'var(--emerald)', fontSize: 12.5, fontWeight: 600,
+                        }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Done
+                        </span>
+                      ) : (
+                        <Btn kind="secondary" size="sm" icon={<Icon.arrow />}>Start</Btn>
+                      )}
                     </div>
                   </div>
                 </Card>
