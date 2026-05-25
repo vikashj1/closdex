@@ -9,7 +9,7 @@ import {
 import { AttemptStatus, ChallengeStatus, MessageSender, UserRole } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
-import { AiLeadService } from '../ai/ai-lead.service';
+import { AiLeadService, GOAL_ACHIEVED_TOKEN } from '../ai/ai-lead.service';
 import { ScoringQueueService } from '../scoring/scoring-queue.service';
 
 @Injectable()
@@ -82,12 +82,13 @@ export class AttemptsService {
       { sender: MessageSender.SALESPERSON, content },
     ];
 
-    let leadReply: string;
+    let rawReply: string;
     try {
-      leadReply = await this.aiLead.respond({
+      rawReply = await this.aiLead.respond({
         personaName: attempt.challenge.persona.name,
         personaPrompt: attempt.challenge.persona.personalityPrompt,
         history: aiHistory,
+        goalDescription: attempt.challenge.goalDescription,
       });
     } catch (err) {
       this.logger.error('AI lead failed to respond', err);
@@ -96,8 +97,13 @@ export class AttemptsService {
       );
     }
 
+    // Detect goal achievement signalled by the lead (no extra LLM call).
+    const goalAchievedSignal = rawReply.includes(GOAL_ACHIEVED_TOKEN);
+    const leadReply = rawReply.replace(GOAL_ACHIEVED_TOKEN, '').trimEnd();
+
     const messagesUsed = attempt.messagesUsed + 1;
     const reachedCap = messagesUsed >= attempt.challenge.maxMessages;
+    const shouldComplete = reachedCap || goalAchievedSignal;
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.message.create({
@@ -110,8 +116,12 @@ export class AttemptsService {
         where: { id: attempt.id },
         data: {
           messagesUsed,
-          ...(reachedCap
-            ? { status: AttemptStatus.COMPLETED, completedAt: new Date() }
+          ...(shouldComplete
+            ? {
+                status: AttemptStatus.COMPLETED,
+                completedAt: new Date(),
+                ...(goalAchievedSignal ? { goalAchieved: true } : {}),
+              }
             : {}),
         },
         include: {
@@ -122,9 +132,7 @@ export class AttemptsService {
       });
     });
 
-    if (reachedCap) {
-      // Async: enqueue scoring so the salesperson's request returns immediately
-      // (the LLM evaluator is the slowest hop). Worker lives in scoring/scoring.worker.ts.
+    if (shouldComplete) {
       await this.scoringQueue.enqueue(updated.id);
     }
 
