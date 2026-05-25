@@ -36,13 +36,13 @@ npx --yes prisma@5 migrate deploy
 
 cd "$DEPLOY_DIR"
 
+# ── Add workspace bin to PATH so nest/next/tsc resolve without npx ───────────
+export PATH="$DEPLOY_DIR/node_modules/.bin:$PATH"
+
 # ── Build API ─────────────────────────────────────────────────────────────────
 echo "==> Build API"
 cd "$DEPLOY_DIR/apps/api"
-node "$DEPLOY_DIR/node_modules/.bin/nest" build 2>/dev/null \
-  || node "$DEPLOY_DIR/apps/api/node_modules/.bin/nest" build 2>/dev/null \
-  || ./node_modules/.bin/nest build \
-  || npx --yes @nestjs/cli@10 build
+nest build
 
 cd "$DEPLOY_DIR"
 
@@ -50,8 +50,7 @@ cd "$DEPLOY_DIR"
 echo "==> Build web"
 unset NEXT_PUBLIC_API_URL
 cd "$DEPLOY_DIR/apps/web"
-node "$DEPLOY_DIR/node_modules/.bin/next" build 2>/dev/null \
-  || npx --yes next@14 build
+next build
 
 # Copy static files into standalone
 cp -r "$DEPLOY_DIR/apps/web/public" "$DEPLOY_DIR/apps/web/.next/standalone/public" 2>/dev/null || true
