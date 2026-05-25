@@ -42,7 +42,12 @@ export PATH="$DEPLOY_DIR/node_modules/.bin:$PATH"
 # ── Build API ─────────────────────────────────────────────────────────────────
 echo "==> Build API"
 cd "$DEPLOY_DIR/apps/api"
-nest build
+if command -v nest &>/dev/null; then
+  nest build
+else
+  # Fallback: compile directly with tsc (excludes spec files via tsconfig.build.json)
+  npx --yes typescript tsc -p tsconfig.build.json
+fi
 
 cd "$DEPLOY_DIR"
 
