@@ -24,6 +24,7 @@ export default function SettingsPage() {
 
   // Profile fields
   const [name, setName] = useState('');
+  const [location, setLocation] = useState('');
   const [resumeUrl, setResumeUrl] = useState('');
   const [openToWork, setOpenToWork] = useState(false);
   const [visibility, setVisibility] = useState<'PUBLIC' | 'CONNECTIONS_ONLY' | 'PRIVATE'>('PUBLIC');
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!user) return;
     setName(user.name ?? '');
+    setLocation(user.location ?? '');
     const sp = user.salesperson;
     if (sp) {
       setResumeUrl(sp.resumeUrl ?? '');
@@ -56,7 +58,7 @@ export default function SettingsPage() {
     setProfileSaving(true);
     setProfileMsg(null);
     try {
-      await api.users.updateMe({ name });
+      await api.users.updateMe({ name, location: location || undefined });
       await api.users.updateSalesperson({
         resumeUrl: resumeUrl || undefined,
         openToWork,
@@ -141,6 +143,10 @@ export default function SettingsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <Field label="Display name">
               <TextInput value={name} onChange={(v) => setName(v)} placeholder="Your full name" />
+            </Field>
+
+            <Field label="Location">
+              <TextInput value={location} onChange={(v) => setLocation(v)} placeholder="Mumbai, India" />
             </Field>
 
             <Field label="Resume URL">

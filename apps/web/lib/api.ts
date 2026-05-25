@@ -106,6 +106,7 @@ export interface MeResponse {
   id: string;
   email: string;
   name: string;
+  location?: string | null;
   role: UserRole;
   salesperson?: {
     id: string;
@@ -411,7 +412,7 @@ export const api = {
 
   users: {
     me: () => request<MeResponse>('GET', '/users/me'),
-    updateMe: (dto: Partial<Pick<MeResponse, 'name'>>) =>
+    updateMe: (dto: Partial<Pick<MeResponse, 'name' | 'location'>>) =>
       request<MeResponse>('PATCH', '/users/me', { body: dto }),
     updateSalesperson: (dto: {
       experienceYears?: number;
