@@ -1,11 +1,12 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/lib/auth';
+import { api } from '@/lib/api';
 
 interface NavItem {
   id: string;
@@ -30,6 +31,13 @@ export function CompanyShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() || '';
   const { user } = useAuth();
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    api.notifications.listMine(true).then((r) => setUnreadCount(r.items.length)).catch(() => {});
+  }, [user]);
 
   const companyName = user?.companyMemberships?.[0]?.company?.name ?? '';
   const displayRole = user?.companyMemberships?.[0]?.companyRole
@@ -180,10 +188,22 @@ export function CompanyShell({ children }: { children: ReactNode }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <button
               onClick={() => router.push('/company/notifications')}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', position: 'relative' }}
               title="Notifications"
             >
               <Icon.bell />
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -4,
+                  minWidth: 16, height: 16, borderRadius: 999,
+                  background: 'var(--d-expert)', color: 'white',
+                  fontSize: 9, fontWeight: 700, lineHeight: '16px',
+                  textAlign: 'center', padding: '0 3px',
+                  boxSizing: 'border-box',
+                }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 10px 4px 4px', background: 'var(--bg-2)', borderRadius: 999, border: '1px solid var(--border)' }}>
               <Avatar name={user?.name ?? companyName ?? 'Co'} size={28} color="oklch(0.55 0.14 220)" />
