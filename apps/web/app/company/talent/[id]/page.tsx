@@ -33,6 +33,16 @@ export default function CandidateProfilePage() {
   const [creatingList, setCreatingList] = useState(false);
   const shortlistRef = useRef<HTMLDivElement>(null);
 
+  // Pre-load shortlists on profile load to show shortlisted state immediately
+  useEffect(() => {
+    if (!profile || !user?.companyMemberships?.[0]?.companyId) return;
+    const companyId = user.companyMemberships[0].companyId;
+    api.shortlists.list(companyId).then((sl) => {
+      setShortlists(sl);
+      setShortlistsLoaded(true);
+    }).catch(() => {});
+  }, [profile, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (authLoading || !slug) return;
     setLoading(true);
@@ -114,7 +124,7 @@ export default function CandidateProfilePage() {
 
   const rankName = rankFromEnum(profile.rank);
   const rankVar = `var(--r-${profile.rank.toLowerCase()})`;
-  const winPct = Math.round(profile._stats.winRate * 100);
+  const winPct = profile._stats.winRate; // already 0-100 integer from API
 
   return (
     <div>
@@ -135,26 +145,15 @@ export default function CandidateProfilePage() {
         <span style={{ transform: 'rotate(180deg)', display: 'inline-flex' }}><Icon.arrow /></span> Back to talent search
       </button>
 
-      <div
-        style={{
-          height: 120,
-          background: 'linear-gradient(135deg, color-mix(in oklch, var(--cool) 30%, var(--bg-2)) 0%, var(--bg-2) 100%)',
-          position: 'relative',
-          marginTop: 14,
-        }}
-      >
-        <div className="stripe-ph" style={{ position: 'absolute', inset: 0, opacity: 0.4 }} />
-      </div>
-
-      <div style={{ padding: '0 32px 40px' }}>
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-end', marginTop: -48 }}>
-          <div style={{ position: 'relative' }}>
-            <Avatar name={profile.user.name} size={104} />
+      <div style={{ padding: '28px 32px 40px' }}>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <Avatar name={profile.user.name} size={80} />
             <div style={{ position: 'absolute', bottom: -4, right: -4 }}>
-              <RankBadge rank={rankName} size={40} />
+              <RankBadge rank={rankName} size={32} />
             </div>
           </div>
-          <div style={{ flex: 1, paddingBottom: 8 }}>
+          <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <h1 className="display" style={{ fontSize: 28, margin: 0, fontWeight: 700 }}>{profile.user.name}</h1>
               {profile.openToWork && (
@@ -187,18 +186,11 @@ export default function CandidateProfilePage() {
           <div style={{ display: 'flex', gap: 10 }}>
             <div ref={shortlistRef} style={{ position: 'relative' }}>
               <Btn
-                kind="ghost"
+                kind={addedTo.size > 0 ? 'success' : 'ghost'}
                 size="md"
-                onClick={() => {
-                  setShortlistOpen(true);
-                  if (!shortlistsLoaded && user?.companyMemberships?.[0]?.companyId) {
-                    api.shortlists.list(user.companyMemberships[0].companyId)
-                      .then((sl) => { setShortlists(sl); setShortlistsLoaded(true); })
-                      .catch(() => {});
-                  }
-                }}
+                onClick={() => setShortlistOpen(true)}
               >
-                Save to shortlist
+                {addedTo.size > 0 ? '✓ Shortlisted' : 'Save to shortlist'}
               </Btn>
               {shortlistOpen && profile && (
                 <div

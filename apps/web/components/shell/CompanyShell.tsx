@@ -86,13 +86,15 @@ export function CompanyShell({ children }: { children: ReactNode }) {
               fontSize: 13,
             }}
           >
-            RP
+            {companyName
+              ? companyName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+              : 'CO'}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              Razorpay
+              {companyName || 'Your Company'}
             </div>
-            <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>Growth · ₹14,999/mo</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>{displayRole}</div>
           </div>
           <Icon.chevDown />
         </div>
