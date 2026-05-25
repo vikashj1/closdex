@@ -25,7 +25,7 @@ git pull --ff-only origin main
 
 # ── Install deps ─────────────────────────────────────────────────────────────
 echo "==> pnpm install"
-pnpm install --frozen-lockfile
+pnpm install --no-frozen-lockfile
 
 # ── Prisma: generate client + run migrations ─────────────────────────────────
 echo "==> prisma generate"
