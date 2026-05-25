@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -11,6 +11,8 @@ import { useRequireAuth } from '@/lib/auth';
 interface ApplicationRow { id: string; status: string; job: JobSummary; createdAt: string }
 
 type Tab = 'all' | 'saved';
+
+const SPEC_TAGS = ['IT Sales', 'Cloud', 'DevTools', 'Cybersec', 'SaaS', 'FinTech', 'Healthcare'];
 
 export default function JobsPage() {
   const router = useRouter();
@@ -24,12 +26,15 @@ export default function JobsPage() {
   const [applying, setApplying] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [locationSearch, setLocationSearch] = useState('');
+  const [tagFilter, setTagFilter] = useState('');
 
-  async function load() {
+  async function load(tag?: string) {
     setLoading(true);
     setError(null);
     const [jRes, aRes, idsRes] = await Promise.allSettled([
-      api.jobs.list({ perPage: 30 }),
+      api.jobs.list({ perPage: 30, specializationTag: tag || undefined }),
       api.applications.mine(),
       api.jobs.savedJobIds(),
     ]);
@@ -47,8 +52,8 @@ export default function JobsPage() {
 
   useEffect(() => {
     if (!user) return;
-    void load();
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+    void load(tagFilter);
+  }, [user, tagFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!user || tab !== 'saved') return;
@@ -98,22 +103,122 @@ export default function JobsPage() {
     { l: 'Offer',       v: apps.filter((a) => a.status === 'OFFER').length,       c: 'var(--emerald)' },
   ];
 
-  const displayJobs = tab === 'saved' ? savedJobs : jobs;
+  const baseJobs = tab === 'saved' ? savedJobs : jobs;
+  const displayJobs = useMemo(() => {
+    const q = locationSearch.trim().toLowerCase();
+    if (!q) return baseJobs;
+    return baseJobs.filter((j) => j.location?.toLowerCase().includes(q));
+  }, [baseJobs, locationSearch]);
 
   return (
     <div style={{ padding: '28px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
         <div>
           <h1 className="display" style={{ fontSize: 32, margin: 0, fontWeight: 700 }}>Jobs for you</h1>
           <p style={{ color: 'var(--text-mute)', fontSize: 13, margin: '4px 0 0' }}>
-            {loading ? 'Loading…' : `${jobs.length} active listings`}
+            {loading ? 'Loading…' : `${displayJobs.length} listing${displayJobs.length !== 1 ? 's' : ''}`}
+            {tagFilter && ` · ${tagFilter}`}
+            {locationSearch && ` · "${locationSearch}"`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Btn kind="ghost" size="sm" icon={<Icon.filter />}>Filters</Btn>
+          <Btn
+            kind={filterOpen ? 'primary' : 'ghost'}
+            size="sm"
+            icon={<Icon.filter />}
+            onClick={() => setFilterOpen((v) => !v)}
+          >
+            {tagFilter || locationSearch ? 'Filters (on)' : 'Filters'}
+          </Btn>
           <Btn kind="ghost" size="sm">Applications ({apps.length})</Btn>
         </div>
       </div>
+
+      {/* Filter bar */}
+      {filterOpen && (
+        <div
+          style={{
+            marginBottom: 18,
+            padding: '14px 16px',
+            borderRadius: 10,
+            background: 'var(--bg-2)',
+            border: '1px solid var(--border-soft)',
+            display: 'flex',
+            gap: 20,
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+          }}
+        >
+          {/* Location text filter */}
+          <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
+              Location
+            </div>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="e.g. Bangalore, Remote…"
+                value={locationSearch}
+                onChange={(e) => setLocationSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '7px 28px 7px 10px',
+                  borderRadius: 7,
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  fontSize: 12.5,
+                  color: 'var(--text)',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {locationSearch && (
+                <button
+                  onClick={() => setLocationSearch('')}
+                  style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', padding: 0 }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Specialization tag chips */}
+          <div style={{ flex: '2 1 300px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
+              Specialization
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {SPEC_TAGS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTagFilter(tagFilter === t ? '' : t)}
+                  style={{
+                    padding: '5px 11px',
+                    borderRadius: 999,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: tagFilter === t ? '1px solid var(--cool)' : '1px solid var(--border)',
+                    background: tagFilter === t ? 'color-mix(in oklch, var(--cool) 18%, transparent)' : 'transparent',
+                    color: tagFilter === t ? 'var(--cool)' : 'var(--text-dim)',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {(tagFilter || locationSearch) && (
+            <button
+              onClick={() => { setTagFilter(''); setLocationSearch(''); }}
+              style={{ background: 'none', border: 'none', fontSize: 12, color: 'var(--text-mute)', cursor: 'pointer', whiteSpace: 'nowrap', padding: '0 4px' }}
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+      )}
 
       {error && (
         <div
