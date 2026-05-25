@@ -233,13 +233,13 @@ export default function CompanyDashboardPage() {
                 <div>
                   <span style={{ fontSize: 13.5, fontWeight: 600 }}>{job.title}</span>
                   <span style={{ fontSize: 11.5, color: 'var(--text-mute)', marginLeft: 10 }}>
-                    {job.location ?? 'Remote'} · {job.workMode ?? 'Any'}
+                    {job.location ?? 'Remote'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {job.ctcMin != null && job.ctcMax != null && (
+                  {job.salaryMin != null && job.salaryMax != null && (
                     <span className="mono" style={{ fontSize: 12, color: 'var(--emerald)' }}>
-                      ₹{job.ctcMin}–{job.ctcMax} LPA
+                      ₹{(job.salaryMin / 100000).toLocaleString()}–{(job.salaryMax / 100000).toLocaleString()} LPA
                     </span>
                   )}
                   <span

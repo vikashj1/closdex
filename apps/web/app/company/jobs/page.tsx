@@ -224,30 +224,25 @@ export default function CompanyJobsPage() {
                   {/* Title row */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
                     <span style={{ fontSize: 16, fontWeight: 700 }}>{job.title}</span>
-                    {job.workMode && (
-                      <Chip color="var(--cool)">{job.workMode}</Chip>
-                    )}
                     <StatusBadge status={job.status} />
                   </div>
 
-                  {/* Location + CTC */}
+                  {/* Location + salary */}
                   <div style={{ fontSize: 12.5, color: 'var(--text-dim)', marginBottom: 8 }}>
                     {job.location && (
                       <span>{job.location}</span>
                     )}
-                    {job.ctcMin != null && job.ctcMax != null && (
+                    {job.salaryMin != null && job.salaryMax != null && (
                       <span className="mono" style={{ marginLeft: job.location ? 12 : 0, color: 'var(--emerald)' }}>
-                        ₹{job.ctcMin}–{job.ctcMax} LPA
+                        ₹{(job.salaryMin / 100000).toLocaleString()}–{(job.salaryMax / 100000).toLocaleString()} LPA
                       </span>
                     )}
                   </div>
 
-                  {/* Specialization tags */}
-                  {job.specializationTags.length > 0 && (
+                  {/* Specialization tag */}
+                  {job.specializationTag && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {job.specializationTags.map((tag) => (
-                        <Chip key={tag}>{tag}</Chip>
-                      ))}
+                      <Chip>{job.specializationTag}</Chip>
                     </div>
                   )}
                 </div>

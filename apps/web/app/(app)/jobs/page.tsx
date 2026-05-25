@@ -155,12 +155,9 @@ export default function JobsPage() {
                     <div style={{ display: 'flex', gap: 14, fontSize: 12.5, color: 'var(--text-dim)', flexWrap: 'wrap', marginBottom: 8 }}>
                       <span><strong style={{ color: 'var(--text)' }}>{j.company.name}</strong></span>
                       {j.location && <span>• {j.location}</span>}
-                      {j.workMode && <span>• {j.workMode}</span>}
-                      {j.specializationTags.length > 0 && (
-                        <span>• {j.specializationTags.slice(0, 3).join(', ')}</span>
-                      )}
+                      {j.specializationTag && <span>• {j.specializationTag}</span>}
                     </div>
-                    {(j.ctcMin || j.ctcMax) && (
+                    {(j.salaryMin || j.salaryMax) && (
                       <span
                         style={{
                           ...BADGE,
@@ -169,7 +166,7 @@ export default function JobsPage() {
                           border: '1px solid color-mix(in oklch, var(--emerald) 30%, transparent)',
                         }}
                       >
-                        ₹{(j.ctcMin ?? 0).toLocaleString()} – ₹{(j.ctcMax ?? 0).toLocaleString()} LPA
+                        ₹{((j.salaryMin ?? 0) / 100000).toLocaleString()} – ₹{((j.salaryMax ?? 0) / 100000).toLocaleString()} LPA
                       </span>
                     )}
                   </div>

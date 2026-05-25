@@ -177,11 +177,10 @@ export interface JobSummary {
   id: string;
   title: string;
   location?: string | null;
-  workMode?: string | null;
   status: string;
-  ctcMin?: number | null;
-  ctcMax?: number | null;
-  specializationTags: string[];
+  specializationTag?: string | null;
+  salaryMin?: number | null;
+  salaryMax?: number | null;
   postedAt?: string | null;
   company: { id: string; name: string };
 }
@@ -189,9 +188,6 @@ export interface JobSummary {
 export interface JobDetail extends JobSummary {
   description?: string | null;
   requiredSkills?: string[];
-  specializationTag?: string | null;
-  salaryMin?: number | null;
-  salaryMax?: number | null;
   experienceMinYears?: number | null;
   experienceMaxYears?: number | null;
   employmentType?: string | null;

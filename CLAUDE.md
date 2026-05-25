@@ -112,3 +112,4 @@ No remaining "coming soon" placeholders — all features shipped.
 - Slice 50: Company talent search — wire location chip toggle + min experience filter to API
 - Slice 51: Edge case tests — AI evaluator crash, void-PAID invoice, zero-CTC placement (443 specs)
 - Slice 52: Fix broken seed — prisma.jobPosting→job, PUBLISHED→LIVE, ctcMin→salaryMin (LPA×100k), correct persona for ROOKIE challenge
+- Slice 53: Align JobSummary/JobDetail types with schema; fix ctcMin/workMode/specializationTags refs in 4 pages

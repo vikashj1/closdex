@@ -84,8 +84,6 @@ export default function JobDetailPage() {
 
   const salaryStr = job.salaryMin && job.salaryMax
     ? `${fmtLpa(job.salaryMin)} – ${fmtLpa(job.salaryMax)}`
-    : job.ctcMin && job.ctcMax
-    ? `₹${job.ctcMin}–${job.ctcMax} LPA`
     : null;
 
   const minRankName = job.minRank
@@ -116,7 +114,6 @@ export default function JobDetailPage() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {job.location && <Chip>{job.location}</Chip>}
-              {job.workMode && <Chip color="var(--cool)">{job.workMode}</Chip>}
               {job.employmentType && <Chip>{job.employmentType.replace('_', ' ')}</Chip>}
               {salaryStr && (
                 <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--emerald)', alignSelf: 'center' }}>
@@ -188,7 +185,7 @@ export default function JobDetailPage() {
       )}
 
       {/* Skills & tags */}
-      {((job.requiredSkills && job.requiredSkills.length > 0) || (job.specializationTags && job.specializationTags.length > 0) || job.specializationTag) && (
+      {((job.requiredSkills && job.requiredSkills.length > 0) || job.specializationTag) && (
         <Card padding={24}>
           {job.requiredSkills && job.requiredSkills.length > 0 && (
             <div style={{ marginBottom: 16 }}>
@@ -200,14 +197,13 @@ export default function JobDetailPage() {
               </div>
             </div>
           )}
-          {(job.specializationTags?.length > 0 || job.specializationTag) && (
+          {job.specializationTag && (
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                 Specialization
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {job.specializationTag && <Chip color="var(--cool)">{job.specializationTag}</Chip>}
-                {job.specializationTags?.filter(t => t !== job.specializationTag).map(t => <Chip key={t} color="var(--cool)">{t}</Chip>)}
+                <Chip color="var(--cool)">{job.specializationTag}</Chip>
               </div>
             </div>
           )}

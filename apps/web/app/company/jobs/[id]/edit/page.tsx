@@ -45,13 +45,13 @@ export default function JobEditPage() {
         setForm({
           title: j.title ?? '',
           location: j.location ?? '',
-          salaryMin: raw.salaryMin != null ? String(raw.salaryMin) : (j.ctcMin != null ? String(j.ctcMin) : ''),
-          salaryMax: raw.salaryMax != null ? String(raw.salaryMax) : (j.ctcMax != null ? String(j.ctcMax) : ''),
-          minRank: raw.minRank
-            ? ((raw.minRank.charAt(0) + raw.minRank.slice(1).toLowerCase()) as RankName)
+          salaryMin: j.salaryMin != null ? String(j.salaryMin) : '',
+          salaryMax: j.salaryMax != null ? String(j.salaryMax) : '',
+          minRank: j.minRank
+            ? ((j.minRank.charAt(0) + j.minRank.slice(1).toLowerCase()) as RankName)
             : 'Gold',
-          specializationTag: raw.specializationTag ?? (j.specializationTags?.[0] ?? ''),
-          experienceMinYears: raw.experienceMinYears != null ? String(raw.experienceMinYears) : '',
+          specializationTag: j.specializationTag ?? '',
+          experienceMinYears: j.experienceMinYears != null ? String(j.experienceMinYears) : '',
         });
       })
       .catch((err: unknown) => {
