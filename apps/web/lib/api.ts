@@ -466,15 +466,15 @@ export const api = {
     apply: (id: string) => request<{ id: string; status: string }>('POST', `/jobs/${id}/apply`),
     create: (dto: {
       title: string;
-      description?: string;
-      location?: string;
-      workMode?: string;
-      ctcMin?: number;
-      ctcMax?: number;
+      description: string;
+      requiredSkills: string[];
+      specializationTag: string;
+      experienceMinYears: number;
+      location: string;
+      salaryMin?: number;
+      salaryMax?: number;
       minRank?: string;
-      specializationTags?: string[];
-      experienceMin?: number;
-      experienceMax?: number;
+      companyId?: string;
     }) => request<JobSummary>('POST', '/jobs', { body: dto }),
     publish: (id: string) => request<JobSummary>('POST', `/jobs/${id}/publish`),
     pause: (id: string) => request<JobSummary>('POST', `/jobs/${id}/pause`),

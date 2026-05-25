@@ -4,6 +4,7 @@ import { CSSProperties, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import { rankFromEnum, type RankName } from '@/lib/constants';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -11,10 +12,8 @@ import { Chip } from '@/components/ui/Chip';
 import { RankBadge } from '@/components/ui/RankBadge';
 import { TextInput } from '@/components/ui/TextInput';
 import { Stat } from '@/components/ui/Stat';
-import { Icon } from '@/components/ui/Icon';
 
 const RANK_OPTIONS: RankName[] = ['Rookie', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master'];
-const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const;
 const SPEC_SUGGESTIONS = ['IT Sales', 'Cloud', 'DevTools', 'Cybersec', 'SaaS', 'FinTech', 'Healthcare'];
 
 const TIERS = [
@@ -25,29 +24,32 @@ const TIERS = [
 
 interface FormState {
   title: string;
+  description: string;
   location: string;
-  workMode: string;
-  ctcMin: string;
-  ctcMax: string;
+  salaryMinLpa: string;
+  salaryMaxLpa: string;
   minRank: RankName;
-  specializationTags: string[];
-  experienceMin: string;
+  specializationTag: string;
+  requiredSkillsRaw: string;
+  experienceMinYears: string;
 }
 
 const EMPTY: FormState = {
   title: '',
+  description: '',
   location: '',
-  workMode: 'Remote',
-  ctcMin: '',
-  ctcMax: '',
+  salaryMinLpa: '',
+  salaryMaxLpa: '',
   minRank: 'Gold',
-  specializationTags: [],
-  experienceMin: '',
+  specializationTag: '',
+  requiredSkillsRaw: '',
+  experienceMinYears: '',
 };
 
 export default function JobPostPage() {
   const router = useRouter();
   useRequireAuth('COMPANY');
+  const { user } = useAuth();
 
   const [form, setForm] = useState<FormState>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
@@ -57,31 +59,40 @@ export default function JobPostPage() {
     setForm((prev) => ({ ...prev, [k]: v }));
   }
 
-  function toggleTag(tag: string) {
-    set(
-      'specializationTags',
-      form.specializationTags.includes(tag)
-        ? form.specializationTags.filter((t) => t !== tag)
-        : [...form.specializationTags, tag],
-    );
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.title.trim()) return;
+    if (!form.title.trim() || !form.description.trim()) return;
+
+    const skills = form.requiredSkillsRaw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (skills.length === 0) {
+      setSubmitError('Please enter at least one required skill.');
+      return;
+    }
+
+    const companyId = user?.companyMemberships?.[0]?.companyId;
+    if (!companyId) {
+      setSubmitError('No company found — please complete company setup first.');
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError(null);
 
     try {
       const dto = {
+        companyId,
         title: form.title.trim(),
-        location: form.location.trim() || undefined,
-        workMode: form.workMode || undefined,
-        ctcMin: form.ctcMin ? Number(form.ctcMin) : undefined,
-        ctcMax: form.ctcMax ? Number(form.ctcMax) : undefined,
+        description: form.description.trim(),
+        requiredSkills: skills,
+        specializationTag: form.specializationTag || SPEC_SUGGESTIONS[0],
+        experienceMinYears: form.experienceMinYears ? Number(form.experienceMinYears) : 0,
+        location: form.location.trim() || 'Remote',
+        salaryMin: form.salaryMinLpa ? Math.round(Number(form.salaryMinLpa) * 100000) : undefined,
+        salaryMax: form.salaryMaxLpa ? Math.round(Number(form.salaryMaxLpa) * 100000) : undefined,
         minRank: form.minRank.toUpperCase(),
-        specializationTags: form.specializationTags.length > 0 ? form.specializationTags : undefined,
-        experienceMin: form.experienceMin ? Number(form.experienceMin) : undefined,
       };
 
       const newJob = await api.jobs.create(dto);
@@ -107,12 +118,12 @@ export default function JobPostPage() {
           <Card padding={28}>
             <h2 className="display" style={{ fontSize: 22, margin: '0 0 6px', fontWeight: 700 }}>Job details</h2>
             <p style={{ color: 'var(--text-dim)', margin: '0 0 22px', fontSize: 13 }}>
-              Be specific. Salespersons filter aggressively on title and CTC.
+              Be specific. Salespersons filter aggressively on title and description.
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {/* Title */}
-              <div style={{ gridColumn: '1 / -1' }}>
+              <div>
                 <FieldLabel label="Job title" required />
                 <TextInput
                   placeholder="Senior Account Executive — IT Sales"
@@ -122,63 +133,77 @@ export default function JobPostPage() {
                 />
               </div>
 
-              {/* Location */}
+              {/* Description */}
               <div>
-                <FieldLabel label="Location" />
-                <TextInput
-                  placeholder="Bangalore"
-                  value={form.location}
-                  onChange={(v) => set('location', v)}
+                <FieldLabel label="Job description" required hint="Min 10 characters" />
+                <textarea
+                  value={form.description}
+                  onChange={(e) => set('description', e.target.value)}
+                  placeholder="Describe the role, responsibilities, and what makes this opportunity unique…"
+                  rows={5}
+                  style={{
+                    ...INPUT_STYLE,
+                    resize: 'vertical',
+                    lineHeight: 1.6,
+                  }}
                 />
               </div>
 
-              {/* Work mode */}
+              {/* Required skills */}
               <div>
-                <FieldLabel label="Work mode" />
-                <select
-                  style={INPUT_STYLE}
-                  value={form.workMode}
-                  onChange={(e) => set('workMode', e.target.value)}
-                >
-                  {WORK_MODES.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* CTC */}
-              <div>
-                <FieldLabel label="Min CTC (LPA)" />
+                <FieldLabel label="Required skills" required hint="Comma-separated, e.g. B2B Sales, Salesforce, Cold Calling" />
                 <TextInput
-                  placeholder="18"
-                  type="number"
-                  value={form.ctcMin}
-                  onChange={(v) => set('ctcMin', v)}
-                />
-              </div>
-              <div>
-                <FieldLabel label="Max CTC (LPA)" />
-                <TextInput
-                  placeholder="28"
-                  type="number"
-                  value={form.ctcMax}
-                  onChange={(v) => set('ctcMax', v)}
+                  placeholder="B2B Sales, Cloud, Account Management"
+                  value={form.requiredSkillsRaw}
+                  onChange={(v) => set('requiredSkillsRaw', v)}
                 />
               </div>
 
-              {/* Min experience */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <FieldLabel label="Minimum experience (years)" />
-                <TextInput
-                  placeholder="3"
-                  type="number"
-                  value={form.experienceMin}
-                  onChange={(v) => set('experienceMin', v)}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {/* Location */}
+                <div>
+                  <FieldLabel label="Location" />
+                  <TextInput
+                    placeholder="Bangalore"
+                    value={form.location}
+                    onChange={(v) => set('location', v)}
+                  />
+                </div>
+
+                {/* Min experience */}
+                <div>
+                  <FieldLabel label="Min experience (years)" />
+                  <TextInput
+                    placeholder="3"
+                    type="number"
+                    value={form.experienceMinYears}
+                    onChange={(v) => set('experienceMinYears', v)}
+                  />
+                </div>
+
+                {/* Salary */}
+                <div>
+                  <FieldLabel label="Min CTC (LPA)" />
+                  <TextInput
+                    placeholder="18"
+                    type="number"
+                    value={form.salaryMinLpa}
+                    onChange={(v) => set('salaryMinLpa', v)}
+                  />
+                </div>
+                <div>
+                  <FieldLabel label="Max CTC (LPA)" />
+                  <TextInput
+                    placeholder="28"
+                    type="number"
+                    value={form.salaryMaxLpa}
+                    onChange={(v) => set('salaryMaxLpa', v)}
+                  />
+                </div>
               </div>
 
               {/* Min rank */}
-              <div style={{ gridColumn: '1 / -1' }}>
+              <div>
                 <FieldLabel label="Minimum rank threshold" hint="Only candidates at this rank or above can apply" />
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
                   {RANK_OPTIONS.map((r) => {
@@ -210,16 +235,16 @@ export default function JobPostPage() {
                 </div>
               </div>
 
-              {/* Specialization tags */}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <FieldLabel label="Specialization tags" hint="Select all that apply" />
+              {/* Specialization tag — single select */}
+              <div>
+                <FieldLabel label="Specialization" hint="Pick one" />
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                   {SPEC_SUGGESTIONS.map((tag) => (
                     <Chip
                       key={tag}
-                      active={form.specializationTags.includes(tag)}
+                      active={form.specializationTag === tag}
                       color="var(--cool)"
-                      onClick={() => toggleTag(tag)}
+                      onClick={() => set('specializationTag', form.specializationTag === tag ? '' : tag)}
                     >
                       {tag}
                     </Chip>
@@ -252,7 +277,7 @@ export default function JobPostPage() {
               <Btn
                 kind="primary"
                 type="submit"
-                disabled={submitting || !form.title.trim()}
+                disabled={submitting || !form.title.trim() || !form.description.trim()}
                 style={{ background: 'var(--cool)', color: 'white', opacity: submitting ? 0.6 : 1 }}
               >
                 {submitting ? 'Posting…' : 'Publish job'}
