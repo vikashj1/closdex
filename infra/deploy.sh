@@ -39,7 +39,7 @@ cd "$DEPLOY_DIR"
 # ── Build API ─────────────────────────────────────────────────────────────────
 echo "==> Build API"
 cd "$DEPLOY_DIR/apps/api"
-pnpm exec nest build
+pnpm run build
 
 cd "$DEPLOY_DIR"
 
@@ -47,7 +47,7 @@ cd "$DEPLOY_DIR"
 echo "==> Build web"
 unset NEXT_PUBLIC_API_URL
 cd "$DEPLOY_DIR/apps/web"
-pnpm exec next build
+pnpm run build
 
 # Copy static files into standalone
 cp -r "$DEPLOY_DIR/apps/web/public" "$DEPLOY_DIR/apps/web/.next/standalone/public" 2>/dev/null || true
