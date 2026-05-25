@@ -36,18 +36,10 @@ npx --yes prisma@5 migrate deploy
 
 cd "$DEPLOY_DIR"
 
-# ── Add workspace bin to PATH so nest/next/tsc resolve without npx ───────────
-export PATH="$DEPLOY_DIR/node_modules/.bin:$PATH"
-
 # ── Build API ─────────────────────────────────────────────────────────────────
 echo "==> Build API"
 cd "$DEPLOY_DIR/apps/api"
-if command -v nest &>/dev/null; then
-  nest build
-else
-  # Fallback: compile directly with tsc (excludes spec files via tsconfig.build.json)
-  npx --yes typescript tsc -p tsconfig.build.json
-fi
+pnpm exec nest build
 
 cd "$DEPLOY_DIR"
 
@@ -55,7 +47,7 @@ cd "$DEPLOY_DIR"
 echo "==> Build web"
 unset NEXT_PUBLIC_API_URL
 cd "$DEPLOY_DIR/apps/web"
-next build
+pnpm exec next build
 
 # Copy static files into standalone
 cp -r "$DEPLOY_DIR/apps/web/public" "$DEPLOY_DIR/apps/web/.next/standalone/public" 2>/dev/null || true
