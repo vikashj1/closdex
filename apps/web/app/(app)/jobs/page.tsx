@@ -1,6 +1,7 @@
 'use client';
 
 import { CSSProperties, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Icon } from '@/components/ui/Icon';
@@ -10,6 +11,7 @@ import { useRequireAuth } from '@/lib/auth';
 interface ApplicationRow { id: string; status: string; job: JobSummary; createdAt: string }
 
 export default function JobsPage() {
+  const router = useRouter();
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
   const [jobs, setJobs] = useState<JobSummary[]>([]);
   const [apps, setApps] = useState<ApplicationRow[]>([]);
@@ -172,21 +174,21 @@ export default function JobsPage() {
                     )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                    <Btn kind="ghost" size="sm" onClick={() => router.push(`/jobs/${j.id}`)}>
+                      Details
+                    </Btn>
                     {existing ? (
                       <Btn kind="secondary" size="sm">View status</Btn>
                     ) : (
-                      <>
-                        <Btn
-                          kind="primary"
-                          size="sm"
-                          icon={<Icon.arrow />}
-                          onClick={() => apply(j.id)}
-                          disabled={applying === j.id}
-                        >
-                          {applying === j.id ? 'Applying…' : 'Apply 1-click'}
-                        </Btn>
-                        <Btn kind="ghost" size="sm">Save</Btn>
-                      </>
+                      <Btn
+                        kind="primary"
+                        size="sm"
+                        icon={<Icon.arrow />}
+                        onClick={() => apply(j.id)}
+                        disabled={applying === j.id}
+                      >
+                        {applying === j.id ? 'Applying…' : 'Apply 1-click'}
+                      </Btn>
                     )}
                   </div>
                 </div>

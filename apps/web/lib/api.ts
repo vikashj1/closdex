@@ -185,6 +185,21 @@ export interface JobSummary {
   company: { id: string; name: string };
 }
 
+export interface JobDetail extends JobSummary {
+  description?: string | null;
+  requiredSkills?: string[];
+  specializationTag?: string | null;
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  experienceMinYears?: number | null;
+  experienceMaxYears?: number | null;
+  employmentType?: string | null;
+  minRank?: string | null;
+  listingTier?: string | null;
+  applicationDeadline?: string | null;
+  company: { id: string; name: string; logoUrl?: string | null; industry?: string | null };
+}
+
 export interface TalentSummary {
   id: string;
   publicSlug: string;
@@ -450,7 +465,7 @@ export const api = {
         '/jobs',
         { query },
       ),
-    get: (id: string) => request<JobSummary>('GET', `/jobs/${id}`),
+    get: (id: string) => request<JobDetail>('GET', `/jobs/${id}`),
     apply: (id: string) => request<{ id: string; status: string }>('POST', `/jobs/${id}/apply`),
     create: (dto: {
       title: string;
