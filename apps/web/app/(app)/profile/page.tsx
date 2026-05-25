@@ -138,11 +138,8 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <div style={{ height: 140, background: 'linear-gradient(135deg, color-mix(in oklch, var(--gold) 30%, var(--bg-2)) 0%, var(--bg-2) 100%)', position: 'relative' }}>
-        <div className="stripe-ph" style={{ position: 'absolute', inset: 0, opacity: 0.4 }} />
-      </div>
-      <div style={{ padding: '0 32px 32px' }}>
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-end', marginTop: -56 }}>
+      <div style={{ padding: '28px 32px 32px' }}>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <Avatar name={user.name} size={120} />
             <div style={{ position: 'absolute', bottom: -4, right: -4 }}>
