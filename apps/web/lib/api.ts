@@ -489,6 +489,8 @@ export const api = {
         'GET',
         '/applications/me',
       ),
+    updateStatus: (id: string, status: string) =>
+      request<{ id: string; status: string }>('PATCH', `/applications/${id}`, { body: { status } }),
   },
 
   talent: {
