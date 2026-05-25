@@ -45,7 +45,7 @@ export class ApiError extends Error {
 
 // ─── core fetch wrapper ─────────────────────────────────────────────────
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT';
 
 async function request<T>(
   method: Method,
@@ -557,6 +557,19 @@ export const api = {
         'POST', `/learning/quizzes/${id}/attempt`, { body: { answerIndices } },
       ),
     myProgress: () => request<TrackProgress[]>('GET', '/learning/me/progress'),
+    createTrack: (dto: { title: string; description: string; category: string; order?: number }) =>
+      request<LearningTrackSummary>('POST', '/learning/tracks', { body: dto }),
+    updateTrack: (id: string, dto: { title?: string; description?: string; category?: string; order?: number }) =>
+      request<LearningTrackSummary>('PATCH', `/learning/tracks/${id}`, { body: dto }),
+    deleteTrack: (id: string) => request<void>('DELETE', `/learning/tracks/${id}`),
+    createTutorial: (trackId: string, dto: { title: string; type: 'VIDEO' | 'ARTICLE'; contentUrl?: string; body?: string; order?: number }) =>
+      request<TutorialDetail>('POST', `/learning/tracks/${trackId}/tutorials`, { body: dto }),
+    updateTutorial: (id: string, dto: { title?: string; type?: 'VIDEO' | 'ARTICLE'; contentUrl?: string; body?: string; order?: number }) =>
+      request<TutorialDetail>('PATCH', `/learning/tutorials/${id}`, { body: dto }),
+    deleteTutorial: (id: string) => request<void>('DELETE', `/learning/tutorials/${id}`),
+    upsertQuiz: (tutorialId: string, dto: { questions: Array<{ q: string; options: string[]; answerIndex: number }>; rewardPoints: number }) =>
+      request<{ id: string; rewardPoints: number; questions: unknown }>('PUT', `/learning/tutorials/${tutorialId}/quiz`, { body: dto }),
+    deleteQuiz: (tutorialId: string) => request<void>('DELETE', `/learning/tutorials/${tutorialId}/quiz`),
   },
 
   disputes: {

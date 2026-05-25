@@ -19,6 +19,7 @@ const NAV: NavItem[] = [
   { id: 'disputes',     label: 'Disputes',     path: '/admin/disputes',         prefix: '/admin/disputes' },
   { id: 'verification', label: 'Verification', path: '/admin/verification',     prefix: '/admin/verification' },
   { id: 'badges',       label: 'Badges',       path: '/admin/badges',           prefix: '/admin/badges' },
+  { id: 'learning',     label: 'Learning',     path: '/admin/learning',         prefix: '/admin/learning' },
   { id: 'audit',        label: 'Audit Log',    path: '/admin/audit',            prefix: '/admin/audit' },
   { id: 'config',       label: 'Config',       path: '/admin/config',           prefix: '/admin/config' },
 ];
