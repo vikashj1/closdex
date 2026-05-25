@@ -1,7 +1,7 @@
 // Seeds the admin-tunable config straight from the SOW (docs/SOW.md tables T3–T7
 // + the §6.3 scoring rules). Re-runnable: every write is an upsert.
 
-import { PrismaClient, UserRole, CompanyRole, VerificationStatus } from '@prisma/client';
+import { PrismaClient, UserRole, CompanyRole, VerificationStatus, Rank } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -213,8 +213,7 @@ async function main() {
     ],
   });
 
-  // Add ROOKIE challenge (for first-time users)
-  const [rookie] = personas; // use Anjali — she's friendly
+  // Add ROOKIE challenge (for first-time users) — use Anjali (friendly, warm)
   await prisma.challenge.create({
     data: {
       title: 'First Contact',
@@ -228,7 +227,7 @@ async function main() {
       estimatedMinutes: 5,
       attemptsAllowed: null,
       status: 'PUBLISHED',
-      personaId: rookie.id,
+      personaId: anjali.id,
     },
   });
 
@@ -290,45 +289,45 @@ async function main() {
     },
   });
 
-  await prisma.jobPosting.createMany({
+  await prisma.job.createMany({
     data: [
       {
         title: 'Senior Account Executive — Cloud Infra',
         description: 'Own the full sales cycle for cloud infrastructure accounts. 5+ years B2B sales, IT Sales background preferred.',
+        requiredSkills: ['B2B Sales', 'Cloud', 'Account Management'],
+        specializationTag: 'IT Sales',
+        experienceMinYears: 4,
+        salaryMin: 2200000,
+        salaryMax: 3500000,
         location: 'Bangalore',
-        workMode: 'Hybrid',
-        ctcMin: 22,
-        ctcMax: 35,
-        minRank: 'SILVER',
-        experienceMin: 4,
-        specializationTags: ['IT Sales', 'Cloud'],
-        status: 'PUBLISHED',
+        minRank: Rank.SILVER,
+        status: 'LIVE',
         companyId: company.id,
       },
       {
         title: 'SDR — SaaS Vertical',
         description: 'High-volume outbound prospecting. We move fast. Ideal for Bronze–Gold tier with SaaS/FinTech background.',
+        requiredSkills: ['Outbound Sales', 'Cold Calling', 'CRM'],
+        specializationTag: 'SaaS',
+        experienceMinYears: 1,
+        salaryMin: 800000,
+        salaryMax: 1400000,
         location: 'Remote',
-        workMode: 'Remote',
-        ctcMin: 8,
-        ctcMax: 14,
-        minRank: 'BRONZE',
-        experienceMin: 1,
-        specializationTags: ['SaaS', 'FinTech'],
-        status: 'PUBLISHED',
+        minRank: Rank.BRONZE,
+        status: 'LIVE',
         companyId: company.id,
       },
       {
         title: 'Enterprise Sales Manager — Healthcare',
         description: 'Lead enterprise accounts in healthcare tech. 7+ years, strong CXO relationships, Platinum+ tier.',
+        requiredSkills: ['Enterprise Sales', 'Healthcare', 'CXO Relationships', 'Solution Selling'],
+        specializationTag: 'Healthcare',
+        experienceMinYears: 7,
+        salaryMin: 4000000,
+        salaryMax: 6000000,
         location: 'Mumbai',
-        workMode: 'On-site',
-        ctcMin: 40,
-        ctcMax: 60,
-        minRank: 'PLATINUM',
-        experienceMin: 7,
-        specializationTags: ['Healthcare', 'SaaS'],
-        status: 'PUBLISHED',
+        minRank: Rank.PLATINUM,
+        status: 'LIVE',
         companyId: company.id,
       },
     ],
