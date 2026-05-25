@@ -20,7 +20,7 @@ const NAV: NavItem[] = [
   { id: 'home',      label: 'Home',            icon: <Icon.home />,      path: '/company' },
   { id: 'talent',    label: 'Talent Search',   icon: <Icon.search />,    path: '/company/talent',     prefix: '/company/talent' },
   { id: 'jobs',      label: 'Job Postings',    icon: <Icon.briefcase />, path: '/company/jobs',       prefix: '/company/jobs' },
-  { id: 'shortlist', label: 'Shortlists',      icon: <Icon.target />,    path: '/company/shortlists', count: 12 },
+  { id: 'shortlist', label: 'Shortlists',      icon: <Icon.target />,    path: '/company/shortlists' },
   { id: 'hires',     label: 'Hires & Billing', icon: <Icon.trophy />,    path: '/company/hires' },
   { id: 'profile',   label: 'Company Profile', icon: <Icon.user />,      path: '/company/profile' },
   { id: 'settings',  label: 'Settings',        icon: <Icon.settings />,  path: '/company/settings' },

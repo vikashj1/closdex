@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
   { id: 'attempts',   label: 'My Attempts', icon: <Icon.clock />,     path: '/attempts',    prefix: '/attempts' },
   { id: 'leaderboard', label: 'Leaderboard', icon: <Icon.trophy />,    path: '/leaderboard' },
   { id: 'learn',       label: 'Learn',       icon: <Icon.book />,      path: '/learn',       prefix: '/learn' },
+  { id: 'disputes',      label: 'My Disputes',   icon: <Icon.flag />,      path: '/disputes',    prefix: '/disputes' },
   { id: 'jobs',          label: 'Jobs',          icon: <Icon.briefcase />, path: '/jobs' },
   { id: 'notifications', label: 'Notifications', icon: <Icon.bell />,      path: '/notifications' },
   { id: 'profile',       label: 'Profile',       icon: <Icon.user />,      path: '/profile' },

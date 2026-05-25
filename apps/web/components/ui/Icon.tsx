@@ -113,6 +113,12 @@ export const Icon = {
       />
     </svg>
   ),
+  flag: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 21V5" />
+      <path d="M4 5h14l-3 5 3 5H4" />
+    </svg>
+  ),
   settings: () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <circle cx="12" cy="12" r="3" />
