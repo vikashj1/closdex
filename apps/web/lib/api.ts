@@ -540,6 +540,12 @@ export const api = {
     get: (id: string) => request<PlacementSummary>('GET', `/placements/${id}`),
   },
 
+  invoices: {
+    issue: (id: string) => request<{ id: string; status: string; issuedAt: string }>('POST', `/invoices/${id}/issue`),
+    markPaid: (id: string) => request<{ id: string; status: string; paidAt: string }>('POST', `/invoices/${id}/mark-paid`),
+    void: (id: string) => request<{ id: string; status: string }>('POST', `/invoices/${id}/void`),
+  },
+
   leaderboards: {
     list: (query: { period?: 'daily' | 'weekly' | 'monthly' | 'all-time'; category?: string; limit?: number } = {}) =>
       request<{ entries: LeaderboardEntry[] }>('GET', '/leaderboards', {

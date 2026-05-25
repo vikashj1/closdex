@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, ApiError, PlacementSummary } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
+import { Btn } from '@/components/ui/Btn';
 import { RankBadge } from '@/components/ui/RankBadge';
 import { Stat } from '@/components/ui/Stat';
 import { rankFromEnum, type RankName } from '@/lib/constants';
@@ -54,8 +55,20 @@ export default function HiresBillingPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [invoiceBusy, setInvoiceBusy] = useState<string | null>(null);
+  const [invoiceError, setInvoiceError] = useState<string | null>(null);
 
   const companyId = user?.companyMemberships?.[0]?.companyId ?? '';
+
+  function reload() {
+    if (!companyId) return;
+    setLoading(true);
+    setError(null);
+    api.placements
+      .list({ companyId, perPage: 100 })
+      .then((res) => { setItems(res.items); setTotal(res.total); setLoading(false); })
+      .catch((err: unknown) => { setError(err instanceof ApiError ? err.message : 'Something went wrong'); setLoading(false); });
+  }
 
   useEffect(() => {
     if (authLoading || !user || !companyId) return;
@@ -77,6 +90,19 @@ export default function HiresBillingPage() {
       });
     return () => { cancelled = true; };
   }, [authLoading, user, companyId]);
+
+  async function doInvoiceAction(invoiceId: string, action: 'issue' | 'markPaid' | 'void') {
+    setInvoiceBusy(invoiceId + ':' + action);
+    setInvoiceError(null);
+    try {
+      await api.invoices[action](invoiceId);
+      reload();
+    } catch (err) {
+      setInvoiceError(err instanceof ApiError ? err.message : `Failed to ${action} invoice.`);
+    } finally {
+      setInvoiceBusy(null);
+    }
+  }
 
   if (authLoading || !user) {
     return (
@@ -101,6 +127,16 @@ export default function HiresBillingPage() {
           Confirmed hires and placement invoices
         </p>
       </div>
+
+      {/* Invoice action error */}
+      {invoiceError && (
+        <div style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, background: 'color-mix(in oklch, red 10%, transparent)', border: '1px solid color-mix(in oklch, red 25%, transparent)', color: 'var(--text-dim)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{invoiceError}</span>
+          <button onClick={() => setInvoiceError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      )}
 
       {/* Stats strip */}
       {!loading && !error && (
@@ -174,7 +210,7 @@ export default function HiresBillingPage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1fr 1fr',
+              gridTemplateColumns: '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1fr 1fr 1.2fr',
               gap: 12,
               padding: '0 18px',
               fontSize: 10.5,
@@ -191,6 +227,7 @@ export default function HiresBillingPage() {
             <span>Confirmed</span>
             <span>Invoice status</span>
             <span>Invoice #</span>
+            <span>Actions</span>
           </div>
 
           {items.map((p) => {
@@ -200,7 +237,7 @@ export default function HiresBillingPage() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1fr 1fr',
+                    gridTemplateColumns: '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1fr 1fr 1.2fr',
                     gap: 12,
                     alignItems: 'center',
                   }}
@@ -242,6 +279,37 @@ export default function HiresBillingPage() {
                   <span className="mono" style={{ fontSize: 12, color: 'var(--text-dim)' }}>
                     {p.invoice?.number ?? '—'}
                   </span>
+
+                  {/* Invoice actions */}
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                    {p.invoice?.status === 'DRAFT' && (
+                      <>
+                        <Btn kind="ghost" size="sm"
+                          disabled={invoiceBusy === p.invoice.id + ':issue'}
+                          onClick={() => doInvoiceAction(p.invoice!.id, 'issue')}
+                          style={{ fontSize: 11, color: 'var(--cool)' }}>
+                          {invoiceBusy === p.invoice.id + ':issue' ? '…' : 'Issue'}
+                        </Btn>
+                        <Btn kind="ghost" size="sm"
+                          disabled={invoiceBusy === p.invoice.id + ':void'}
+                          onClick={() => doInvoiceAction(p.invoice!.id, 'void')}
+                          style={{ fontSize: 11, color: 'var(--text-mute)' }}>
+                          {invoiceBusy === p.invoice.id + ':void' ? '…' : 'Void'}
+                        </Btn>
+                      </>
+                    )}
+                    {p.invoice?.status === 'ISSUED' && (
+                      <Btn kind="ghost" size="sm"
+                        disabled={invoiceBusy === p.invoice.id + ':markPaid'}
+                        onClick={() => doInvoiceAction(p.invoice!.id, 'markPaid')}
+                        style={{ fontSize: 11, color: 'var(--emerald)' }}>
+                        {invoiceBusy === p.invoice.id + ':markPaid' ? '…' : 'Mark Paid'}
+                      </Btn>
+                    )}
+                    {(!p.invoice || p.invoice.status === 'PAID' || p.invoice.status === 'VOID') && (
+                      <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>—</span>
+                    )}
+                  </div>
                 </div>
               </Card>
             );
