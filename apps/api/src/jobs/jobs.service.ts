@@ -128,6 +128,53 @@ export class JobsService {
     return !!m;
   }
 
+  // ─── Saved jobs ──────────────────────────────────────────────────────────
+
+  async saveJob(viewer: AuthUser, jobId: string) {
+    const sp = await this.prisma.salespersonProfile.findUnique({ where: { userId: viewer.id } });
+    if (!sp) throw new ForbiddenException('Only salespersons can save jobs.');
+    await this.prisma.savedJob.upsert({
+      where: { jobId_salespersonId: { jobId, salespersonId: sp.id } },
+      create: { jobId, salespersonId: sp.id },
+      update: {},
+    });
+    return { saved: true };
+  }
+
+  async unsaveJob(viewer: AuthUser, jobId: string) {
+    const sp = await this.prisma.salespersonProfile.findUnique({ where: { userId: viewer.id } });
+    if (!sp) throw new ForbiddenException('Only salespersons can unsave jobs.');
+    await this.prisma.savedJob.deleteMany({
+      where: { jobId, salespersonId: sp.id },
+    });
+    return { saved: false };
+  }
+
+  async listSaved(viewer: AuthUser) {
+    const sp = await this.prisma.salespersonProfile.findUnique({ where: { userId: viewer.id } });
+    if (!sp) return [];
+    const saved = await this.prisma.savedJob.findMany({
+      where: { salespersonId: sp.id },
+      include: {
+        job: {
+          include: { company: { select: { id: true, name: true, logoUrl: true, industry: true } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return saved.map((s) => ({ ...s.job, savedAt: s.createdAt }));
+  }
+
+  async savedJobIds(viewer: AuthUser): Promise<string[]> {
+    const sp = await this.prisma.salespersonProfile.findUnique({ where: { userId: viewer.id } });
+    if (!sp) return [];
+    const saved = await this.prisma.savedJob.findMany({
+      where: { salespersonId: sp.id },
+      select: { jobId: true },
+    });
+    return saved.map((s) => s.jobId);
+  }
+
   /** Throws ForbiddenException if not a company member with one of the allowed roles.
    *  Platform admins bypass. Exported for use by ApplicationsService. */
   async assertCompanyMember(

@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards,
+  Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -56,6 +56,30 @@ export class JobsController {
   @Post(':id/repost')
   repost(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.jobs.repost(user, id);
+  }
+
+  // ─── Saved jobs ──────────────────────────────────────────────────────────
+
+  @Get('saved/list')
+  listSaved(@CurrentUser() user: AuthUser) {
+    return this.jobs.listSaved(user);
+  }
+
+  @Get('saved/ids')
+  savedJobIds(@CurrentUser() user: AuthUser) {
+    return this.jobs.savedJobIds(user);
+  }
+
+  @Post(':id/save')
+  @HttpCode(HttpStatus.OK)
+  save(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.jobs.saveJob(user, id);
+  }
+
+  @Delete(':id/save')
+  @HttpCode(HttpStatus.OK)
+  unsave(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.jobs.unsaveJob(user, id);
   }
 
   // ─── Application routes nested under the job ─────────────────────────

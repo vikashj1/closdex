@@ -517,6 +517,10 @@ export const api = {
       request<Array<{ id: string; status: string; salesperson: { id: string; publicSlug: string; rank: string; totalPoints: number; user: { name: string } } }>>(
         'GET', `/jobs/${id}/applications`,
       ),
+    save: (id: string) => request<{ saved: boolean }>('POST', `/jobs/${id}/save`),
+    unsave: (id: string) => request<{ saved: boolean }>('DELETE', `/jobs/${id}/save`),
+    listSaved: () => request<Array<JobSummary & { savedAt: string }>>('GET', '/jobs/saved/list'),
+    savedJobIds: () => request<string[]>('GET', '/jobs/saved/ids'),
   },
 
   applications: {

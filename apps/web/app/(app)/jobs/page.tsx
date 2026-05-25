@@ -10,32 +10,50 @@ import { useRequireAuth } from '@/lib/auth';
 
 interface ApplicationRow { id: string; status: string; job: JobSummary; createdAt: string }
 
+type Tab = 'all' | 'saved';
+
 export default function JobsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
   const [jobs, setJobs] = useState<JobSummary[]>([]);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [savedJobs, setSavedJobs] = useState<Array<JobSummary & { savedAt: string }>>([]);
   const [apps, setApps] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('all');
 
   async function load() {
     setLoading(true);
     setError(null);
-    const [jRes, aRes] = await Promise.allSettled([
+    const [jRes, aRes, idsRes] = await Promise.allSettled([
       api.jobs.list({ perPage: 30 }),
       api.applications.mine(),
+      api.jobs.savedJobIds(),
     ]);
     if (jRes.status === 'fulfilled') setJobs(jRes.value.items);
     else setError(jRes.reason instanceof ApiError ? jRes.reason.message : 'Could not load jobs.');
     if (aRes.status === 'fulfilled') setApps(aRes.value);
+    if (idsRes.status === 'fulfilled') setSavedIds(new Set(idsRes.value));
     setLoading(false);
+  }
+
+  async function loadSaved() {
+    const res = await api.jobs.listSaved().catch(() => []);
+    setSavedJobs(res);
   }
 
   useEffect(() => {
     if (!user) return;
     void load();
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!user || tab !== 'saved') return;
+    void loadSaved();
+  }, [user, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function apply(jobId: string) {
     setApplying(jobId);
@@ -46,6 +64,24 @@ export default function JobsPage() {
       setError(err instanceof ApiError ? err.message : 'Apply failed.');
     } finally {
       setApplying(null);
+    }
+  }
+
+  async function toggleSave(jobId: string) {
+    setSavingId(jobId);
+    try {
+      if (savedIds.has(jobId)) {
+        await api.jobs.unsave(jobId);
+        setSavedIds((prev) => { const n = new Set(prev); n.delete(jobId); return n; });
+        setSavedJobs((prev) => prev.filter((j) => j.id !== jobId));
+      } else {
+        await api.jobs.save(jobId);
+        setSavedIds((prev) => new Set([...prev, jobId]));
+      }
+    } catch {
+      // silently ignore
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -61,6 +97,8 @@ export default function JobsPage() {
     { l: 'Interview',   v: apps.filter((a) => a.status === 'INTERVIEW').length,   c: 'var(--text-mute)' },
     { l: 'Offer',       v: apps.filter((a) => a.status === 'OFFER').length,       c: 'var(--emerald)' },
   ];
+
+  const displayJobs = tab === 'saved' ? savedJobs : jobs;
 
   return (
     <div style={{ padding: '28px 32px' }}>
@@ -107,16 +145,40 @@ export default function JobsPage() {
         </div>
       </Card>
 
-      {loading ? (
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 18, borderBottom: '1px solid var(--border-soft)' }}>
+        {([['all', 'All Jobs'], ['saved', `Saved (${savedIds.size})`]] as const).map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              padding: '8px 18px',
+              border: 'none',
+              borderBottom: tab === t ? '2px solid var(--gold)' : '2px solid transparent',
+              background: 'transparent',
+              color: tab === t ? 'var(--gold)' : 'var(--text-dim)',
+              fontSize: 13,
+              fontWeight: tab === t ? 700 : 500,
+              cursor: 'pointer',
+              marginBottom: -1,
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {loading && tab === 'all' ? (
         <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>Loading jobs…</div>
-      ) : jobs.length === 0 ? (
+      ) : displayJobs.length === 0 ? (
         <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>
-          No active job listings.
+          {tab === 'saved' ? 'No saved jobs yet. Bookmark listings to find them here.' : 'No active job listings.'}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {jobs.map((j) => {
+          {displayJobs.map((j) => {
             const existing = appByJob.get(j.id);
+            const isSaved = savedIds.has(j.id);
             const initials = j.company.name
               .split(/\s+/)
               .map((w) => w[0])
@@ -171,9 +233,29 @@ export default function JobsPage() {
                     )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                    <Btn kind="ghost" size="sm" onClick={() => router.push(`/jobs/${j.id}`)}>
-                      Details
-                    </Btn>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => toggleSave(j.id)}
+                        disabled={savingId === j.id}
+                        title={isSaved ? 'Unsave' : 'Save job'}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 32, height: 32, borderRadius: 8,
+                          border: `1px solid ${isSaved ? 'color-mix(in oklch, var(--gold) 50%, transparent)' : 'var(--border)'}`,
+                          background: isSaved ? 'color-mix(in oklch, var(--gold) 14%, transparent)' : 'transparent',
+                          color: isSaved ? 'var(--gold)' : 'var(--text-mute)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </button>
+                      <Btn kind="ghost" size="sm" onClick={() => router.push(`/jobs/${j.id}`)}>
+                        Details
+                      </Btn>
+                    </div>
                     {existing ? (
                       <Btn kind="secondary" size="sm">View status</Btn>
                     ) : (
