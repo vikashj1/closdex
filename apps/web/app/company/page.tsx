@@ -1,23 +1,40 @@
 'use client';
 
-import { CSSProperties, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, ApiError, JobSummary, TalentSummary } from '@/lib/api';
+import { api, ApiError, JobSummary, NotificationItem, TalentSummary } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
-import { rankFromEnum, type RankName } from '@/lib/constants';
+import { rankFromEnum } from '@/lib/constants';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
 import { Icon } from '@/components/ui/Icon';
 
-const ACTIVITY = [
-  { t: 'Karan Mehta applied',            role: 'Senior AE — IT Sales',           time: '23m ago', c: 'var(--cool)' },
-  { t: 'You shortlisted Priya Iyer',     role: 'Enterprise AE',                  time: '2h ago',  c: 'var(--gold)' },
-  { t: 'Interview scheduled with Aarav', role: 'Senior AE — IT Sales · Fri 4pm', time: '5h ago',  c: 'var(--emerald)' },
-  { t: 'Sneha Reddy declined offer',     role: 'Mid-Market AE',                  time: '1d ago',  c: 'var(--text-dim)' },
-  { t: 'Job posted: SDR Manager',        role: '₹2,499/wk Featured tier',        time: '2d ago',  c: 'var(--text-mute)' },
-];
+interface CompanyStats {
+  activeJobs: number;
+  newApplicationsThisWeek: number;
+  shortlistedCount: number;
+  hiresThisQuarter: number;
+  commissionThisQuarter: number;
+}
+
+function activityColor(type: string): string {
+  if (type.includes('APPLICATION') || type.includes('APPLY')) return 'var(--cool)';
+  if (type.includes('SHORTLIST') || type.includes('INTERVIEW') || type.includes('OFFER')) return 'var(--gold)';
+  if (type.includes('HIRE') || type.includes('PLACEMENT')) return 'var(--emerald)';
+  if (type.includes('REJECT') || type.includes('CLOSE')) return 'var(--text-dim)';
+  return 'var(--text-mute)';
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 export default function CompanyDashboardPage() {
   const router = useRouter();
@@ -25,29 +42,36 @@ export default function CompanyDashboardPage() {
 
   const [jobs, setJobs] = useState<JobSummary[]>([]);
   const [candidates, setCandidates] = useState<TalentSummary[]>([]);
+  const [stats, setStats] = useState<CompanyStats | null>(null);
+  const [activity, setActivity] = useState<NotificationItem[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const companyId = user?.companyMemberships?.[0]?.companyId;
   const companyName = user?.companyMemberships?.[0]?.company.name ?? 'Your Company';
 
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading || !user || !companyId) return;
     setDataLoading(true);
     setError(null);
 
     Promise.all([
       api.jobs.list({ perPage: 50 }),
       api.talent.search({ perPage: 5 }),
+      api.companies.stats(companyId),
+      api.notifications.listMine(),
     ])
-      .then(([jobsRes, talentRes]) => {
+      .then(([jobsRes, talentRes, statsRes, notifRes]) => {
         setJobs(jobsRes.items);
         setCandidates(talentRes.items);
+        setStats(statsRes);
+        setActivity(notifRes.items.slice(0, 6));
       })
       .catch((err) => {
         setError(err instanceof ApiError ? err.message : 'Failed to load dashboard data.');
       })
       .finally(() => setDataLoading(false));
-  }, [authLoading, user]);
+  }, [authLoading, user, companyId]);
 
   if (authLoading || dataLoading) {
     return (
@@ -65,13 +89,19 @@ export default function CompanyDashboardPage() {
     );
   }
 
-  const activeJobs = jobs.filter((j) => j.status === 'PUBLISHED' || j.status === 'ACTIVE');
+  const activeJobs = jobs.filter((j) => j.status === 'LIVE');
+
+  const fmtCommission = (amt: number) => {
+    if (amt >= 100000) return `₹${(amt / 100000).toFixed(1)}L`;
+    if (amt >= 1000) return `₹${(amt / 1000).toFixed(0)}K`;
+    return `₹${amt}`;
+  };
 
   const KPIS = [
-    { l: 'Active job postings',      v: String(activeJobs.length),  sub: `of ${jobs.length} total`,       c: 'var(--text)' },
-    { l: 'New applications',         v: '47',                        sub: 'this week',                     c: 'var(--cool)' },
-    { l: 'Shortlisted candidates',   v: '12',                        sub: 'across all roles',              c: 'var(--gold)' },
-    { l: 'Hires this quarter',       v: '2',                         sub: '₹1.5L commission paid',         c: 'var(--emerald)' },
+    { l: 'Active job postings',    v: String(stats?.activeJobs ?? activeJobs.length), sub: `of ${jobs.length} total`,       c: 'var(--text)' },
+    { l: 'New applications',       v: String(stats?.newApplicationsThisWeek ?? '—'),  sub: 'this week',                     c: 'var(--cool)' },
+    { l: 'Shortlisted candidates', v: String(stats?.shortlistedCount ?? '—'),          sub: 'across all roles',              c: 'var(--gold)' },
+    { l: 'Hires this quarter',     v: String(stats?.hiresThisQuarter ?? '—'),          sub: stats ? fmtCommission(stats.commissionThisQuarter) + ' commission' : '',  c: 'var(--emerald)' },
   ];
 
   return (
@@ -195,16 +225,20 @@ export default function CompanyDashboardPage() {
         <Card padding={22}>
           <h3 className="display" style={{ fontSize: 16, margin: '0 0 16px', fontWeight: 600 }}>Recent activity</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {ACTIVITY.map((a, i) => (
-              <div key={i} style={{ display: 'flex', gap: 10 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 999, background: a.c, marginTop: 6, flexShrink: 0 }} />
+            {activity.length > 0 ? activity.map((n) => (
+              <div key={n.id} style={{ display: 'flex', gap: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 999, background: activityColor(n.type), marginTop: 6, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 12.5, fontWeight: 500 }}>{a.t}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 2 }}>{a.role}</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>{a.time}</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 500 }}>{n.title}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 2 }}>{n.body}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>{timeAgo(n.createdAt)}</div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div style={{ fontSize: 13, color: 'var(--text-mute)', padding: '16px 0', textAlign: 'center' }}>
+                No recent activity yet.
+              </div>
+            )}
           </div>
         </Card>
       </div>

@@ -15,6 +15,12 @@ export class CompaniesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get(':id/stats')
+  getStats(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.companies.getStats(id, user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
     @Param('id') id: string,

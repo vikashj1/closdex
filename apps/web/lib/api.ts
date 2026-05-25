@@ -529,6 +529,14 @@ export const api = {
 
   companies: {
     get: (id: string) => request<CompanyDetail>('GET', `/companies/${id}`),
+    stats: (id: string) =>
+      request<{
+        activeJobs: number;
+        newApplicationsThisWeek: number;
+        shortlistedCount: number;
+        hiresThisQuarter: number;
+        commissionThisQuarter: number;
+      }>('GET', `/companies/${id}/stats`),
     update: (id: string, dto: Partial<Pick<CompanyDetail, 'name' | 'logoUrl' | 'industry' | 'size' | 'website' | 'about' | 'perks' | 'culture' | 'incentiveStructure'> & { locations?: string[] }>) =>
       request<CompanyDetail>('PATCH', `/companies/${id}`, { body: dto }),
   },

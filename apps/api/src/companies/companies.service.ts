@@ -12,10 +12,51 @@ export class CompaniesService {
     return company;
   }
 
+  async getStats(id: string, actorUserId: string) {
+    await this.assertMember(id, actorUserId);
+
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+
+    const [activeJobs, newApplicationsThisWeek, shortlistedCount, hiresThisQuarter, commissionAgg] =
+      await Promise.all([
+        this.prisma.job.count({ where: { companyId: id, status: 'LIVE' } }),
+        this.prisma.application.count({
+          where: { job: { companyId: id }, createdAt: { gte: weekAgo } },
+        }),
+        this.prisma.application.count({
+          where: { job: { companyId: id }, status: 'SHORTLISTED' },
+        }),
+        this.prisma.placement.count({
+          where: { companyId: id, createdAt: { gte: quarterStart } },
+        }),
+        this.prisma.placement.aggregate({
+          _sum: { commissionAmount: true },
+          where: { companyId: id, createdAt: { gte: quarterStart } },
+        }),
+      ]);
+
+    return {
+      activeJobs,
+      newApplicationsThisWeek,
+      shortlistedCount,
+      hiresThisQuarter,
+      commissionThisQuarter: commissionAgg._sum.commissionAmount ?? 0,
+    };
+  }
+
   /** Edit company profile. Only the company's ADMIN members can do this. */
   async update(id: string, actorUserId: string, dto: UpdateCompanyDto) {
     await this.assertAdmin(id, actorUserId);
     return this.prisma.company.update({ where: { id }, data: dto });
+  }
+
+  private async assertMember(companyId: string, userId: string) {
+    const membership = await this.prisma.companyMembership.findUnique({
+      where: { companyId_userId: { companyId, userId } },
+    });
+    if (!membership) throw new ForbiddenException('Not a member of this company.');
   }
 
   private async assertAdmin(companyId: string, userId: string) {
