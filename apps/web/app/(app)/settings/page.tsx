@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { TextInput } from '@/components/ui/TextInput';
 import { Field } from '@/components/ui/Field';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth, useRequireAuth } from '@/lib/auth';
 import { api, ApiError } from '@/lib/api';
 
 const TABS = ['Profile', 'Security'] as const;
@@ -18,7 +18,8 @@ const VISIBILITY_OPTIONS = [
 ] as const;
 
 export default function SettingsPage() {
-  const { user, loading: authLoading, refresh } = useRequireAuth('SALESPERSON') as any;
+  const { refresh } = useAuth();
+  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
 
   const [tab, setTab] = useState<Tab>('Profile');
 
@@ -63,12 +64,12 @@ export default function SettingsPage() {
         resumeUrl: resumeUrl || undefined,
         openToWork,
         visibility,
-        salaryExpectation: salaryExpectation ? Number(salaryExpectation) : undefined,
+        salaryExpectation: salaryExpectation ? parseInt(salaryExpectation, 10) : undefined,
         preferredLocations: preferredLocations
           ? preferredLocations.split(',').map((s) => s.trim()).filter(Boolean)
           : [],
       });
-      if (typeof refresh === 'function') refresh();
+      void refresh();
       setProfileMsg({ ok: true, text: 'Profile updated.' });
     } catch (e) {
       setProfileMsg({ ok: false, text: e instanceof ApiError ? e.message : 'Failed to save.' });
