@@ -4,7 +4,7 @@ import {
 } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { LeaderboardsService } from '../leaderboards/leaderboards.service';
-import { RubricService, ScoreBreakdown, ScoringRules } from './rubric.service';
+import { RubricService, QualityDims, ScoreBreakdown, ScoringRules } from './rubric.service';
 import { AiEvaluatorService, AiEvaluation } from './ai-evaluator.service';
 
 const DIFFICULTY_ORDER: DifficultyTier[] = [
@@ -106,7 +106,7 @@ export class ScoringService {
       rules,
     });
 
-    await this.persistScore(attempt.id, attempt.salespersonId, breakdown, evaluation?.notes ?? null);
+    await this.persistScore(attempt.id, attempt.salespersonId, breakdown, evaluation?.notes ?? null, evaluation?.qualityDims ?? null);
     await this.recomputeRank(attempt.salespersonId, rankConfigs);
 
     // Update Redis leaderboards last — failures are logged inside, never thrown
@@ -165,13 +165,14 @@ export class ScoringService {
     salespersonId: string,
     breakdown: ScoreBreakdown,
     notes: string | null,
+    qualityDims: QualityDims | null,
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await tx.challengeAttempt.update({
         where: { id: attemptId },
         data: {
           finalScore: breakdown.total,
-          scoreBreakdown: { ...breakdown, notes } as unknown as Prisma.InputJsonValue,
+          scoreBreakdown: { ...breakdown, notes, qualityDims } as unknown as Prisma.InputJsonValue,
         },
       });
 

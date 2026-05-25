@@ -166,11 +166,12 @@ export class AttemptsService {
   async listMine(user: AuthUser) {
     const profile = await this.prisma.salespersonProfile.findUnique({ where: { userId: user.id } });
     if (!profile) return [];
-    return this.prisma.challengeAttempt.findMany({
+    const rows = await this.prisma.challengeAttempt.findMany({
       where: { salespersonId: profile.id },
       orderBy: { startedAt: 'desc' },
       include: { challenge: { select: { id: true, title: true, difficulty: true } } },
     });
+    return rows.map((r) => this.shape(r));
   }
 
   private async loadOwnedAttempt(user: AuthUser, attemptId: string) {
@@ -189,10 +190,18 @@ export class AttemptsService {
     return attempt;
   }
 
-  /** Strip the persona's `personalityPrompt` before returning to a client. */
+  /** Strip persona prompt + project scoring fields to frontend-expected names. */
   private shape(attempt: any) {
-    if (!attempt?.challenge?.persona) return attempt;
+    const bd = attempt.scoreBreakdown as any;
+    const projected = {
+      ...attempt,
+      pointsAwarded: attempt.finalScore ?? null,
+      score: bd?.qualityMultiplier != null ? Math.round(bd.qualityMultiplier * 100) : null,
+      rubricScores: bd?.qualityDims ?? null,
+      feedback: bd?.notes ?? null,
+    };
+    if (!attempt?.challenge?.persona) return projected;
     const { personalityPrompt, ...persona } = attempt.challenge.persona;
-    return { ...attempt, challenge: { ...attempt.challenge, persona } };
+    return { ...projected, challenge: { ...attempt.challenge, persona } };
   }
 }
