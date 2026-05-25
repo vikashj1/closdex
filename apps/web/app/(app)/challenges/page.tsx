@@ -14,7 +14,15 @@ import { DIFFICULTY, type DifficultyLevel, difficultyFromEnum } from '@/lib/cons
 type DiffFilter = 'All' | DifficultyLevel;
 
 const DIFFICULTIES: DiffFilter[] = ['All', 'Rookie', 'Easy', 'Medium', 'Hard', 'Expert'];
-const GOALS = ['Qualify', 'Book call', 'Proposal', 'Decision-maker', 'Close', 'Win-back'];
+
+const GOALS: { label: string; value: string }[] = [
+  { label: 'Qualify',          value: 'QUALIFY_LEAD'          },
+  { label: 'Book call',        value: 'BOOK_DISCOVERY_CALL'    },
+  { label: 'Proposal',         value: 'SEND_PROPOSAL'          },
+  { label: 'Decision-maker',   value: 'REACH_DECISION_MAKER'   },
+  { label: 'Close',            value: 'CLOSE_DEAL'             },
+  { label: 'Win-back',         value: 'WIN_BACK'               },
+];
 
 const UI_TO_ENUM: Record<DifficultyLevel, string> = {
   Rookie: 'ROOKIE',
@@ -28,6 +36,7 @@ export default function ChallengesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
   const [diff, setDiff] = useState<DiffFilter>('All');
+  const [goalFilter, setGoalFilter] = useState('');
   const [items, setItems] = useState<ChallengeSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -53,6 +62,7 @@ export default function ChallengesPage() {
     api.challenges
       .list({
         difficulty: diff === 'All' ? undefined : UI_TO_ENUM[diff],
+        goalType: goalFilter || undefined,
         perPage: 30,
       })
       .then((res) => {
@@ -67,7 +77,7 @@ export default function ChallengesPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [user, diff]);
+  }, [user, diff, goalFilter]);
 
   if (authLoading || !user) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
@@ -118,10 +128,39 @@ export default function ChallengesPage() {
           </div>
         </div>
         <div>
-          <div style={FILTER_LBL}>Goal type</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={FILTER_LBL}>Goal type</div>
+            {goalFilter && (
+              <button
+                onClick={() => setGoalFilter('')}
+                style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--text-mute)', cursor: 'pointer', padding: 0 }}
+              >
+                clear
+              </button>
+            )}
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
             {GOALS.map((g) => (
-              <Chip key={g}>{g}</Chip>
+              <button
+                key={g.value}
+                onClick={() => setGoalFilter(goalFilter === g.value ? '' : g.value)}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: 999,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: goalFilter === g.value
+                    ? '1px solid var(--gold)'
+                    : '1px solid var(--border)',
+                  background: goalFilter === g.value
+                    ? 'color-mix(in oklch, var(--gold) 18%, transparent)'
+                    : 'transparent',
+                  color: goalFilter === g.value ? 'var(--gold)' : 'var(--text-dim)',
+                }}
+              >
+                {g.label}
+              </button>
             ))}
           </div>
         </div>
@@ -134,7 +173,8 @@ export default function ChallengesPage() {
             <h1 className="display" style={{ fontSize: 28, margin: 0, fontWeight: 700 }}>Challenge library</h1>
             <p style={{ color: 'var(--text-mute)', fontSize: 13, margin: '4px 0 0' }}>
               {loading ? 'Loading…' : `Showing ${items.length} of ${total} challenges`}
-              {diff !== 'All' && ` · ${diff} only`}
+              {diff !== 'All' && ` · ${diff}`}
+              {goalFilter && ` · ${GOALS.find(g => g.value === goalFilter)?.label}`}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
