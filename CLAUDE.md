@@ -92,9 +92,9 @@ LLM_MODEL=meta/llama-3.1-8b-instruct
 - NIM API key was posted publicly — **rotation required**
 - Email delivery credentials (SES/Sendgrid) not yet configured
 
-## Slice history (slices 1–44 committed on `main`)
+## Slice history (slices 1–47 committed on `main`)
 
-All UI pages complete through slice 44. Full test coverage at slice 41 (439 specs, 26 suites).
+All UI pages complete through slice 47. Full test coverage at slice 41 (439 specs, 26 suites).
 No remaining "coming soon" placeholders — all features shipped.
 
 - Slice 38: Config edit UI (inline editing for all 5 scoring config tables + goal types)
@@ -104,3 +104,6 @@ No remaining "coming soon" placeholders — all features shipped.
 - Slice 42: Job lifecycle management — pause/close/repost + edit page (company/jobs)
 - Slice 43: Admin learning content management — tracks, tutorials, quizzes CRUD UI
 - Slice 44: Invoice actions on hires page — issue/void/mark-paid inline buttons
+- Slice 45: Application pipeline management — Shortlist/Interview/Offer/Hire/Reject buttons
+- Slice 46: Notifications inbox page — unread filter, mark-read, mark-all-read
+- Slice 47: Salesperson job detail page — full JD view + apply from detail
