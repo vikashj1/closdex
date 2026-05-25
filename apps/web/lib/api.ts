@@ -52,7 +52,8 @@ async function request<T>(
   path: string,
   options: { body?: unknown; query?: Record<string, unknown> } = {},
 ): Promise<T> {
-  const url = new URL(`${BASE}${path}`);
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000';
+  const url = new URL(`${BASE}${path}`, origin);
   if (options.query) {
     for (const [k, v] of Object.entries(options.query)) {
       if (v === undefined || v === null || v === '') continue;
