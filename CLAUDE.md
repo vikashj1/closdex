@@ -109,3 +109,4 @@ No remaining "coming soon" placeholders — all features shipped.
 - Slice 47: Salesperson job detail page — full JD view + apply from detail
 - Slice 48: Company notifications page + CompanyShell real user data (avatar/name/role from JWT)
 - Slice 49: Settings location field, global not-found.tsx + error.tsx pages
+- Slice 50: Company talent search — wire location chip toggle + min experience filter to API

@@ -19,6 +19,8 @@ export default function TalentSearchPage() {
   const { user, loading: authLoading } = useRequireAuth('COMPANY');
   const [minRank, setMinRank] = useState<RankName>('Gold');
   const [openOnly, setOpenOnly] = useState(true);
+  const [locationFilter, setLocationFilter] = useState<string>('');
+  const [minExp, setMinExp] = useState('');
   const [items, setItems] = useState<TalentSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,8 @@ export default function TalentSearchPage() {
       .search({
         minRank: minRank.toUpperCase(),
         openToWork: openOnly || undefined,
+        location: locationFilter || undefined,
+        minExperienceYears: minExp ? Number(minExp) : undefined,
         perPage: 30,
       })
       .then((res) => {
@@ -47,7 +51,7 @@ export default function TalentSearchPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [user, minRank, openOnly]);
+  }, [user, minRank, openOnly, locationFilter, minExp]);
 
   if (authLoading || !user) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
@@ -95,16 +99,33 @@ export default function TalentSearchPage() {
           <div style={FILTER_LBL}>Location</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
             {['Bangalore', 'Mumbai', 'Delhi NCR', 'Pune', 'Hyderabad', 'Remote'].map((l) => (
-              <Chip key={l} color="var(--cool)">{l}</Chip>
+              <button
+                key={l}
+                onClick={() => setLocationFilter(locationFilter === l ? '' : l)}
+                style={{
+                  padding: '3px 10px',
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  border: locationFilter === l ? '1px solid var(--cool)' : '1px solid var(--border)',
+                  background: locationFilter === l ? 'color-mix(in oklch, var(--cool) 14%, transparent)' : 'transparent',
+                  color: locationFilter === l ? 'var(--cool)' : 'var(--text-dim)',
+                }}
+              >{l}</button>
             ))}
           </div>
         </div>
 
         <div>
-          <div style={FILTER_LBL}>Experience</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <TextInput placeholder="Min" style={{ width: '100%' }} />
-            <TextInput placeholder="Max" style={{ width: '100%' }} />
+          <div style={FILTER_LBL}>Min experience (yrs)</div>
+          <div style={{ marginTop: 10 }}>
+            <TextInput
+              placeholder="e.g. 3"
+              value={minExp}
+              onChange={(v) => setMinExp(v.replace(/\D/g, ''))}
+              style={{ width: '100%' }}
+            />
           </div>
         </div>
 
@@ -130,7 +151,13 @@ export default function TalentSearchPage() {
             <p style={{ color: 'var(--text-mute)', fontSize: 12.5, margin: '4px 0 0' }}>
               {loading
                 ? 'Searching…'
-                : `Showing ${items.length} of ${total} candidates · ${minRank}+ ${openOnly ? '· open to work' : ''}`}
+                : [
+                    `Showing ${items.length} of ${total} candidates`,
+                    `${minRank}+`,
+                    openOnly ? 'open to work' : '',
+                    locationFilter ? locationFilter : '',
+                    minExp ? `${minExp}+ yrs` : '',
+                  ].filter(Boolean).join(' · ')}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
