@@ -223,27 +223,38 @@ function PodiumCard({ entry, score, height, isMe }: { entry: LeaderboardEntry; s
   };
   const medal: Record<1 | 2 | 3, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
   return (
-    <Card
-      padding={20}
-      style={{
-        borderColor: `color-mix(in oklch, ${colors[r]} 40%, var(--border))`,
-        background: `linear-gradient(180deg, color-mix(in oklch, ${colors[r]} ${isMe ? 20 : 12}%, var(--surface)) 0%, var(--surface) 70%)`,
-        textAlign: 'center',
-        height,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-end',
-        gap: 12,
-      }}
-    >
-      <div style={{ fontSize: 32 }}>{medal[r]}</div>
-      <Avatar name={entry.salesperson.name} size={56} />
-      <div>
-        <div className="display" style={{ fontSize: 17, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text)' }}>{entry.salesperson.name}</div>
-      </div>
-      <RankBadge rank={rankFromEnum(entry.salesperson.rank)} size={22} showLabel />
-      <div className="display mono" style={{ fontSize: 22, fontWeight: 700, color: colors[r] }}>{score.toLocaleString()}</div>
-    </Card>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Medal sits above the card, same distance for all positions */}
+      <div style={{ fontSize: 36, lineHeight: 1, marginBottom: 10 }}>{medal[r]}</div>
+      <Card
+        padding={20}
+        style={{
+          borderColor: `color-mix(in oklch, ${colors[r]} 40%, var(--border))`,
+          background: `linear-gradient(180deg, color-mix(in oklch, ${colors[r]} ${isMe ? 20 : 12}%, var(--surface)) 0%, var(--surface) 70%)`,
+          textAlign: 'center',
+          height,
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+          boxSizing: 'border-box',
+        }}
+      >
+        <Avatar name={entry.salesperson.name} size={52} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+          <div className="display" style={{ fontSize: 15, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text)', lineHeight: 1.2 }}>
+            {entry.salesperson.name}
+          </div>
+          <RankBadge rank={rankFromEnum(entry.salesperson.rank)} size={18} showLabel />
+        </div>
+        <div className="display mono" style={{ fontSize: 20, fontWeight: 700, color: colors[r], lineHeight: 1 }}>
+          {score.toLocaleString()}
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', marginLeft: 4 }}>pts</span>
+        </div>
+      </Card>
+    </div>
   );
 }
 
