@@ -56,7 +56,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   }, [user, params.id]);
 
   async function onStart() {
-    if (!challenge) return;
+    if (!challenge || isCompleted) return;
     setStarting(true);
     setError(null);
     try {
