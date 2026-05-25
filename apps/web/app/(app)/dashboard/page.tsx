@@ -30,17 +30,22 @@ export default function DashboardPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
 
+  // Refresh auth once on mount so totalPoints reflects the latest DB state.
+  // This is intentionally separate from the data-fetch effect: refresh() creates
+  // a new user object on every call, so putting it inside [user] would loop forever.
+  useEffect(() => { void refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let cancelled = false;
     setDataLoading(true);
 
     Promise.allSettled([
-      refresh(),
       api.challenges.list({ perPage: 4 }),
       api.leaderboards.list({ period: 'weekly', limit: 5 }),
       api.attempts.listMine(),
-    ]).then(([, cRes, lRes, aRes]) => {
+    ]).then(([cRes, lRes, aRes]) => {
       if (cancelled) return;
       if (cRes.status === 'fulfilled') setRecommended(cRes.value.items);
       if (lRes.status === 'fulfilled') setLeaderboard(lRes.value.entries);
@@ -52,7 +57,7 @@ export default function DashboardPage() {
     });
 
     return () => { cancelled = true; };
-  }, [user]);
+  }, [userId]);
 
   const activityData = useMemo(() => {
     const counts = new Array(182).fill(0);
