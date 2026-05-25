@@ -1,59 +1,70 @@
 #!/usr/bin/env bash
 # Closdex VPS deploy script
 # Run as root on 129.121.98.198:  bash /opt/closdex/infra/deploy.sh
-# First-time setup: see infra/SETUP.md
 
 set -euo pipefail
 
 DEPLOY_DIR=/opt/closdex
 ENV_FILE=$DEPLOY_DIR/.env
 
-# ── Sanity checks ────────────────────────────────────────────────────────────
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "ERROR: $ENV_FILE not found. Copy infra/env.example and fill in values."
+  echo "ERROR: $ENV_FILE not found."
   exit 1
 fi
 
 cd "$DEPLOY_DIR"
 
-# ── Pull latest code ─────────────────────────────────────────────────────────
+# ── Pull latest code ──────────────────────────────────────────────────────────
 echo "==> git pull"
 git pull --ff-only origin main
 
-# ── Install deps (before sourcing env so NODE_ENV=production doesn't skip devDeps) ──
+# ── Install deps (before sourcing env so devDeps aren't skipped) ─────────────
 echo "==> pnpm install"
-pnpm install --no-frozen-lockfile --ignore-scripts=false
+NODE_ENV=development pnpm install --no-frozen-lockfile
 
-# ── Load env (after install so devDeps are installed regardless of NODE_ENV) ─
+# ── Load env ──────────────────────────────────────────────────────────────────
 echo "==> Loading env"
 set -a; source "$ENV_FILE"; set +a
 
-# ── Prisma: generate client + run migrations ─────────────────────────────────
+# ── Prisma generate + migrate (pin to v5 to match schema format) ─────────────
 echo "==> prisma generate"
-cd packages/db && npx prisma generate && cd "$DEPLOY_DIR"
+cd "$DEPLOY_DIR/packages/db"
+npx --yes prisma@5 generate
 
 echo "==> prisma migrate deploy"
-cd packages/db && npx prisma migrate deploy && cd "$DEPLOY_DIR"
+npx --yes prisma@5 migrate deploy
 
-# ── Build API ────────────────────────────────────────────────────────────────
+cd "$DEPLOY_DIR"
+
+# ── Build API ─────────────────────────────────────────────────────────────────
 echo "==> Build API"
-pnpm --filter @closdex/api build
+cd "$DEPLOY_DIR/apps/api"
+node "$DEPLOY_DIR/node_modules/.bin/nest" build 2>/dev/null \
+  || node "$DEPLOY_DIR/apps/api/node_modules/.bin/nest" build 2>/dev/null \
+  || ./node_modules/.bin/nest build \
+  || npx --yes @nestjs/cli@10 build
 
-# ── Build web (CRITICAL: unset NEXT_PUBLIC_API_URL so rewrites are active) ───
+cd "$DEPLOY_DIR"
+
+# ── Build web (NEXT_PUBLIC_API_URL must NOT be set) ───────────────────────────
 echo "==> Build web"
 unset NEXT_PUBLIC_API_URL
-pnpm --filter @closdex/web build
+cd "$DEPLOY_DIR/apps/web"
+node "$DEPLOY_DIR/node_modules/.bin/next" build 2>/dev/null \
+  || npx --yes next@14 build
 
-# Copy public + static into standalone output
+# Copy static files into standalone
 cp -r "$DEPLOY_DIR/apps/web/public" "$DEPLOY_DIR/apps/web/.next/standalone/public" 2>/dev/null || true
 cp -r "$DEPLOY_DIR/apps/web/.next/static" "$DEPLOY_DIR/apps/web/.next/standalone/.next/static" 2>/dev/null || true
+
+cd "$DEPLOY_DIR"
 
 # ── Install + reload systemd services ────────────────────────────────────────
 echo "==> Installing systemd services"
 cp "$DEPLOY_DIR/infra/closdex-api.service" /etc/systemd/system/
 cp "$DEPLOY_DIR/infra/closdex-web.service" /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable closdex-api closdex-web
+systemctl enable closdex-api closdex-web 2>/dev/null || true
 
 echo "==> Restarting services"
 systemctl restart closdex-api
