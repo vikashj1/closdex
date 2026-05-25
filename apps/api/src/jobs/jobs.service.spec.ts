@@ -223,4 +223,111 @@ describe('JobsService', () => {
         .rejects.toBeInstanceOf(NotFoundException);
     });
   });
+
+  describe('saved jobs', () => {
+    const SP: AuthUser = { id: 'u-sp', email: 'sp@x.com', role: UserRole.SALESPERSON };
+
+    function makeSavedPrisma(sp: any, savedRows: any[] = []) {
+      return {
+        salespersonProfile: { findUnique: jest.fn().mockResolvedValue(sp) },
+        savedJob: {
+          upsert: jest.fn().mockResolvedValue({}),
+          deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+          findMany: jest.fn().mockResolvedValue(savedRows),
+        },
+        job: {
+          findUnique: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          create: jest.fn(),
+          update: jest.fn(),
+        },
+        companyMembership: { findUnique: jest.fn() },
+        $transaction: jest.fn(),
+      } as unknown as PrismaService;
+    }
+
+    describe('saveJob()', () => {
+      it('throws ForbiddenException when no salesperson profile', async () => {
+        const prisma = makeSavedPrisma(null);
+        const svc = new JobsService(prisma);
+        await expect(svc.saveJob(SP, 'job-1')).rejects.toBeInstanceOf(ForbiddenException);
+      });
+
+      it('calls savedJob.upsert with correct unique key when profile exists', async () => {
+        const sp = { id: 'sp-1' };
+        const prisma = makeSavedPrisma(sp);
+        const svc = new JobsService(prisma);
+        const result = await svc.saveJob(SP, 'job-1');
+        expect(prisma.savedJob.upsert).toHaveBeenCalledWith({
+          where: { jobId_salespersonId: { jobId: 'job-1', salespersonId: 'sp-1' } },
+          create: { jobId: 'job-1', salespersonId: 'sp-1' },
+          update: {},
+        });
+        expect(result).toEqual({ saved: true });
+      });
+    });
+
+    describe('unsaveJob()', () => {
+      it('throws ForbiddenException when no salesperson profile', async () => {
+        const prisma = makeSavedPrisma(null);
+        const svc = new JobsService(prisma);
+        await expect(svc.unsaveJob(SP, 'job-1')).rejects.toBeInstanceOf(ForbiddenException);
+      });
+
+      it('calls savedJob.deleteMany when profile exists', async () => {
+        const sp = { id: 'sp-1' };
+        const prisma = makeSavedPrisma(sp);
+        const svc = new JobsService(prisma);
+        const result = await svc.unsaveJob(SP, 'job-1');
+        expect(prisma.savedJob.deleteMany).toHaveBeenCalledWith({
+          where: { jobId: 'job-1', salespersonId: 'sp-1' },
+        });
+        expect(result).toEqual({ saved: false });
+      });
+    });
+
+    describe('savedJobIds()', () => {
+      it('returns [] when no profile', async () => {
+        const prisma = makeSavedPrisma(null);
+        const svc = new JobsService(prisma);
+        const result = await svc.savedJobIds(SP);
+        expect(result).toEqual([]);
+      });
+
+      it('returns array of jobId strings when profile exists', async () => {
+        const sp = { id: 'sp-1' };
+        const savedRows = [{ jobId: 'job-1' }, { jobId: 'job-2' }];
+        const prisma = makeSavedPrisma(sp, savedRows);
+        const svc = new JobsService(prisma);
+        const result = await svc.savedJobIds(SP);
+        expect(result).toEqual(['job-1', 'job-2']);
+      });
+    });
+
+    describe('listSaved()', () => {
+      it('returns [] when no profile', async () => {
+        const prisma = makeSavedPrisma(null);
+        const svc = new JobsService(prisma);
+        const result = await svc.listSaved(SP);
+        expect(result).toEqual([]);
+      });
+
+      it('maps saved.job into flat objects with savedAt', async () => {
+        const sp = { id: 'sp-1' };
+        const now = new Date();
+        const savedRows = [
+          {
+            createdAt: now,
+            job: { id: 'job-1', title: 'AE', company: { id: 'co-1', name: 'Acme' } },
+          },
+        ];
+        const prisma = makeSavedPrisma(sp, savedRows);
+        const svc = new JobsService(prisma);
+        const result = await svc.listSaved(SP);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({ id: 'job-1', title: 'AE', savedAt: now });
+      });
+    });
+  });
 });
