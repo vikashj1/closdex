@@ -7,7 +7,7 @@ import { Btn } from '@/components/ui/Btn';
 import { Avatar } from '@/components/ui/Avatar';
 import { DifficultyTag } from '@/components/ui/DifficultyTag';
 import { Icon } from '@/components/ui/Icon';
-import { ApiError, ChallengeSummary, api } from '@/lib/api';
+import { ApiError, AttemptDetail, ChallengeSummary, api } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 import { DIFFICULTY, difficultyFromEnum } from '@/lib/constants';
 
@@ -18,20 +18,40 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [bestAttempt, setBestAttempt] = useState<AttemptDetail | null>(null);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     setLoading(true);
-    api.challenges
-      .get(params.id)
-      .then((c) => { if (!cancelled) { setChallenge(c); setLoading(false); } })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : 'Could not load challenge.');
-          setLoading(false);
+    Promise.allSettled([
+      api.challenges.get(params.id),
+      api.attempts.listMine(),
+    ]).then(([cRes, aRes]) => {
+      if (cancelled) return;
+      if (cRes.status === 'fulfilled') setChallenge(cRes.value);
+      if (aRes.status === 'fulfilled') {
+        const mine: AttemptDetail[] = aRes.value;
+        const completed = mine.filter(
+          (a) => a.challenge.id === params.id && a.status === 'COMPLETED',
+        );
+        if (completed.length > 0) {
+          setIsCompleted(true);
+          // pick attempt with highest pointsAwarded
+          const best = completed.reduce((a, b) =>
+            (b.pointsAwarded ?? 0) > (a.pointsAwarded ?? 0) ? b : a,
+          );
+          setBestAttempt(best);
         }
-      });
+      }
+      setLoading(false);
+    }).catch((err: unknown) => {
+      if (!cancelled) {
+        setError(err instanceof ApiError ? err.message : 'Could not load challenge.');
+        setLoading(false);
+      }
+    });
     return () => { cancelled = true; };
   }, [user, params.id]);
 
@@ -216,13 +236,47 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
                 {error}
               </div>
             )}
-            <Btn kind="primary" full size="lg" icon={<Icon.bolt />} onClick={onStart} disabled={starting}>
-              {starting ? 'Starting…' : 'Start challenge'}
-            </Btn>
-            <Btn kind="ghost" full size="md" style={{ marginTop: 10 }}>Save for later</Btn>
-            <div style={{ fontSize: 11, color: 'var(--text-mute)', textAlign: 'center', marginTop: 12 }}>
-              Once started, abandoning costs −25 pts.
-            </div>
+            {isCompleted ? (
+              <>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  padding: '14px 0',
+                  borderRadius: 10,
+                  background: 'color-mix(in oklch, var(--emerald) 14%, transparent)',
+                  border: '1px solid color-mix(in oklch, var(--emerald) 35%, transparent)',
+                  color: 'var(--emerald)', fontSize: 14, fontWeight: 700,
+                  marginBottom: 10,
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Challenge completed
+                </div>
+                {bestAttempt && (
+                  <div style={{ fontSize: 12, color: 'var(--text-mute)', textAlign: 'center', marginBottom: 10 }}>
+                    Best score: <span style={{ color: 'var(--gold)', fontWeight: 700 }}>+{bestAttempt.pointsAwarded ?? 0} pts</span>
+                    {bestAttempt.score != null && ` · ${bestAttempt.score}/100`}
+                  </div>
+                )}
+                <Btn
+                  kind="ghost"
+                  full
+                  size="md"
+                  onClick={() => bestAttempt && router.push(`/challenges/${params.id}/result?attempt=${bestAttempt.id}`)}
+                >
+                  View result
+                </Btn>
+              </>
+            ) : (
+              <>
+                <Btn kind="primary" full size="lg" icon={<Icon.bolt />} onClick={onStart} disabled={starting}>
+                  {starting ? 'Starting…' : 'Start challenge'}
+                </Btn>
+                <div style={{ fontSize: 11, color: 'var(--text-mute)', textAlign: 'center', marginTop: 12 }}>
+                  Once started, abandoning costs −25 pts.
+                </div>
+              </>
+            )}
           </Card>
         </div>
       </div>
