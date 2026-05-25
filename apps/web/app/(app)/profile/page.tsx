@@ -190,10 +190,16 @@ export default function ProfilePage() {
               kind="primary"
               size="sm"
               onClick={() => {
-                navigator.clipboard.writeText(`https://closdex.in/u/${sp.publicSlug}`).then(() => {
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(`https://closdex.in/u/${sp.publicSlug}`).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  });
+                } else {
+                  // HTTP context — clipboard API requires HTTPS
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
-                });
+                }
               }}
             >
               {copied ? 'Link copied!' : 'Share profile'}

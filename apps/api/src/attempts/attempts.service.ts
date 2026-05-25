@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { AttemptStatus, ChallengeStatus, MessageSender, UserRole } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
@@ -81,11 +82,19 @@ export class AttemptsService {
       { sender: MessageSender.SALESPERSON, content },
     ];
 
-    const leadReply = await this.aiLead.respond({
-      personaName: attempt.challenge.persona.name,
-      personaPrompt: attempt.challenge.persona.personalityPrompt,
-      history: aiHistory,
-    });
+    let leadReply: string;
+    try {
+      leadReply = await this.aiLead.respond({
+        personaName: attempt.challenge.persona.name,
+        personaPrompt: attempt.challenge.persona.personalityPrompt,
+        history: aiHistory,
+      });
+    } catch (err) {
+      this.logger.error('AI lead failed to respond', err);
+      throw new ServiceUnavailableException(
+        'The AI lead is temporarily unavailable. Please try again in a moment.',
+      );
+    }
 
     const messagesUsed = attempt.messagesUsed + 1;
     const reachedCap = messagesUsed >= attempt.challenge.maxMessages;
