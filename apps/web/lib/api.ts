@@ -324,11 +324,15 @@ export interface TrackProgress {
 }
 
 export interface LeaderboardEntry {
-  rank: number;
-  userId: string;
-  name: string;
-  points: number;
-  rankBadge?: string;
+  position: number;
+  score: number;
+  salesperson: {
+    publicSlug: string;
+    name: string;
+    photoUrl: string | null;
+    rank: string;
+    totalPoints: number;
+  };
 }
 
 export interface NotificationItem {

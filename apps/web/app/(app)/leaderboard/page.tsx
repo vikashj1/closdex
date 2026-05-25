@@ -37,14 +37,15 @@ export default function LeaderboardPage() {
 
   if (authLoading) return null;
 
-  const top3Raw = entries.filter(e => e.rank <= 3);
+  const top3Raw = entries.filter(e => e.position <= 3);
   const podium: LeaderboardEntry[] = [
-    top3Raw.find(e => e.rank === 2),
-    top3Raw.find(e => e.rank === 1),
-    top3Raw.find(e => e.rank === 3),
+    top3Raw.find(e => e.position === 2),
+    top3Raw.find(e => e.position === 1),
+    top3Raw.find(e => e.position === 3),
   ].filter((e): e is LeaderboardEntry => !!e);
-  const rest = entries.filter(e => e.rank > 3);
-  const myEntry = entries.find(e => e.userId === user?.id);
+  const rest = entries.filter(e => e.position > 3);
+  const mySlug = user?.salesperson?.publicSlug;
+  const myEntry = entries.find(e => e.salesperson.publicSlug === mySlug);
 
   return (
     <div style={{ padding: '28px 32px' }}>
@@ -123,10 +124,10 @@ export default function LeaderboardPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: 16, alignItems: 'end', marginBottom: 24 }}>
               {podium.map((e) => (
                 <PodiumCard
-                  key={e.userId}
+                  key={e.salesperson.publicSlug}
                   entry={e}
-                  height={e.rank === 1 ? 240 : e.rank === 2 ? 200 : 180}
-                  isMe={e.userId === user?.id}
+                  height={e.position === 1 ? 240 : e.position === 2 ? 200 : 180}
+                  isMe={e.salesperson.publicSlug === mySlug}
                 />
               ))}
             </div>
@@ -150,10 +151,10 @@ export default function LeaderboardPage() {
                 <div>Rank</div><div>Salesperson</div><div>Tier</div><div>Points</div><div>Change</div>
               </div>
               {rest.map((entry) => {
-                const isMe = entry.userId === user?.id;
+                const isMe = entry.salesperson.publicSlug === mySlug;
                 return (
                   <div
-                    key={entry.userId}
+                    key={entry.salesperson.publicSlug}
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '60px 1fr 100px 130px 80px',
@@ -164,16 +165,16 @@ export default function LeaderboardPage() {
                     }}
                   >
                     <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text-mute)' }}>
-                      #{entry.rank}
+                      #{entry.position}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <Avatar name={entry.name} size={32} />
+                      <Avatar name={entry.salesperson.name} size={32} />
                       <div style={{ fontSize: 13.5, fontWeight: isMe ? 700 : 500, color: isMe ? 'var(--gold)' : 'var(--text)' }}>
-                        {entry.name}
+                        {entry.salesperson.name}
                       </div>
                     </div>
-                    <RankBadge rank={rankFromEnum(entry.rankBadge ?? 'ROOKIE')} size={18} showLabel />
-                    <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>{entry.points.toLocaleString()}</div>
+                    <RankBadge rank={rankFromEnum(entry.salesperson.rank)} size={18} showLabel />
+                    <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>{entry.score.toLocaleString()}</div>
                     <div />
                   </div>
                 );
@@ -181,7 +182,7 @@ export default function LeaderboardPage() {
             </Card>
           )}
 
-          {myEntry && myEntry.rank > 3 && (
+          {myEntry && myEntry.position > 3 && (
             <div style={{ position: 'sticky', bottom: 16, marginTop: 16 }}>
               <Card
                 padding={14}
@@ -193,13 +194,13 @@ export default function LeaderboardPage() {
                   background: 'color-mix(in oklch, var(--gold) 14%, var(--surface))',
                 }}
               >
-                <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>#{myEntry.rank}</div>
+                <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>#{myEntry.position}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Avatar name={myEntry.name} size={32} />
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>You · {myEntry.name}</div>
+                  <Avatar name={myEntry.salesperson.name} size={32} />
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>You · {myEntry.salesperson.name}</div>
                 </div>
-                <RankBadge rank={rankFromEnum(myEntry.rankBadge ?? 'ROOKIE')} size={18} showLabel />
-                <div className="mono" style={{ fontSize: 13.5, fontWeight: 700 }}>{myEntry.points.toLocaleString()}</div>
+                <RankBadge rank={rankFromEnum(myEntry.salesperson.rank)} size={18} showLabel />
+                <div className="mono" style={{ fontSize: 13.5, fontWeight: 700 }}>{myEntry.score.toLocaleString()}</div>
                 <div />
               </Card>
             </div>
@@ -211,7 +212,7 @@ export default function LeaderboardPage() {
 }
 
 function PodiumCard({ entry, height, isMe }: { entry: LeaderboardEntry; height: number; isMe: boolean }) {
-  const r = entry.rank as 1 | 2 | 3;
+  const r = entry.position as 1 | 2 | 3;
   const colors: Record<1 | 2 | 3, string> = {
     1: 'var(--r-gold)',
     2: 'var(--r-silver)',
@@ -233,12 +234,12 @@ function PodiumCard({ entry, height, isMe }: { entry: LeaderboardEntry; height: 
       }}
     >
       <div style={{ fontSize: 32 }}>{medal[r]}</div>
-      <Avatar name={entry.name} size={56} />
+      <Avatar name={entry.salesperson.name} size={56} />
       <div>
-        <div className="display" style={{ fontSize: 17, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text)' }}>{entry.name}</div>
+        <div className="display" style={{ fontSize: 17, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text)' }}>{entry.salesperson.name}</div>
       </div>
-      <RankBadge rank={rankFromEnum(entry.rankBadge ?? 'ROOKIE')} size={22} showLabel />
-      <div className="display mono" style={{ fontSize: 22, fontWeight: 700, color: colors[r] }}>{entry.points.toLocaleString()}</div>
+      <RankBadge rank={rankFromEnum(entry.salesperson.rank)} size={22} showLabel />
+      <div className="display mono" style={{ fontSize: 22, fontWeight: 700, color: colors[r] }}>{entry.score.toLocaleString()}</div>
     </Card>
   );
 }

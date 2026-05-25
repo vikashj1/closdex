@@ -227,10 +227,10 @@ export default function DashboardPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {leaderboard.map((row) => {
-                const isMe = row.userId === user.id;
+                const isMe = row.salesperson.publicSlug === user.salesperson?.publicSlug;
                 return (
                   <div
-                    key={row.userId}
+                    key={row.salesperson.publicSlug}
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '28px 1fr auto',
@@ -242,15 +242,15 @@ export default function DashboardPage() {
                     }}
                   >
                     <div className="mono" style={{ fontSize: 12, fontWeight: 600, color: isMe ? 'var(--gold)' : 'var(--text-mute)' }}>
-                      #{row.rank}
+                      #{row.position}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Avatar name={row.name} size={22} />
+                      <Avatar name={row.salesperson.name} size={22} />
                       <span style={{ fontSize: 12.5, fontWeight: isMe ? 700 : 500, color: isMe ? 'var(--gold)' : 'var(--text)' }}>
-                        {isMe ? `You (${row.name})` : row.name}
+                        {isMe ? `You (${row.salesperson.name})` : row.salesperson.name}
                       </span>
                     </div>
-                    <span className="mono" style={{ fontSize: 12, fontWeight: 600 }}>{row.points.toLocaleString()}</span>
+                    <span className="mono" style={{ fontSize: 12, fontWeight: 600 }}>{row.score.toLocaleString()}</span>
                   </div>
                 );
               })}
