@@ -529,6 +529,8 @@ export const api = {
       ),
     getBySlug: (slug: string) =>
       request<TalentDetail>('GET', `/talent/${encodeURIComponent(slug)}`),
+    getPublicBySlug: (slug: string) =>
+      request<TalentDetail>('GET', `/talent/public/${encodeURIComponent(slug)}`),
     myViewers: () => request<ProfileViewItem[]>('GET', '/talent/me/viewers'),
   },
 

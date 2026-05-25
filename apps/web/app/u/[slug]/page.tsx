@@ -27,7 +27,7 @@ export default function PublicProfilePage() {
     setNotFound(false);
 
     api.talent
-      .getBySlug(slug)
+      .getPublicBySlug(slug)
       .then((data) => setTalent(data))
       .catch((err) => {
         if (err instanceof ApiError && err.status === 404) {
@@ -113,7 +113,7 @@ export default function PublicProfilePage() {
 
   const rankName = rankFromEnum(talent.rank);
   const rankVar = `var(--r-${talent.rank.toLowerCase()})`;
-  const winPct = Math.round(talent._stats.winRate * 100);
+  const winPct = talent._stats.winRate;
   const heatSeed = talent.totalPoints % 200;
 
   return (
