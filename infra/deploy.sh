@@ -14,25 +14,26 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-echo "==> Loading env"
-set -a; source "$ENV_FILE"; set +a
-
 cd "$DEPLOY_DIR"
 
 # ── Pull latest code ─────────────────────────────────────────────────────────
 echo "==> git pull"
 git pull --ff-only origin main
 
-# ── Install deps ─────────────────────────────────────────────────────────────
+# ── Install deps (before sourcing env so NODE_ENV=production doesn't skip devDeps) ──
 echo "==> pnpm install"
-pnpm install --no-frozen-lockfile
+pnpm install --no-frozen-lockfile --ignore-scripts=false
+
+# ── Load env (after install so devDeps are installed regardless of NODE_ENV) ─
+echo "==> Loading env"
+set -a; source "$ENV_FILE"; set +a
 
 # ── Prisma: generate client + run migrations ─────────────────────────────────
 echo "==> prisma generate"
-pnpm --filter @closdex/db generate
+cd packages/db && npx prisma generate && cd "$DEPLOY_DIR"
 
 echo "==> prisma migrate deploy"
-pnpm --filter @closdex/db exec prisma migrate deploy
+cd packages/db && npx prisma migrate deploy && cd "$DEPLOY_DIR"
 
 # ── Build API ────────────────────────────────────────────────────────────────
 echo "==> Build API"
@@ -44,10 +45,16 @@ unset NEXT_PUBLIC_API_URL
 pnpm --filter @closdex/web build
 
 # Copy public + static into standalone output
-cp -r "$DEPLOY_DIR/apps/web/public" "$DEPLOY_DIR/apps/web/.next/standalone/public"
-cp -r "$DEPLOY_DIR/apps/web/.next/static" "$DEPLOY_DIR/apps/web/.next/standalone/.next/static"
+cp -r "$DEPLOY_DIR/apps/web/public" "$DEPLOY_DIR/apps/web/.next/standalone/public" 2>/dev/null || true
+cp -r "$DEPLOY_DIR/apps/web/.next/static" "$DEPLOY_DIR/apps/web/.next/standalone/.next/static" 2>/dev/null || true
 
-# ── Restart services ─────────────────────────────────────────────────────────
+# ── Install + reload systemd services ────────────────────────────────────────
+echo "==> Installing systemd services"
+cp "$DEPLOY_DIR/infra/closdex-api.service" /etc/systemd/system/
+cp "$DEPLOY_DIR/infra/closdex-web.service" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable closdex-api closdex-web
+
 echo "==> Restarting services"
 systemctl restart closdex-api
 systemctl restart closdex-web
