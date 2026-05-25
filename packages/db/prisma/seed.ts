@@ -225,7 +225,7 @@ async function main() {
       basePoints: 50,
       maxMessages: 10,
       estimatedMinutes: 5,
-      attemptsAllowed: null,
+      attemptsAllowed: undefined,
       status: 'PUBLISHED',
       personaId: anjali.id,
     },
@@ -283,7 +283,7 @@ async function main() {
       about: DEMO_COMPANY.about,
       website: DEMO_COMPANY.website,
       verification: VerificationStatus.VERIFIED,
-      memberships: {
+      members: {
         create: { userId: companyAdmin.id, companyRole: CompanyRole.ADMIN },
       },
     },
