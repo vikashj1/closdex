@@ -2,7 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useState } from 'react';
 import { api, ApiError, AttemptDetail, EarnedBadge, MeResponse, ProfileViewItem } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth, useRequireAuth } from '@/lib/auth';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
 import { Btn } from '@/components/ui/Btn';
@@ -26,6 +26,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function ProfilePage() {
+  const { refresh } = useAuth();
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
   const [attempts, setAttempts] = useState<AttemptDetail[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(true);
@@ -52,6 +53,7 @@ export default function ProfilePage() {
   }, [user]);
 
   useEffect(() => {
+    void refresh();
     api.attempts.listMine()
       .then(setAttempts)
       .catch(() => {})
@@ -131,7 +133,7 @@ export default function ProfilePage() {
 
   const subtitleParts: string[] = [];
   if (sp.experienceYears != null) subtitleParts.push(`${sp.experienceYears} yrs exp`);
-  if (user.salesperson?.location) subtitleParts.push(user.salesperson.location);
+  if (user.location) subtitleParts.push(user.location);
   if (tagsDisplay) subtitleParts.push(tagsDisplay);
 
   return (
@@ -396,7 +398,7 @@ export default function ProfilePage() {
                       </span>
                     }
                   />
-                  {sp.location && <Row k="Location" v={sp.location} />}
+                  {user.location && <Row k="Location" v={user.location} />}
                   {sp.experienceYears != null && <Row k="Experience" v={`${sp.experienceYears} years`} />}
                   {sp.expectedCtc && <Row k="Expected CTC" v={sp.expectedCtc} />}
                   {sp.noticePeriodDays != null && <Row k="Notice period" v={`${sp.noticePeriodDays} days`} />}
