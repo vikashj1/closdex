@@ -92,12 +92,15 @@ LLM_MODEL=meta/llama-3.1-8b-instruct
 - NIM API key was posted publicly — **rotation required**
 - Email delivery credentials (SES/Sendgrid) not yet configured
 
-## Slice history (slices 1–41 committed on `main`)
+## Slice history (slices 1–44 committed on `main`)
 
-All UI pages complete through slice 40. Full test coverage at slice 41 (439 specs, 26 suites).
+All UI pages complete through slice 44. Full test coverage at slice 41 (439 specs, 26 suites).
 No remaining "coming soon" placeholders — all features shipped.
 
 - Slice 38: Config edit UI (inline editing for all 5 scoring config tables + goal types)
 - Slice 39: Badges system (NestJS module, admin UI, profile display, 6 demo badges in seed)
 - Slice 40: Profile viewer tracking (ProfileView schema, auto-record on talent fetch, profile page display)
 - Slice 41: Tests for BadgesService (15 specs) + ProfileViewsService (13 specs)
+- Slice 42: Job lifecycle management — pause/close/repost + edit page (company/jobs)
+- Slice 43: Admin learning content management — tracks, tutorials, quizzes CRUD UI
+- Slice 44: Invoice actions on hires page — issue/void/mark-paid inline buttons
