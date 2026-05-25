@@ -20,7 +20,7 @@ git pull --ff-only origin main
 
 # ── Install deps (before sourcing env so devDeps aren't skipped) ─────────────
 echo "==> pnpm install"
-NODE_ENV=development pnpm install --no-frozen-lockfile
+CI=true NODE_ENV=development pnpm install --no-frozen-lockfile
 
 # ── Load env ──────────────────────────────────────────────────────────────────
 echo "==> Loading env"
