@@ -21,6 +21,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { id: 'home',        label: 'Home',        icon: <Icon.home />,      path: '/dashboard' },
   { id: 'challenges',  label: 'Challenges',  icon: <Icon.bolt />,      path: '/challenges',  prefix: '/challenges' },
+  { id: 'attempts',   label: 'My Attempts', icon: <Icon.clock />,     path: '/attempts',    prefix: '/attempts' },
   { id: 'leaderboard', label: 'Leaderboard', icon: <Icon.trophy />,    path: '/leaderboard' },
   { id: 'learn',       label: 'Learn',       icon: <Icon.book />,      path: '/learn',       prefix: '/learn' },
   { id: 'jobs',          label: 'Jobs',          icon: <Icon.briefcase />, path: '/jobs' },
