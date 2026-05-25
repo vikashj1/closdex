@@ -47,9 +47,18 @@ export default function DashboardPage() {
       api.attempts.listMine(),
     ]).then(([cRes, lRes, aRes]) => {
       if (cancelled) return;
-      if (cRes.status === 'fulfilled') setRecommended(cRes.value.items);
       if (lRes.status === 'fulfilled') setLeaderboard(lRes.value.entries);
-      if (aRes.status === 'fulfilled') setAttempts(aRes.value);
+      const myAttempts = aRes.status === 'fulfilled' ? aRes.value : [];
+      if (aRes.status === 'fulfilled') setAttempts(myAttempts);
+      if (cRes.status === 'fulfilled') {
+        const doneIds = new Set(
+          myAttempts.filter((a) => a.status === 'COMPLETED').map((a) => a.challenge.id),
+        );
+        // Show uncompleted first; pad with completed if fewer than 4 remain
+        const uncompleted = cRes.value.items.filter((c) => !doneIds.has(c.id));
+        const completed = cRes.value.items.filter((c) => doneIds.has(c.id));
+        setRecommended([...uncompleted, ...completed].slice(0, 4));
+      }
       if (cRes.status === 'rejected' && lRes.status === 'rejected') {
         setDataError('Could not reach the API. Showing your profile only.');
       }
