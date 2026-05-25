@@ -5,7 +5,7 @@ Wants=closdex-api.service
 
 [Service]
 Type=simple
-User=closdex
+User=root
 WorkingDirectory=/opt/closdex/apps/web
 # NEXT_PUBLIC_API_URL must NOT be set here — Next.js rewrites proxy /api/* to localhost:4000
 Environment="NODE_ENV=production"

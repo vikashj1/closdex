@@ -5,7 +5,7 @@ Wants=postgresql.service redis.service
 
 [Service]
 Type=simple
-User=closdex
+User=root
 WorkingDirectory=/opt/closdex/apps/api
 EnvironmentFile=/opt/closdex/.env
 ExecStart=/usr/bin/node dist/main.js
