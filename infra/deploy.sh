@@ -49,9 +49,9 @@ unset NEXT_PUBLIC_API_URL
 cd "$DEPLOY_DIR/apps/web"
 pnpm run build
 
-# Copy static files into standalone
-cp -r "$DEPLOY_DIR/apps/web/public" "$DEPLOY_DIR/apps/web/.next/standalone/public" 2>/dev/null || true
-cp -r "$DEPLOY_DIR/apps/web/.next/static" "$DEPLOY_DIR/apps/web/.next/standalone/.next/static" 2>/dev/null || true
+# Copy static files into standalone (monorepo: server.js lives at standalone/apps/web/)
+cp -r "$DEPLOY_DIR/apps/web/public" "$DEPLOY_DIR/apps/web/.next/standalone/apps/web/public" 2>/dev/null || true
+cp -r "$DEPLOY_DIR/apps/web/.next/static" "$DEPLOY_DIR/apps/web/.next/standalone/apps/web/.next/static" 2>/dev/null || true
 
 cd "$DEPLOY_DIR"
 
