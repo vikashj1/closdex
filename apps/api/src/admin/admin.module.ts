@@ -8,11 +8,13 @@ import { VerificationService } from './verification.service';
 import { VerificationController } from './verification.controller';
 import { ConfigService } from './config.service';
 import { ConfigController } from './config.controller';
+import { StatsService } from './stats.service';
+import { StatsController } from './stats.controller';
 
 @Module({
   imports: [LeaderboardsModule],
-  providers: [AuditService, DisputesService, VerificationService, ConfigService],
-  controllers: [DisputesController, VerificationController, ConfigController, AuditController],
+  providers: [AuditService, DisputesService, VerificationService, ConfigService, StatsService],
+  controllers: [DisputesController, VerificationController, ConfigController, AuditController, StatsController],
   exports: [AuditService],
 })
 export class AdminModule {}

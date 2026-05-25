@@ -376,6 +376,15 @@ export interface ProfileViewItem {
   viewerPhotoUrl: string | null;
 }
 
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'SALESPERSON' | 'COMPANY' | 'ADMIN';
+  createdAt: string;
+  salesperson?: { totalPoints: number; rank: string } | null;
+}
+
 export interface AuditLogEntry {
   id: string;
   action: string;
@@ -690,6 +699,18 @@ export const api = {
       updateDimension: (id: string, dto: Record<string, unknown>) =>
         request<unknown>('PATCH', `/admin/config/rubric-dimensions/${id}`, { body: dto }),
     },
+    stats: () =>
+      request<{
+        users: { salespersons: number; companies: number; admins: number };
+        challenges: { total: number; published: number };
+        attempts: { total: number; thisWeek: number; completedThisWeek: number };
+      }>('GET', '/admin/stats'),
+    users: (query: { role?: string; search?: string; page?: number; perPage?: number } = {}) =>
+      request<{ items: AdminUser[]; total: number; page: number; perPage: number }>(
+        'GET', '/admin/users', { query },
+      ),
+    updateUserRole: (id: string, role: string) =>
+      request<{ id: string; role: string }>('PATCH', `/admin/users/${id}/role`, { body: { role } }),
   },
 
   notifications: {

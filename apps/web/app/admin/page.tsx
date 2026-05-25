@@ -5,6 +5,12 @@ import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { api, AuditLogEntry, VerificationCompany, DisputeSummary } from '@/lib/api';
 
+type PlatformStats = {
+  users: { salespersons: number; companies: number; admins: number };
+  challenges: { total: number; published: number };
+  attempts: { total: number; thisWeek: number; completedThisWeek: number };
+};
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 function timeAgo(dateStr: string): string {
@@ -33,33 +39,30 @@ export default function AdminOverviewPage() {
   const [pendingVerifications, setPendingVerifications] = useState<VerificationCompany[]>([]);
   const [auditEntries, setAuditEntries] = useState<AuditLogEntry[]>([]);
   const [auditTotal, setAuditTotal] = useState<number | null>(null);
+  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [disputesResult, verificationResult, auditResult] = await Promise.allSettled([
+    const [disputesResult, verificationResult, auditResult, statsResult] = await Promise.allSettled([
       api.admin.disputes.list({ perPage: 5 }),
       api.admin.verification.listPending(),
       api.admin.audit.list({ perPage: 5 }),
+      api.admin.stats(),
     ]);
 
     if (disputesResult.status === 'fulfilled') {
       const open = disputesResult.value.items.filter(
         (d: DisputeSummary) => d.status === 'OPEN',
       ).length;
-      // Use total if all were open, else approximate with count
       setOpenDisputes(disputesResult.value.total > 5 ? disputesResult.value.total : open);
     }
-
-    if (verificationResult.status === 'fulfilled') {
-      setPendingVerifications(verificationResult.value);
-    }
-
+    if (verificationResult.status === 'fulfilled') setPendingVerifications(verificationResult.value);
     if (auditResult.status === 'fulfilled') {
       setAuditEntries(auditResult.value.items);
       setAuditTotal(auditResult.value.total);
     }
-
+    if (statsResult.status === 'fulfilled') setPlatformStats(statsResult.value);
     setLoading(false);
   };
 
@@ -101,30 +104,19 @@ export default function AdminOverviewPage() {
         <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-mute)' }}>{TODAY}</p>
       </div>
 
-      {/* Stats strip */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 16,
-          marginBottom: 32,
-        }}
-      >
-        <StatCard
-          label="Open Disputes"
-          value={loading ? '—' : String(openDisputes ?? 0)}
-          accent="var(--d-expert)"
-        />
-        <StatCard
-          label="Pending Verifications"
-          value={loading ? '—' : String(pendingVerifications.length)}
-          accent="var(--gold)"
-        />
-        <StatCard
-          label="Total Audit Entries"
-          value={loading ? '—' : String(auditTotal ?? 0)}
-          accent="var(--cool)"
-        />
+      {/* Platform KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+        <StatCard label="Salespersons"    value={loading ? '—' : String(platformStats?.users.salespersons ?? 0)} accent="var(--gold)" />
+        <StatCard label="Companies"       value={loading ? '—' : String(platformStats?.users.companies ?? 0)}    accent="var(--cool)" />
+        <StatCard label="Challenges Live" value={loading ? '—' : String(platformStats?.challenges.published ?? 0)} accent="var(--emerald)" />
+        <StatCard label="Attempts / week" value={loading ? '—' : String(platformStats?.attempts.thisWeek ?? 0)}  accent="var(--r-gold)" />
+      </div>
+
+      {/* Action items strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 32 }}>
+        <StatCard label="Open Disputes"        value={loading ? '—' : String(openDisputes ?? 0)}              accent="var(--d-expert)" />
+        <StatCard label="Pending Verifications" value={loading ? '—' : String(pendingVerifications.length)}   accent="var(--gold)" />
+        <StatCard label="Total Audit Entries"  value={loading ? '—' : String(auditTotal ?? 0)}                accent="var(--text-dim)" />
       </div>
 
       {/* Two-column body */}
