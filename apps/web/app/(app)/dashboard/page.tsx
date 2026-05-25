@@ -43,7 +43,7 @@ export default function DashboardPage() {
 
     Promise.allSettled([
       api.challenges.list({ perPage: 4 }),
-      api.leaderboards.list({ period: 'weekly', limit: 5 }),
+      api.leaderboards.list({ period: 'all-time', limit: 5 }),
       api.attempts.listMine(),
     ]).then(([cRes, lRes, aRes]) => {
       if (cancelled) return;
@@ -226,7 +226,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card padding={20}>
-          <h3 className="display" style={{ fontSize: 16, margin: '0 0 16px', fontWeight: 600 }}>Weekly leaderboard</h3>
+          <h3 className="display" style={{ fontSize: 16, margin: '0 0 16px', fontWeight: 600 }}>Leaderboard</h3>
           {dataLoading ? (
             <div style={EMPTY_HINT}>Loading…</div>
           ) : leaderboard.length === 0 ? (
@@ -257,7 +257,7 @@ export default function DashboardPage() {
                         {isMe ? `You (${row.salesperson.name})` : row.salesperson.name}
                       </span>
                     </div>
-                    <span className="mono" style={{ fontSize: 12, fontWeight: 600 }}>{row.score.toLocaleString()}</span>
+                    <span className="mono" style={{ fontSize: 12, fontWeight: 600 }}>{row.salesperson.totalPoints.toLocaleString()}</span>
                   </div>
                 );
               })}
