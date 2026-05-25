@@ -55,8 +55,26 @@ export default function CompanyJobsPage() {
   const [items, setItems] = useState<JobSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const companyId = user?.companyMemberships?.[0]?.companyId;
+
+  function reload() {
+    if (!companyId) return;
+    setLoading(true);
+    setError(null);
+    api.jobs
+      .list({ companyId, perPage: 100 })
+      .then((res) => {
+        setItems(res.items);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof ApiError ? err.message : 'Could not load jobs.');
+        setLoading(false);
+      });
+  }
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -81,6 +99,19 @@ export default function CompanyJobsPage() {
       });
     return () => { cancelled = true; };
   }, [authLoading, user, companyId]);
+
+  async function doAction(jobId: string, action: 'publish' | 'pause' | 'close' | 'repost') {
+    setActionBusy(jobId + ':' + action);
+    setActionError(null);
+    try {
+      await api.jobs[action](jobId);
+      reload();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : `Failed to ${action} job.`);
+    } finally {
+      setActionBusy(null);
+    }
+  }
 
   if (authLoading) {
     return (
@@ -114,6 +145,33 @@ export default function CompanyJobsPage() {
           Post new role
         </Btn>
       </div>
+
+      {/* Action error */}
+      {actionError && (
+        <div
+          style={{
+            padding: '10px 14px',
+            borderRadius: 8,
+            background: 'color-mix(in oklch, var(--r-master) 12%, transparent)',
+            border: '1px solid color-mix(in oklch, var(--r-master) 30%, transparent)',
+            color: 'var(--text-dim)',
+            fontSize: 13,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>{actionError}</span>
+          <button
+            onClick={() => setActionError(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: 16, lineHeight: 1 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -195,7 +253,7 @@ export default function CompanyJobsPage() {
                 </div>
 
                 {/* Right: actions + meta */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
                   <Btn
                     kind="ghost"
                     size="sm"
@@ -203,6 +261,58 @@ export default function CompanyJobsPage() {
                   >
                     View applicants
                   </Btn>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {job.status === 'DRAFT' && (
+                      <Btn
+                        kind="ghost"
+                        size="sm"
+                        disabled={actionBusy === job.id + ':publish'}
+                        onClick={() => doAction(job.id, 'publish')}
+                        style={{ color: 'var(--emerald)', borderColor: 'var(--emerald)' }}
+                      >
+                        {actionBusy === job.id + ':publish' ? 'Publishing…' : 'Publish'}
+                      </Btn>
+                    )}
+                    {(job.status === 'PUBLISHED' || job.status === 'ACTIVE' || job.status === 'LIVE') && (
+                      <>
+                        <Btn
+                          kind="ghost"
+                          size="sm"
+                          disabled={actionBusy === job.id + ':pause'}
+                          onClick={() => doAction(job.id, 'pause')}
+                        >
+                          {actionBusy === job.id + ':pause' ? 'Pausing…' : 'Pause'}
+                        </Btn>
+                        <Btn
+                          kind="ghost"
+                          size="sm"
+                          disabled={actionBusy === job.id + ':close'}
+                          onClick={() => doAction(job.id, 'close')}
+                          style={{ color: 'var(--text-mute)' }}
+                        >
+                          {actionBusy === job.id + ':close' ? 'Closing…' : 'Close'}
+                        </Btn>
+                      </>
+                    )}
+                    {(job.status === 'PAUSED' || job.status === 'CLOSED') && (
+                      <Btn
+                        kind="ghost"
+                        size="sm"
+                        disabled={actionBusy === job.id + ':repost'}
+                        onClick={() => doAction(job.id, 'repost')}
+                        style={{ color: 'var(--cool)' }}
+                      >
+                        {actionBusy === job.id + ':repost' ? 'Reposting…' : 'Repost'}
+                      </Btn>
+                    )}
+                    <Btn
+                      kind="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/company/jobs/${job.id}/edit`)}
+                    >
+                      Edit
+                    </Btn>
+                  </div>
                   {job.postedAt && (
                     <span style={{ fontSize: 11.5, color: 'var(--text-mute)' }}>
                       Posted {relativeTime(job.postedAt)}

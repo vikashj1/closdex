@@ -465,6 +465,18 @@ export const api = {
       experienceMax?: number;
     }) => request<JobSummary>('POST', '/jobs', { body: dto }),
     publish: (id: string) => request<JobSummary>('POST', `/jobs/${id}/publish`),
+    pause: (id: string) => request<JobSummary>('POST', `/jobs/${id}/pause`),
+    close: (id: string) => request<JobSummary>('POST', `/jobs/${id}/close`),
+    repost: (id: string) => request<JobSummary>('POST', `/jobs/${id}/repost`),
+    update: (id: string, dto: {
+      title?: string;
+      location?: string;
+      salaryMin?: number;
+      salaryMax?: number;
+      experienceMinYears?: number;
+      minRank?: string;
+      specializationTag?: string;
+    }) => request<JobSummary>('PATCH', `/jobs/${id}`, { body: dto }),
     listApplications: (id: string) =>
       request<Array<{ id: string; status: string; salesperson: { id: string; publicSlug: string; rank: string; totalPoints: number; user: { name: string } } }>>(
         'GET', `/jobs/${id}/applications`,
