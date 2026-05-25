@@ -212,6 +212,15 @@ export interface TalentSummary {
   user: { name: string };
 }
 
+export interface EarnedBadge {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  awardedAt: string;
+}
+
 export interface TalentDetail {
   id: string;
   publicSlug: string;
@@ -224,6 +233,7 @@ export interface TalentDetail {
   currentStreakDays: number;
   resumeUrl?: string | null;
   user: { name: string; photoUrl?: string | null; location?: string | null };
+  badges: EarnedBadge[];
   _stats: { totalAttempts: number; completedAttempts: number; winRate: number };
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { api, ApiError, TalentDetail } from '@/lib/api';
+import { api, ApiError, EarnedBadge, TalentDetail } from '@/lib/api';
 import { rankFromEnum } from '@/lib/constants';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
@@ -231,6 +231,40 @@ export default function PublicProfilePage() {
             sub={talent.currentStreakDays > 0 ? 'current streak' : undefined}
           />
         </Card>
+
+        {/* Badges */}
+        {talent.badges.length > 0 && (
+          <Card padding={22} style={{ marginTop: 18 }}>
+            <h3 className="display" style={{ fontSize: 15, margin: '0 0 16px', fontWeight: 600 }}>
+              Achievements
+            </h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {talent.badges.map((b: EarnedBadge) => (
+                <div
+                  key={b.id}
+                  title={`${b.name} — ${b.description}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 14px',
+                    borderRadius: 10,
+                    background: 'color-mix(in oklch, var(--gold) 10%, var(--bg-2))',
+                    border: '1px solid color-mix(in oklch, var(--gold) 25%, var(--border-soft))',
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>{b.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--gold)' }}>{b.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>
+                      {new Date(b.awardedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Two-column lower section */}
         <div

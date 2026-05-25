@@ -23,6 +23,7 @@ const NAV: NavItem[] = [
   { id: 'shortlist', label: 'Shortlists',      icon: <Icon.target />,    path: '/company/shortlists', count: 12 },
   { id: 'hires',     label: 'Hires & Billing', icon: <Icon.trophy />,    path: '/company/hires' },
   { id: 'profile',   label: 'Company Profile', icon: <Icon.user />,      path: '/company/profile' },
+  { id: 'settings',  label: 'Settings',        icon: <Icon.settings />,  path: '/company/settings' },
 ];
 
 export function CompanyShell({ children }: { children: ReactNode }) {

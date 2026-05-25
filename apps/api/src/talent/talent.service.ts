@@ -97,6 +97,10 @@ export class TalentService {
           where: { status: { in: ['COMPLETED', 'IN_PROGRESS'] } },
           select: { status: true, goalAchieved: true },
         },
+        badges: {
+          include: { badge: true },
+          orderBy: { awardedAt: 'desc' },
+        },
       },
     });
 
@@ -106,9 +110,10 @@ export class TalentService {
     const wins = completed.filter((a) => a.goalAchieved === true);
     const winRate = completed.length > 0 ? Math.round((wins.length / completed.length) * 100) : 0;
 
-    const { attempts, ...rest } = profile;
+    const { attempts, badges, ...rest } = profile;
     return {
       ...rest,
+      badges: badges.map((ub) => ({ ...ub.badge, awardedAt: ub.awardedAt })),
       _stats: {
         totalAttempts: profile.attempts.length,
         completedAttempts: completed.length,
