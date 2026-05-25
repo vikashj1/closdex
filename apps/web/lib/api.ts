@@ -531,6 +531,8 @@ export const api = {
       ),
     updateStatus: (id: string, status: string) =>
       request<{ id: string; status: string }>('PATCH', `/applications/${id}`, { body: { status } }),
+    hire: (id: string, annualCtc: number, commissionRate: number) =>
+      request<{ id: string }>('POST', `/applications/${id}/hire`, { body: { annualCtc, commissionRate } }),
   },
 
   talent: {

@@ -61,6 +61,10 @@ export default function JobApplicationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [hireModal, setHireModal] = useState<{ appId: string; name: string } | null>(null);
+  const [ctcLpa, setCtcLpa] = useState('');
+  const [commissionPct, setCommissionPct] = useState('10');
+  const [hiring, setHiring] = useState(false);
 
   function load(cancelled?: { current: boolean }) {
     if (!jobId) return;
@@ -86,6 +90,13 @@ export default function JobApplicationsPage() {
   }, [user, jobId]);
 
   async function advance(appId: string, nextStatus: string) {
+    if (nextStatus === 'HIRED') {
+      const app = applications.find((a) => a.id === appId);
+      setHireModal({ appId, name: app?.salesperson.user.name ?? '' });
+      setCtcLpa('');
+      setCommissionPct('10');
+      return;
+    }
     setBusy(appId + ':' + nextStatus);
     setActionError(null);
     try {
@@ -95,6 +106,24 @@ export default function JobApplicationsPage() {
       setActionError(err instanceof ApiError ? err.message : 'Status update failed.');
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function confirmHire() {
+    if (!hireModal) return;
+    const ctc = Math.round(parseFloat(ctcLpa) * 100000);
+    const rate = parseFloat(commissionPct) / 100;
+    if (!ctc || ctc < 1 || rate < 0.10 || rate > 0.15) return;
+    setHiring(true);
+    setActionError(null);
+    try {
+      await api.applications.hire(hireModal.appId, ctc, rate);
+      setApplications(prev => prev.map(a => a.id === hireModal.appId ? { ...a, status: 'HIRED' } : a));
+      setHireModal(null);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Hire failed.');
+    } finally {
+      setHiring(false);
     }
   }
 
@@ -231,6 +260,91 @@ export default function JobApplicationsPage() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Hire modal */}
+      {hireModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--bg)', border: '1px solid var(--border)',
+            borderRadius: 14, padding: 28, width: 380, boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+          }}>
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Confirm Hire</h3>
+              <p style={{ fontSize: 12.5, color: 'var(--text-mute)', margin: 0 }}>
+                Hiring {hireModal.name} — enter CTC to create a placement record and draft invoice.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                  Annual CTC (LPA)
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.5"
+                  value={ctcLpa}
+                  onChange={(e) => setCtcLpa(e.target.value)}
+                  placeholder="e.g. 12"
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '9px 12px', borderRadius: 8,
+                    border: '1px solid var(--border)', background: 'var(--bg-2)',
+                    color: 'var(--text)', fontSize: 13,
+                  }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                  Commission Rate (10–15%)
+                </div>
+                <input
+                  type="number"
+                  min="10"
+                  max="15"
+                  step="0.5"
+                  value={commissionPct}
+                  onChange={(e) => setCommissionPct(e.target.value)}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '9px 12px', borderRadius: 8,
+                    border: '1px solid var(--border)', background: 'var(--bg-2)',
+                    color: 'var(--text)', fontSize: 13,
+                  }}
+                />
+                {ctcLpa && commissionPct && (
+                  <div style={{ fontSize: 11.5, color: 'var(--text-mute)', marginTop: 6 }}>
+                    Commission: ₹{((parseFloat(ctcLpa) * parseFloat(commissionPct) / 100) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} LPA
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {actionError && (
+              <div style={{ padding: '8px 12px', borderRadius: 8, marginBottom: 14, fontSize: 12.5, color: 'var(--r-master)', background: 'color-mix(in oklch, var(--r-master) 10%, transparent)', border: '1px solid color-mix(in oklch, var(--r-master) 25%, transparent)' }}>
+                {actionError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Btn kind="ghost" size="sm" onClick={() => setHireModal(null)} disabled={hiring}>Cancel</Btn>
+              <Btn
+                kind="success"
+                size="sm"
+                disabled={hiring || !ctcLpa || parseFloat(ctcLpa) <= 0 || parseFloat(commissionPct) < 10 || parseFloat(commissionPct) > 15}
+                onClick={confirmHire}
+              >
+                {hiring ? 'Hiring…' : 'Confirm Hire'}
+              </Btn>
+            </div>
+          </div>
         </div>
       )}
     </div>
