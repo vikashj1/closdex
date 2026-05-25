@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
+import { useAuth } from '@/lib/auth';
 
 interface NavItem {
   id: string;
@@ -27,6 +28,12 @@ const NAV: NavItem[] = [
 export function CompanyShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() || '';
+  const { user } = useAuth();
+
+  const companyName = user?.companyMemberships?.[0]?.company?.name ?? '';
+  const displayRole = user?.companyMemberships?.[0]?.companyRole
+    ? (user.companyMemberships[0].companyRole.charAt(0) + user.companyMemberships[0].companyRole.slice(1).toLowerCase())
+    : 'Member';
 
   const isActive = (n: NavItem) =>
     n.prefix ? pathname.startsWith(n.prefix) : pathname === n.path;
@@ -168,12 +175,18 @@ export function CompanyShell({ children }: { children: ReactNode }) {
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)' }}>
+            <button
+              onClick={() => router.push('/company/notifications')}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+              title="Notifications"
+            >
               <Icon.bell />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 10px 4px 4px', background: 'var(--bg-2)', borderRadius: 999, border: '1px solid var(--border)' }}>
-              <Avatar name="Anika Verma" size={28} color="oklch(0.55 0.14 220)" />
-              <span style={{ fontSize: 12.5, fontWeight: 600 }}>Anika · Recruiter</span>
+              <Avatar name={user?.name ?? companyName ?? 'Co'} size={28} color="oklch(0.55 0.14 220)" />
+              <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                {user?.name?.split(' ')[0] ?? 'User'} · {displayRole}
+              </span>
             </div>
           </div>
         </div>
