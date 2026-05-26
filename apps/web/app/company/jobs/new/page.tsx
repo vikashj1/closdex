@@ -16,10 +16,12 @@ import { Stat } from '@/components/ui/Stat';
 const RANK_OPTIONS: RankName[] = ['Rookie', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master'];
 const SPEC_SUGGESTIONS = ['IT Sales', 'Cloud', 'DevTools', 'Cybersec', 'SaaS', 'FinTech', 'Healthcare'];
 
-const TIERS = [
-  { name: 'Basic',    price: 'Included',  desc: 'Standard placement in jobs feed. Filtered by rank match only.',           apps: '8-15 / week' },
-  { name: 'Featured', price: '₹2,499/wk', desc: 'Pinned to top of jobs feed for 7 days. Spotlight badge.',                 apps: '30-50 / week', best: true },
-  { name: 'Premium',  price: '₹9,999/wk', desc: 'Featured + Email blast to matched salespersons + Talent reports.',        apps: '60-100 / week' },
+type Tier = 'BASIC' | 'FEATURED' | 'PREMIUM';
+
+const TIERS: { value: Tier; name: string; price: string; desc: string; apps: string; best?: boolean }[] = [
+  { value: 'BASIC',    name: 'Basic',    price: 'Included',  desc: 'Standard placement in jobs feed. Filtered by rank match only.',           apps: '8-15 / week' },
+  { value: 'FEATURED', name: 'Featured', price: '₹2,499/wk', desc: 'Pinned to top of jobs feed for 7 days. Spotlight badge.',                 apps: '30-50 / week', best: true },
+  { value: 'PREMIUM',  name: 'Premium',  price: '₹9,999/wk', desc: 'Featured + Email blast to matched salespersons + Talent reports.',        apps: '60-100 / week' },
 ];
 
 interface FormState {
@@ -32,6 +34,7 @@ interface FormState {
   specializationTag: string;
   requiredSkillsRaw: string;
   experienceMinYears: string;
+  listingTier: Tier;
 }
 
 const EMPTY: FormState = {
@@ -44,6 +47,7 @@ const EMPTY: FormState = {
   specializationTag: '',
   requiredSkillsRaw: '',
   experienceMinYears: '',
+  listingTier: 'BASIC',
 };
 
 export default function JobPostPage() {
@@ -93,6 +97,7 @@ export default function JobPostPage() {
         salaryMin: form.salaryMinLpa ? Math.round(Number(form.salaryMinLpa) * 100000) : undefined,
         salaryMax: form.salaryMaxLpa ? Math.round(Number(form.salaryMaxLpa) * 100000) : undefined,
         minRank: form.minRank.toUpperCase(),
+        listingTier: form.listingTier,
       };
 
       const newJob = await api.jobs.create(dto);
@@ -299,39 +304,54 @@ export default function JobPostPage() {
             </div>
           </Card>
 
-          {/* Listing tiers — visual only */}
+          {/* Listing tiers */}
           <Card padding={22}>
-            <h3 className="display" style={{ fontSize: 14, margin: '0 0 14px', fontWeight: 700 }}>Listing tiers</h3>
+            <h3 className="display" style={{ fontSize: 14, margin: '0 0 14px', fontWeight: 700 }}>Listing tier</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {TIERS.map((t) => (
-                <div
-                  key={t.name}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 10,
-                    borderColor: t.best ? 'var(--cool)' : 'var(--border-soft)',
-                    borderWidth: 1,
-                    borderStyle: 'solid',
-                    background: t.best
-                      ? 'color-mix(in oklch, var(--cool) 8%, var(--surface))'
-                      : 'var(--surface)',
-                  }}
-                >
-                  {t.best && (
-                    <div style={{ fontSize: 10, color: 'var(--cool)', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>
-                      RECOMMENDED
+              {TIERS.map((t) => {
+                const selected = form.listingTier === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => set('listingTier', t.value)}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      borderColor: selected ? 'var(--cool)' : t.best ? 'color-mix(in oklch, var(--cool) 45%, var(--border-soft))' : 'var(--border-soft)',
+                      borderWidth: selected ? 2 : 1,
+                      borderStyle: 'solid',
+                      background: selected
+                        ? 'color-mix(in oklch, var(--cool) 12%, var(--surface))'
+                        : t.best
+                          ? 'color-mix(in oklch, var(--cool) 5%, var(--surface))'
+                          : 'var(--surface)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                    }}
+                  >
+                    {t.best && !selected && (
+                      <div style={{ fontSize: 10, color: 'var(--cool)', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>
+                        RECOMMENDED
+                      </div>
+                    )}
+                    {selected && (
+                      <div style={{ fontSize: 10, color: 'var(--cool)', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>
+                        ✓ SELECTED
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                      <span className="display" style={{ fontSize: 14, fontWeight: 700 }}>{t.name}</span>
+                      <span className="mono" style={{ fontSize: 14, fontWeight: 700, color: 'var(--cool)' }}>{t.price}</span>
                     </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                    <span className="display" style={{ fontSize: 14, fontWeight: 700 }}>{t.name}</span>
-                    <span className="mono" style={{ fontSize: 14, fontWeight: 700, color: 'var(--cool)' }}>{t.price}</span>
-                  </div>
-                  <p style={{ fontSize: 11.5, color: 'var(--text-dim)', margin: '0 0 6px', lineHeight: 1.5 }}>{t.desc}</p>
-                  <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>
-                    Est. applicants: <strong style={{ color: 'var(--text)' }}>{t.apps}</strong>
-                  </div>
-                </div>
-              ))}
+                    <p style={{ fontSize: 11.5, color: 'var(--text-dim)', margin: '0 0 6px', lineHeight: 1.5 }}>{t.desc}</p>
+                    <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>
+                      Est. applicants: <strong style={{ color: 'var(--text)' }}>{t.apps}</strong>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </Card>
 

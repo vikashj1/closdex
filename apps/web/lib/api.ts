@@ -499,6 +499,7 @@ export const api = {
       salaryMax?: number;
       minRank?: string;
       companyId?: string;
+      listingTier?: string;
     }) => request<JobSummary>('POST', '/jobs', { body: dto }),
     publish: (id: string) => request<JobSummary>('POST', `/jobs/${id}/publish`),
     pause: (id: string) => request<JobSummary>('POST', `/jobs/${id}/pause`),
