@@ -43,6 +43,8 @@ export default function ChallengesPage() {
   const [error, setError] = useState<string | null>(null);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [pageLoaded, setPageLoaded] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Load completed challenge IDs once on mount (independent of diff filter)
   useEffect(() => {
@@ -60,11 +62,13 @@ export default function ChallengesPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setPageLoaded(1);
     api.challenges
       .list({
         difficulty: diff === 'All' ? undefined : UI_TO_ENUM[diff],
         goalType: goalFilter || undefined,
         perPage: 30,
+        page: 1,
       })
       .then((res) => {
         if (cancelled) return;
@@ -79,6 +83,26 @@ export default function ChallengesPage() {
       });
     return () => { cancelled = true; };
   }, [user, diff, goalFilter]);
+
+  async function loadMore() {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const nextPage = pageLoaded + 1;
+    try {
+      const res = await api.challenges.list({
+        difficulty: diff === 'All' ? undefined : UI_TO_ENUM[diff],
+        goalType: goalFilter || undefined,
+        perPage: 30,
+        page: nextPage,
+      });
+      setItems((prev) => [...prev, ...res.items]);
+      setPageLoaded(nextPage);
+    } catch {
+      // non-critical — user can retry
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const displayed = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -328,6 +352,19 @@ export default function ChallengesPage() {
                 </Card>
               );
             })}
+          </div>
+        )}
+
+        {/* Load more */}
+        {!loading && !searchQuery && items.length < total && (
+          <div style={{ textAlign: 'center', marginTop: 28 }}>
+            <Btn
+              kind="secondary"
+              size="md"
+              onClick={loadMore}
+            >
+              {loadingMore ? 'Loading…' : `Load more (${total - items.length} remaining)`}
+            </Btn>
           </div>
         )}
       </div>
