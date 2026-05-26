@@ -1,12 +1,13 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { TopBar } from './TopBar';
 import { useAuth } from '@/lib/auth';
+import { api } from '@/lib/api';
 
 interface NavItem {
   id: string;
@@ -16,20 +17,21 @@ interface NavItem {
   /** Active when the URL starts with this prefix. Defaults to exact `path` match. */
   prefix?: string;
   soon?: boolean;
+  count?: number;
 }
 
-const NAV: NavItem[] = [
-  { id: 'home',        label: 'Home',        icon: <Icon.home />,      path: '/dashboard' },
-  { id: 'challenges',  label: 'Challenges',  icon: <Icon.bolt />,      path: '/challenges',  prefix: '/challenges' },
-  { id: 'attempts',   label: 'My Attempts', icon: <Icon.clock />,     path: '/attempts',    prefix: '/attempts' },
-  { id: 'leaderboard', label: 'Leaderboard', icon: <Icon.trophy />,    path: '/leaderboard' },
-  { id: 'learn',       label: 'Learn',       icon: <Icon.book />,      path: '/learn',       prefix: '/learn' },
-  { id: 'disputes',      label: 'My Disputes',   icon: <Icon.flag />,      path: '/disputes',    prefix: '/disputes' },
+const BASE_NAV: NavItem[] = [
+  { id: 'home',          label: 'Home',          icon: <Icon.home />,      path: '/dashboard' },
+  { id: 'challenges',    label: 'Challenges',    icon: <Icon.bolt />,      path: '/challenges',    prefix: '/challenges' },
+  { id: 'attempts',      label: 'My Attempts',   icon: <Icon.clock />,     path: '/attempts',      prefix: '/attempts' },
+  { id: 'leaderboard',   label: 'Leaderboard',   icon: <Icon.trophy />,    path: '/leaderboard' },
+  { id: 'learn',         label: 'Learn',         icon: <Icon.book />,      path: '/learn',         prefix: '/learn' },
+  { id: 'disputes',      label: 'My Disputes',   icon: <Icon.flag />,      path: '/disputes',      prefix: '/disputes' },
   { id: 'jobs',          label: 'Jobs',          icon: <Icon.briefcase />, path: '/jobs' },
   { id: 'applications',  label: 'Applications',  icon: <Icon.fileText />,  path: '/applications' },
-  { id: 'notifications', label: 'Notifications', icon: <Icon.bell />,      path: '/notifications' },
+  { id: 'notifications', label: 'Notifications', icon: <Icon.bell />,      path: '/notifications', prefix: '/notifications' },
   { id: 'profile',       label: 'Profile',       icon: <Icon.user />,      path: '/profile' },
-  { id: 'settings',    label: 'Settings',    icon: <Icon.settings />,  path: '/settings' },
+  { id: 'settings',      label: 'Settings',      icon: <Icon.settings />,  path: '/settings' },
 ];
 
 /** Sidebar + topbar shell for authenticated salesperson screens. Lives in
@@ -39,6 +41,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() || '';
   const { user } = useAuth();
   const streak = user?.salesperson?.currentStreakDays ?? 0;
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    api.notifications.listMine(true).then((r) => setUnreadCount(r.items.length)).catch(() => {});
+  }, [user]);
+
+  const NAV: NavItem[] = BASE_NAV.map((n) =>
+    n.id === 'notifications' && unreadCount > 0 ? { ...n, count: unreadCount } : n,
+  );
 
   const isActive = (n: NavItem) =>
     n.prefix ? pathname.startsWith(n.prefix) : pathname === n.path;
@@ -100,6 +112,28 @@ export function AppShell({ children }: { children: ReactNode }) {
                   SOON
                 </span>
               )}
+              {!n.soon && n.count ? (
+                <span
+                  style={{
+                    marginLeft: 'auto',
+                    fontSize: 9,
+                    fontWeight: 700,
+                    minWidth: 16,
+                    height: 16,
+                    padding: '0 4px',
+                    borderRadius: 999,
+                    background: 'var(--d-expert)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {n.count > 9 ? '9+' : n.count}
+                </span>
+              ) : null}
             </button>
           );
         })}
