@@ -156,7 +156,13 @@ export default function DashboardPage() {
           <Stat label="Total points" value={points.toLocaleString()} accent="var(--text)" icon={<Icon.bolt />} />
           <Stat label="This week"    value={weeklyPoints > 0 ? `+${weeklyPoints.toLocaleString()}` : '—'} sub="last 7 days" accent="var(--emerald)" icon={<Icon.trend />} />
           <Stat label="Challenges"  value={String(attempts.filter(a => a.status === 'COMPLETED').length)} sub="completed" accent="var(--gold)" icon={<Icon.fire />} />
-          <Stat label="Open to work" value={profile?.openToWork ? 'Yes' : 'No'} icon={<Icon.trophy />} />
+          <Stat
+            label="Day streak"
+            value={profile?.currentStreakDays ? `${profile.currentStreakDays}d` : '—'}
+            sub={profile?.currentStreakDays ? 'keep it going' : 'complete a challenge'}
+            accent={profile?.currentStreakDays ? 'var(--d-expert)' : 'var(--text-mute)'}
+            icon={<Icon.fire />}
+          />
         </div>
         {next && (
           <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid var(--border-soft)' }}>

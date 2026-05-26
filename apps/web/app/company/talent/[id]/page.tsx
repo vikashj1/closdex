@@ -280,7 +280,7 @@ export default function CandidateProfilePage() {
               )}
             </div>
             <Btn kind="primary" size="md" style={{ background: 'var(--cool)', color: 'white' }} onClick={() => setShortlistOpen(true)}>
-              Contact
+              Add to shortlist
             </Btn>
           </div>
         </div>
@@ -381,7 +381,7 @@ export default function CandidateProfilePage() {
                   color: 'var(--text-dim)',
                 }}
               >
-                Contact details unlock when you shortlist or message this candidate.
+                Shortlist this candidate to save them to a list and share with your team.
               </div>
             </Card>
           </div>
