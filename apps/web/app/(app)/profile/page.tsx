@@ -49,6 +49,7 @@ export default function ProfilePage() {
       setOpenToWork(user.salesperson.openToWork);
       setEditExp(user.salesperson.experienceYears != null ? String(user.salesperson.experienceYears) : '');
       setEditTags(user.salesperson.specializationTags ?? []);
+      setEditResume(user.salesperson.resumeUrl ?? '');
     }
   }, [user]);
 
@@ -401,6 +402,21 @@ export default function ProfilePage() {
                   {sp.noticePeriodDays != null && <Row k="Notice period" v={`${sp.noticePeriodDays} days`} />}
                   {sp.specializationTags.length > 0 && (
                     <Row k="Specialization" v={sp.specializationTags.join(', ')} />
+                  )}
+                  {sp.resumeUrl && (
+                    <Row
+                      k="Resume / portfolio"
+                      v={
+                        <a
+                          href={sp.resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--cool)', textDecoration: 'none', fontSize: 12.5 }}
+                        >
+                          {sp.resumeUrl.length > 40 ? `${sp.resumeUrl.slice(0, 40)}…` : sp.resumeUrl} ↗
+                        </a>
+                      }
+                    />
                   )}
                   {!sp.experienceYears && !sp.specializationTags.length && (
                     <div style={{ fontSize: 12, color: 'var(--text-mute)', fontStyle: 'italic' }}>
