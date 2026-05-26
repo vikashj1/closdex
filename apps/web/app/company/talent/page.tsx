@@ -25,12 +25,15 @@ export default function TalentSearchPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pageLoaded, setPageLoaded] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setPageLoaded(1);
     api.talent
       .search({
         minRank: minRank.toUpperCase(),
@@ -38,6 +41,7 @@ export default function TalentSearchPage() {
         location: locationFilter || undefined,
         minExperienceYears: minExp ? Number(minExp) : undefined,
         perPage: 30,
+        page: 1,
       })
       .then((res) => {
         if (cancelled) return;
@@ -52,6 +56,26 @@ export default function TalentSearchPage() {
       });
     return () => { cancelled = true; };
   }, [user, minRank, openOnly, locationFilter, minExp]);
+
+  async function loadMore() {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const nextPage = pageLoaded + 1;
+    try {
+      const res = await api.talent.search({
+        minRank: minRank.toUpperCase(),
+        openToWork: openOnly || undefined,
+        location: locationFilter || undefined,
+        minExperienceYears: minExp ? Number(minExp) : undefined,
+        perPage: 30,
+        page: nextPage,
+      });
+      setItems((prev) => [...prev, ...res.items]);
+      setPageLoaded(nextPage);
+    } catch { /* silently ignore */ } finally {
+      setLoadingMore(false);
+    }
+  }
 
   if (authLoading || !user) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
@@ -254,6 +278,14 @@ export default function TalentSearchPage() {
                 </Card>
               );
             })}
+
+            {items.length < total && (
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
+                <Btn kind="ghost" size="sm" disabled={loadingMore} onClick={loadMore}>
+                  {loadingMore ? 'Loading…' : `Load more (${total - items.length} remaining)`}
+                </Btn>
+              </div>
+            )}
           </div>
         )}
       </div>
