@@ -133,6 +133,26 @@ describe('TalentService', () => {
       expect(capturedWhere().specializationTags).toBeUndefined();
     });
 
+    it("13b. search = 'Alice' → user.name.contains = 'Alice' (insensitive)", async () => {
+      await service.search(companyViewer, { search: 'Alice' });
+      expect(capturedWhere().user).toEqual({
+        name: { contains: 'Alice', mode: 'insensitive' },
+      });
+    });
+
+    it("13c. search + location combined → user filter contains both name and location", async () => {
+      await service.search(companyViewer, { search: 'Alice', location: 'Mumbai' });
+      expect(capturedWhere().user).toEqual({
+        name: { contains: 'Alice', mode: 'insensitive' },
+        location: { contains: 'Mumbai', mode: 'insensitive' },
+      });
+    });
+
+    it('13d. empty search string → user.name filter NOT added', async () => {
+      await service.search(companyViewer, { search: '' });
+      expect(capturedWhere().user).toBeUndefined();
+    });
+
     it('14. all filters combined → all where conditions present simultaneously', async () => {
       await service.search(companyViewer, {
         minRank: Rank.SILVER,
