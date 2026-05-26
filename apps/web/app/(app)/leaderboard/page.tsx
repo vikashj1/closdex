@@ -69,11 +69,6 @@ export default function LeaderboardPage() {
             <option value="FinTech">FinTech</option>
             <option value="Healthcare">Healthcare</option>
           </select>
-          <select style={SELECT_STYLE}>
-            <option>All India</option>
-            <option>Bangalore</option>
-            <option>Mumbai</option>
-          </select>
         </div>
       </div>
 

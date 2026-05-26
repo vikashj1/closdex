@@ -33,6 +33,7 @@ export default function AttemptsPage() {
   const [attempts, setAttempts] = useState<AttemptDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -41,10 +42,12 @@ export default function AttemptsPage() {
       .catch(() => setLoading(false));
   }, [user]);
 
-  const filtered = useMemo(() =>
-    statusFilter === 'ALL' ? attempts : attempts.filter((a) => a.status === statusFilter),
-    [attempts, statusFilter],
-  );
+  const filtered = useMemo(() => {
+    let result = statusFilter === 'ALL' ? attempts : attempts.filter((a) => a.status === statusFilter);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) result = result.filter((a) => a.challenge.title.toLowerCase().includes(q));
+    return result;
+  }, [attempts, statusFilter, searchQuery]);
 
   const stats = useMemo(() => ({
     total: attempts.length,
@@ -86,6 +89,29 @@ export default function AttemptsPage() {
         ))}
       </div>
 
+      {/* Search */}
+      <div style={{ position: 'relative', maxWidth: 360, marginBottom: 14 }}>
+        <input
+          type="text"
+          placeholder="Search by challenge title…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%', padding: '8px 30px 8px 12px', borderRadius: 8,
+            background: 'var(--bg-2)', border: '1px solid var(--border)',
+            fontSize: 13, color: 'var(--text)', boxSizing: 'border-box',
+          }}
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', padding: 0 }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        )}
+      </div>
+
       {/* Status filter tabs */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 18, borderBottom: '1px solid var(--border-soft)' }}>
         {STATUS_FILTERS.map(({ key, label }) => (
@@ -115,7 +141,11 @@ export default function AttemptsPage() {
         <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-mute)' }}>Loading…</div>
       ) : filtered.length === 0 ? (
         <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-mute)' }}>
-          {statusFilter === 'ALL' ? 'No attempts yet. Start a challenge!' : `No ${statusFilter.toLowerCase().replace('_', ' ')} attempts.`}
+          {searchQuery
+            ? `No attempts match "${searchQuery}".`
+            : statusFilter === 'ALL'
+              ? 'No attempts yet. Start a challenge!'
+              : `No ${statusFilter.toLowerCase().replace('_', ' ')} attempts.`}
         </div>
       ) : (
         <Card padding={0}>
