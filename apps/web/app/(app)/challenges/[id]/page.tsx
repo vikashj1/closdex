@@ -19,6 +19,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [completedCount, setCompletedCount] = useState(0);
   const [bestAttempt, setBestAttempt] = useState<AttemptDetail | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
         );
         if (completed.length > 0) {
           setIsCompleted(true);
+          setCompletedCount(completed.length);
           // pick attempt with highest pointsAwarded
           const best = completed.reduce((a, b) =>
             (b.pointsAwarded ?? 0) > (a.pointsAwarded ?? 0) ? b : a,
@@ -55,8 +57,12 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
     return () => { cancelled = true; };
   }, [user, params.id]);
 
+  const canRetry = challenge
+    ? !challenge.attemptsAllowed || completedCount < challenge.attemptsAllowed
+    : false;
+
   async function onStart() {
-    if (!challenge || isCompleted) return;
+    if (!challenge || (isCompleted && !canRetry)) return;
     setStarting(true);
     setError(null);
     try {
@@ -266,6 +272,30 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
                 >
                   View result
                 </Btn>
+                {canRetry ? (
+                  <>
+                    <Btn
+                      kind="primary"
+                      full
+                      size="md"
+                      icon={<Icon.bolt />}
+                      onClick={onStart}
+                      disabled={starting}
+                      style={{ marginTop: 8 }}
+                    >
+                      {starting ? 'Starting…' : 'Try again'}
+                    </Btn>
+                    <div style={{ fontSize: 11, color: 'var(--text-mute)', textAlign: 'center', marginTop: 8 }}>
+                      {challenge?.attemptsAllowed
+                        ? `${challenge.attemptsAllowed - completedCount} attempt${challenge.attemptsAllowed - completedCount === 1 ? '' : 's'} remaining`
+                        : 'Unlimited attempts'}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 11.5, color: 'var(--text-mute)', textAlign: 'center', marginTop: 10 }}>
+                    Max attempts reached
+                  </div>
+                )}
               </>
             ) : (
               <>
