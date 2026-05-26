@@ -1,7 +1,7 @@
 'use client';
 
 import { CSSProperties, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Chip } from '@/components/ui/Chip';
@@ -34,6 +34,7 @@ const UI_TO_ENUM: Record<DifficultyLevel, string> = {
 
 export default function ChallengesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
   const [diff, setDiff] = useState<DiffFilter>('All');
   const [goalFilter, setGoalFilter] = useState('');
@@ -42,7 +43,7 @@ export default function ChallengesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') ?? '');
   const [pageLoaded, setPageLoaded] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
 

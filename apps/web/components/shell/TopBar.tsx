@@ -12,6 +12,7 @@ import { rankFromEnum } from '@/lib/constants';
 export function TopBar() {
   const router = useRouter();
   const { user } = useAuth();
+  const [topbarSearch, setTopbarSearch] = useState('');
   const [notifs, setNotifs] = useState<NotificationItem[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
@@ -71,7 +72,15 @@ export function TopBar() {
           <Icon.search />
         </span>
         <input
-          placeholder="Search challenges, companies, salespersons…"
+          value={topbarSearch}
+          onChange={(e) => setTopbarSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && topbarSearch.trim()) {
+              router.push(`/challenges?q=${encodeURIComponent(topbarSearch.trim())}`);
+              setTopbarSearch('');
+            }
+          }}
+          placeholder="Search challenges… (Enter)"
           style={{
             width: '100%',
             padding: '9px 12px 9px 36px',
@@ -80,6 +89,7 @@ export function TopBar() {
             border: '1px solid var(--border)',
             fontSize: 13,
             color: 'var(--text)',
+            outline: 'none',
           }}
         />
       </div>
