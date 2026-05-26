@@ -279,7 +279,7 @@ export default function CandidateProfilePage() {
                 </div>
               )}
             </div>
-            <Btn kind="primary" size="md" style={{ background: 'var(--cool)', color: 'white' }}>
+            <Btn kind="primary" size="md" style={{ background: 'var(--cool)', color: 'white' }} onClick={() => setShortlistOpen(true)}>
               Contact
             </Btn>
           </div>
