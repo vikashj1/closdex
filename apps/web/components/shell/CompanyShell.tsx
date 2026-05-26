@@ -17,14 +17,15 @@ interface NavItem {
   count?: number;
 }
 
-const NAV: NavItem[] = [
-  { id: 'home',      label: 'Home',            icon: <Icon.home />,      path: '/company' },
-  { id: 'talent',    label: 'Talent Search',   icon: <Icon.search />,    path: '/company/talent',     prefix: '/company/talent' },
-  { id: 'jobs',      label: 'Job Postings',    icon: <Icon.briefcase />, path: '/company/jobs',       prefix: '/company/jobs' },
-  { id: 'shortlist', label: 'Shortlists',      icon: <Icon.target />,    path: '/company/shortlists' },
-  { id: 'hires',     label: 'Hires & Billing', icon: <Icon.trophy />,    path: '/company/hires' },
-  { id: 'profile',   label: 'Company Profile', icon: <Icon.user />,      path: '/company/profile' },
-  { id: 'settings',  label: 'Settings',        icon: <Icon.settings />,  path: '/company/settings' },
+const BASE_NAV: NavItem[] = [
+  { id: 'home',          label: 'Home',            icon: <Icon.home />,      path: '/company' },
+  { id: 'talent',        label: 'Talent Search',   icon: <Icon.search />,    path: '/company/talent',        prefix: '/company/talent' },
+  { id: 'jobs',          label: 'Job Postings',    icon: <Icon.briefcase />, path: '/company/jobs',          prefix: '/company/jobs' },
+  { id: 'shortlist',     label: 'Shortlists',      icon: <Icon.target />,    path: '/company/shortlists' },
+  { id: 'hires',         label: 'Hires & Billing', icon: <Icon.trophy />,    path: '/company/hires' },
+  { id: 'notifications', label: 'Notifications',   icon: <Icon.bell />,      path: '/company/notifications', prefix: '/company/notifications' },
+  { id: 'profile',       label: 'Company Profile', icon: <Icon.user />,      path: '/company/profile' },
+  { id: 'settings',      label: 'Settings',        icon: <Icon.settings />,  path: '/company/settings' },
 ];
 
 export function CompanyShell({ children }: { children: ReactNode }) {
@@ -43,6 +44,10 @@ export function CompanyShell({ children }: { children: ReactNode }) {
   const displayRole = user?.companyMemberships?.[0]?.companyRole
     ? (user.companyMemberships[0].companyRole.charAt(0) + user.companyMemberships[0].companyRole.slice(1).toLowerCase())
     : 'Member';
+
+  const NAV: NavItem[] = BASE_NAV.map((n) =>
+    n.id === 'notifications' && unreadCount > 0 ? { ...n, count: unreadCount } : n,
+  );
 
   const isActive = (n: NavItem) =>
     n.prefix ? pathname.startsWith(n.prefix) : pathname === n.path;
@@ -129,20 +134,28 @@ export function CompanyShell({ children }: { children: ReactNode }) {
             >
               {n.icon}
               {n.label}
-              {n.count && (
+              {n.count ? (
                 <span
                   style={{
                     marginLeft: 'auto',
-                    fontSize: 10,
-                    padding: '1px 6px',
-                    borderRadius: 4,
-                    background: 'var(--surface-2)',
-                    color: 'var(--text-dim)',
+                    fontSize: 9,
+                    fontWeight: 700,
+                    minWidth: 16,
+                    height: 16,
+                    padding: '0 4px',
+                    borderRadius: 999,
+                    background: 'var(--d-expert)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                    boxSizing: 'border-box',
                   }}
                 >
-                  {n.count}
+                  {n.count > 9 ? '9+' : n.count}
                 </span>
-              )}
+              ) : null}
             </button>
           );
         })}
