@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -30,6 +30,14 @@ function extractDims(rubricScores: Record<string, number> | null | undefined): R
 }
 
 export default function ResultPage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense fallback={<div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading result…</div>}>
+      <ResultPageInner params={params} />
+    </Suspense>
+  );
+}
+
+function ResultPageInner({ params }: { params: { id: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const attemptId = searchParams.get('attempt');

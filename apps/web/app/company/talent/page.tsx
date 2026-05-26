@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, useEffect, useRef, useState } from 'react';
+import { CSSProperties, Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -15,6 +15,14 @@ import { rankFromEnum, type RankName } from '@/lib/constants';
 const RANK_OPTIONS: RankName[] = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master'];
 
 export default function TalentSearchPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>}>
+      <TalentSearchPageInner />
+    </Suspense>
+  );
+}
+
+function TalentSearchPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useRequireAuth('COMPANY');

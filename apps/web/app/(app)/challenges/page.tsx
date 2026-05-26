@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, useEffect, useMemo, useState } from 'react';
+import { CSSProperties, Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -33,6 +33,14 @@ const UI_TO_ENUM: Record<DifficultyLevel, string> = {
 };
 
 export default function ChallengesPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>}>
+      <ChallengesPageInner />
+    </Suspense>
+  );
+}
+
+function ChallengesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
