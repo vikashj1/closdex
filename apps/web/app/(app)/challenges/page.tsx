@@ -43,11 +43,12 @@ export default function ChallengesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [inProgressMap, setInProgressMap] = useState<Map<string, string>>(new Map()); // challengeId → attemptId
   const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') ?? '');
   const [pageLoaded, setPageLoaded] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Load completed challenge IDs once on mount (independent of diff filter)
+  // Load attempt state once on mount (independent of diff filter)
   useEffect(() => {
     if (!user) return;
     api.attempts.listMine().then((attempts: AttemptDetail[]) => {
@@ -55,6 +56,11 @@ export default function ChallengesPage() {
         attempts.filter((a) => a.status === 'COMPLETED').map((a) => a.challenge.id),
       );
       setCompletedIds(done);
+      const ipMap = new Map<string, string>();
+      attempts
+        .filter((a) => a.status === 'IN_PROGRESS')
+        .forEach((a) => ipMap.set(a.challenge.id, a.id));
+      setInProgressMap(ipMap);
     }).catch(() => {}); // non-critical
   }, [user]);
 
@@ -281,20 +287,33 @@ export default function ChallengesPage() {
             {displayed.map((c) => {
               const level = difficultyFromEnum(c.difficulty);
               const done = completedIds.has(c.id);
+              const inProgressId = inProgressMap.get(c.id);
               return (
                 <Card
                   key={c.id}
                   hover
                   onClick={() => router.push(`/challenges/${c.id}`)}
                   padding={0}
-                  style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', opacity: done ? 0.82 : 1 }}
+                  style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', opacity: done && !inProgressId ? 0.82 : 1 }}
                 >
-                  <div style={{ height: 4, background: done ? 'var(--emerald)' : DIFFICULTY[level].color }} />
+                  <div style={{ height: 4, background: inProgressId ? 'var(--cool)' : done ? 'var(--emerald)' : DIFFICULTY[level].color }} />
                   <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <DifficultyTag level={level} size="sm" />
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {done && (
+                        {inProgressId && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 10.5, fontWeight: 700, color: 'var(--cool)',
+                            background: 'color-mix(in oklch, var(--cool) 14%, transparent)',
+                            border: '1px solid color-mix(in oklch, var(--cool) 35%, transparent)',
+                            padding: '3px 8px', borderRadius: 999,
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: 999, background: 'var(--cool)' }} />
+                            Active
+                          </span>
+                        )}
+                        {done && !inProgressId && (
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', gap: 4,
                             fontSize: 10.5, fontWeight: 700, color: 'var(--emerald)',
@@ -329,10 +348,28 @@ export default function ChallengesPage() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
                       <div>
-                        <div className="display mono" style={{ fontWeight: 700, color: done ? 'var(--emerald)' : 'var(--gold)', fontSize: 22 }}>+{c.basePoints}</div>
+                        <div className="display mono" style={{ fontWeight: 700, color: inProgressId ? 'var(--cool)' : done ? 'var(--emerald)' : 'var(--gold)', fontSize: 22 }}>+{c.basePoints}</div>
                         <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>base points</div>
                       </div>
-                      {done ? (
+                      {inProgressId ? (
+                        <span
+                          role="button"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/play/${inProgressId}`); }}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            padding: '7px 14px', borderRadius: 10,
+                            background: 'color-mix(in oklch, var(--cool) 18%, transparent)',
+                            border: '1px solid color-mix(in oklch, var(--cool) 40%, transparent)',
+                            color: 'var(--cool)', fontSize: 12.5, fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                          </svg>
+                          Resume
+                        </span>
+                      ) : done ? (
                         <span style={{
                           display: 'inline-flex', alignItems: 'center', gap: 6,
                           padding: '7px 14px', borderRadius: 10,
