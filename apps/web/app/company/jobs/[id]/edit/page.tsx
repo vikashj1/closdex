@@ -13,15 +13,24 @@ import { TextInput } from '@/components/ui/TextInput';
 
 const RANK_OPTIONS: RankName[] = ['Rookie', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master'];
 const SPEC_SUGGESTIONS = ['IT Sales', 'Cloud', 'DevTools', 'Cybersec', 'SaaS', 'FinTech', 'Healthcare'];
+type Tier = 'BASIC' | 'FEATURED' | 'PREMIUM';
+const TIERS: { value: Tier; name: string; price: string }[] = [
+  { value: 'BASIC', name: 'Basic', price: 'Included' },
+  { value: 'FEATURED', name: 'Featured', price: '₹2,499/wk' },
+  { value: 'PREMIUM', name: 'Premium', price: '₹9,999/wk' },
+];
 
 interface FormState {
   title: string;
+  description: string;
+  requiredSkillsRaw: string;
   location: string;
-  salaryMin: string;
-  salaryMax: string;
+  salaryMinLpa: string;
+  salaryMaxLpa: string;
   minRank: RankName;
   specializationTag: string;
   experienceMinYears: string;
+  listingTier: Tier;
 }
 
 export default function JobEditPage() {
@@ -43,14 +52,17 @@ export default function JobEditPage() {
         setJob(j);
         setForm({
           title: j.title ?? '',
+          description: (j as any).description ?? '',
+          requiredSkillsRaw: ((j as any).requiredSkills as string[] | undefined)?.join(', ') ?? '',
           location: j.location ?? '',
-          salaryMin: j.salaryMin != null ? String(j.salaryMin) : '',
-          salaryMax: j.salaryMax != null ? String(j.salaryMax) : '',
+          salaryMinLpa: j.salaryMin != null ? String(j.salaryMin / 100000) : '',
+          salaryMaxLpa: j.salaryMax != null ? String(j.salaryMax / 100000) : '',
           minRank: j.minRank
             ? ((j.minRank.charAt(0) + j.minRank.slice(1).toLowerCase()) as RankName)
             : 'Gold',
           specializationTag: j.specializationTag ?? '',
           experienceMinYears: j.experienceMinYears != null ? String(j.experienceMinYears) : '',
+          listingTier: (j.listingTier as Tier | undefined) ?? 'BASIC',
         });
       })
       .catch((err: unknown) => {
@@ -68,14 +80,18 @@ export default function JobEditPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const skills = form.requiredSkillsRaw.split(',').map((s) => s.trim()).filter(Boolean);
       await api.jobs.update(jobId, {
         title: form.title.trim() || undefined,
+        description: form.description.trim() || undefined,
+        requiredSkills: skills.length ? skills : undefined,
         location: form.location.trim() || undefined,
-        salaryMin: form.salaryMin ? Number(form.salaryMin) : undefined,
-        salaryMax: form.salaryMax ? Number(form.salaryMax) : undefined,
+        salaryMin: form.salaryMinLpa ? Math.round(Number(form.salaryMinLpa) * 100000) : undefined,
+        salaryMax: form.salaryMaxLpa ? Math.round(Number(form.salaryMaxLpa) * 100000) : undefined,
         minRank: form.minRank.toUpperCase(),
         specializationTag: form.specializationTag || undefined,
         experienceMinYears: form.experienceMinYears ? Number(form.experienceMinYears) : undefined,
+        listingTier: form.listingTier,
       });
       router.push('/company/jobs');
     } catch (err) {
@@ -123,6 +139,28 @@ export default function JobEditPage() {
               />
             </div>
 
+            {/* Description */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <FieldLabel label="Job description" />
+              <textarea
+                value={form.description}
+                onChange={(e) => set('description', e.target.value)}
+                placeholder="Describe the role, responsibilities, and what makes this opportunity unique…"
+                rows={4}
+                style={{ ...INPUT_STYLE, resize: 'vertical', lineHeight: 1.6 }}
+              />
+            </div>
+
+            {/* Required skills */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <FieldLabel label="Required skills" hint="Comma-separated" />
+              <TextInput
+                placeholder="B2B Sales, Cloud, Account Management"
+                value={form.requiredSkillsRaw}
+                onChange={(v) => set('requiredSkillsRaw', v)}
+              />
+            </div>
+
             {/* Location */}
             <div>
               <FieldLabel label="Location" />
@@ -154,8 +192,8 @@ export default function JobEditPage() {
               <TextInput
                 placeholder="18"
                 type="number"
-                value={form.salaryMin}
-                onChange={(v) => set('salaryMin', v)}
+                value={form.salaryMinLpa}
+                onChange={(v) => set('salaryMinLpa', v)}
               />
             </div>
             <div>
@@ -163,8 +201,8 @@ export default function JobEditPage() {
               <TextInput
                 placeholder="28"
                 type="number"
-                value={form.salaryMax}
-                onChange={(v) => set('salaryMax', v)}
+                value={form.salaryMaxLpa}
+                onChange={(v) => set('salaryMaxLpa', v)}
               />
             </div>
 
@@ -206,6 +244,41 @@ export default function JobEditPage() {
                     >
                       <RankBadge rank={r} size={14} />
                       {r}+
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Listing tier */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <FieldLabel label="Listing tier" />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                {TIERS.map((t) => {
+                  const active = form.listingTier === t.value;
+                  return (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => set('listingTier', t.value)}
+                      style={{
+                        flex: 1,
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        background: active ? 'color-mix(in oklch, var(--cool) 16%, transparent)' : 'var(--bg-2)',
+                        border: `${active ? 2 : 1}px solid ${active ? 'var(--cool)' : 'var(--border)'}`,
+                        color: active ? 'var(--cool)' : 'var(--text)',
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2,
+                      }}
+                    >
+                      <span>{t.name}</span>
+                      <span style={{ fontSize: 10.5, color: active ? 'var(--cool)' : 'var(--text-mute)', fontWeight: 400 }}>{t.price}</span>
                     </button>
                   );
                 })}

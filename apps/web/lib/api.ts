@@ -507,12 +507,15 @@ export const api = {
     repost: (id: string) => request<JobSummary>('POST', `/jobs/${id}/repost`),
     update: (id: string, dto: {
       title?: string;
+      description?: string;
+      requiredSkills?: string[];
       location?: string;
       salaryMin?: number;
       salaryMax?: number;
       experienceMinYears?: number;
       minRank?: string;
       specializationTag?: string;
+      listingTier?: string;
     }) => request<JobSummary>('PATCH', `/jobs/${id}`, { body: dto }),
     listApplications: (id: string) =>
       request<Array<{ id: string; status: string; salesperson: { id: string; publicSlug: string; rank: string; totalPoints: number; user: { name: string } } }>>(
