@@ -130,7 +130,7 @@ export default function JobsPage() {
           >
             {tagFilter || locationSearch ? 'Filters (on)' : 'Filters'}
           </Btn>
-          <Btn kind="ghost" size="sm">Applications ({apps.length})</Btn>
+          <Btn kind="ghost" size="sm" onClick={() => router.push('/applications')}>Applications ({apps.length})</Btn>
         </div>
       </div>
 
@@ -362,7 +362,7 @@ export default function JobsPage() {
                       </Btn>
                     </div>
                     {existing ? (
-                      <Btn kind="secondary" size="sm">View status</Btn>
+                      <Btn kind="secondary" size="sm" onClick={() => router.push('/applications')}>View status</Btn>
                     ) : (
                       <Btn
                         kind="primary"
