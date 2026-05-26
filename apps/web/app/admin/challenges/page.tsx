@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -59,6 +59,7 @@ export default function AdminChallengesPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -109,6 +110,14 @@ export default function AdminChallengesPage() {
     }
   }
 
+  const displayed = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (c) => c.title.toLowerCase().includes(q) || c.category.toLowerCase().includes(q),
+    );
+  }, [items, searchQuery]);
+
   const perPage = 50;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
@@ -144,6 +153,34 @@ export default function AdminChallengesPage() {
         </div>
       </div>
 
+      {/* Search */}
+      <div style={{ position: 'relative', maxWidth: 400 }}>
+        <input
+          type="text"
+          placeholder="Search by title or category…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '8px 32px 8px 12px',
+            borderRadius: 8,
+            background: 'var(--bg-2)',
+            border: '1px solid var(--border)',
+            fontSize: 13,
+            color: 'var(--text)',
+            boxSizing: 'border-box',
+          }}
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', padding: 0 }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        )}
+      </div>
+
       {/* Filter chips */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {FILTER_OPTIONS.map((opt) => {
@@ -177,9 +214,9 @@ export default function AdminChallengesPage() {
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-mute)', fontSize: 13 }}>
             Loading challenges…
           </div>
-        ) : items.length === 0 ? (
+        ) : displayed.length === 0 ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-mute)', fontSize: 13 }}>
-            No challenges found.
+            {searchQuery ? `No challenges match "${searchQuery}".` : 'No challenges found.'}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -206,7 +243,7 @@ export default function AdminChallengesPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((c) => (
+                {displayed.map((c) => (
                   <tr key={c.id} style={{ borderBottom: '1px solid var(--border-soft)' }}>
 
                     {/* Title */}

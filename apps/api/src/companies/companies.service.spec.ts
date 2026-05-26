@@ -6,6 +6,9 @@ import { PrismaService } from '../prisma/prisma.service';
 const mockPrisma = {
   company: { findUnique: jest.fn(), update: jest.fn() },
   companyMembership: { findUnique: jest.fn() },
+  job: { count: jest.fn() },
+  application: { count: jest.fn() },
+  placement: { count: jest.fn(), aggregate: jest.fn() },
 };
 
 const baseCompany = { id: 'co-1', name: 'Acme Corp', industry: 'Tech' };
@@ -127,6 +130,46 @@ describe('CompaniesService', () => {
           companyId_userId: { companyId: 'co-1', userId: 'user-admin' },
         },
       });
+    });
+  });
+
+  // ─── getStats ─────────────────────────────────────────────────────────────
+
+  describe('getStats', () => {
+    it('throws ForbiddenException when actor is not a member', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(null);
+      await expect(service.getStats('co-1', 'user-outsider')).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('returns correct stats shape with mocked counts', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(adminMembership);
+      mockPrisma.job.count.mockResolvedValue(4);
+      mockPrisma.application.count
+        .mockResolvedValueOnce(7)   // newApplicationsThisWeek
+        .mockResolvedValueOnce(3);  // shortlistedCount
+      mockPrisma.placement.count.mockResolvedValue(2);
+      mockPrisma.placement.aggregate.mockResolvedValue({ _sum: { commissionAmount: 50000 } });
+
+      const result = await service.getStats('co-1', 'user-admin');
+
+      expect(result).toMatchObject({
+        activeJobs: 4,
+        newApplicationsThisWeek: 7,
+        shortlistedCount: 3,
+        hiresThisQuarter: 2,
+        commissionThisQuarter: 50000,
+      });
+    });
+
+    it('defaults commissionThisQuarter to 0 when aggregate returns null sum', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(adminMembership);
+      mockPrisma.job.count.mockResolvedValue(0);
+      mockPrisma.application.count.mockResolvedValue(0);
+      mockPrisma.placement.count.mockResolvedValue(0);
+      mockPrisma.placement.aggregate.mockResolvedValue({ _sum: { commissionAmount: null } });
+
+      const result = await service.getStats('co-1', 'user-admin');
+      expect(result.commissionThisQuarter).toBe(0);
     });
   });
 });
