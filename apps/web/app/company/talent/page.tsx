@@ -1,7 +1,7 @@
 'use client';
 
 import { CSSProperties, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Chip } from '@/components/ui/Chip';
@@ -16,11 +16,13 @@ const RANK_OPTIONS: RankName[] = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamo
 
 export default function TalentSearchPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useRequireAuth('COMPANY');
   const [minRank, setMinRank] = useState<RankName>('Gold');
   const [openOnly, setOpenOnly] = useState(true);
   const [locationFilter, setLocationFilter] = useState<string>('');
   const [minExp, setMinExp] = useState('');
+  const [nameSearch, setNameSearch] = useState(searchParams?.get('q') ?? '');
   const [items, setItems] = useState<TalentSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,7 @@ export default function TalentSearchPage() {
     setPageLoaded(1);
     api.talent
       .search({
+        search: nameSearch.trim() || undefined,
         minRank: minRank.toUpperCase(),
         openToWork: openOnly || undefined,
         location: locationFilter || undefined,
@@ -65,7 +68,7 @@ export default function TalentSearchPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [user, minRank, openOnly, locationFilter, minExp]);
+  }, [user, minRank, openOnly, locationFilter, minExp, nameSearch]);
 
   async function loadMore() {
     if (loadingMore) return;
@@ -73,6 +76,7 @@ export default function TalentSearchPage() {
     const nextPage = pageLoaded + 1;
     try {
       const res = await api.talent.search({
+        search: nameSearch.trim() || undefined,
         minRank: minRank.toUpperCase(),
         openToWork: openOnly || undefined,
         location: locationFilter || undefined,
@@ -156,6 +160,27 @@ export default function TalentSearchPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 className="display" style={{ fontSize: 14, margin: 0, fontWeight: 700 }}>Filters</h3>
           <a style={{ fontSize: 11, color: 'var(--cool)', cursor: 'pointer' }}>Save search</a>
+        </div>
+
+        <div>
+          <div style={FILTER_LBL}>Search by name</div>
+          <input
+            type="text"
+            value={nameSearch}
+            onChange={(e) => setNameSearch(e.target.value)}
+            placeholder="e.g. Priya Iyer"
+            style={{
+              marginTop: 8,
+              width: '100%',
+              padding: '9px 12px',
+              borderRadius: 9,
+              background: 'var(--bg-2)',
+              border: '1px solid var(--border)',
+              fontSize: 13,
+              color: 'var(--text)',
+              boxSizing: 'border-box',
+            }}
+          />
         </div>
 
         <div>

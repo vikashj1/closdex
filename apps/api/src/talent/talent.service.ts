@@ -37,8 +37,15 @@ export class TalentService {
     if (query.category) {
       where.attempts = { some: { challenge: { category: query.category } } };
     }
+    const userFilter: Record<string, unknown> = {};
     if (query.location) {
-      where.user = { location: { contains: query.location, mode: 'insensitive' } };
+      userFilter.location = { contains: query.location, mode: 'insensitive' };
+    }
+    if (query.search) {
+      userFilter.name = { contains: query.search, mode: 'insensitive' };
+    }
+    if (Object.keys(userFilter).length > 0) {
+      where.user = userFilter as Prisma.UserWhereInput;
     }
     if (query.minExperienceYears !== undefined) {
       where.experienceYears = { gte: query.minExperienceYears };

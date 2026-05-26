@@ -541,6 +541,7 @@ export const api = {
 
   talent: {
     search: (query: {
+      search?: string;
       minRank?: string;
       minPoints?: number;
       category?: string;

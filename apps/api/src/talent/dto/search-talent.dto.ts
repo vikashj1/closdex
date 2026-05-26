@@ -6,6 +6,10 @@ import { Rank } from '@closdex/db';
 
 export class SearchTalentDto {
   @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
   @IsEnum(Rank)
   minRank?: Rank;
 

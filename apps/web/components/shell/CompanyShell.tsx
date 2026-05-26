@@ -34,6 +34,7 @@ export function CompanyShell({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   const [unreadCount, setUnreadCount] = useState(0);
+  const [topbarSearch, setTopbarSearch] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -186,7 +187,14 @@ export function CompanyShell({ children }: { children: ReactNode }) {
               <Icon.search />
             </span>
             <input
-              placeholder="Search talent by skill, rank, location…"
+              value={topbarSearch}
+              onChange={(e) => setTopbarSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && topbarSearch.trim()) {
+                  router.push(`/company/talent?q=${encodeURIComponent(topbarSearch.trim())}`);
+                }
+              }}
+              placeholder="Search talent by name… (Enter)"
               style={{
                 width: '100%',
                 padding: '9px 12px 9px 36px',
@@ -195,6 +203,7 @@ export function CompanyShell({ children }: { children: ReactNode }) {
                 border: '1px solid var(--border)',
                 fontSize: 13,
                 color: 'var(--text)',
+                outline: 'none',
               }}
             />
           </div>
