@@ -576,6 +576,8 @@ export const api = {
       }>('GET', `/companies/${id}/stats`),
     update: (id: string, dto: Partial<Pick<CompanyDetail, 'name' | 'logoUrl' | 'industry' | 'size' | 'website' | 'about' | 'perks' | 'culture' | 'incentiveStructure'> & { locations?: string[] }>) =>
       request<CompanyDetail>('PATCH', `/companies/${id}`, { body: dto }),
+    reapply: (id: string) =>
+      request<CompanyDetail>('POST', `/companies/${id}/reapply`),
   },
 
   shortlists: {

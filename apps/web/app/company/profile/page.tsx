@@ -66,6 +66,9 @@ export default function CompanyProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedMsg, setSavedMsg] = useState(false);
+  const [reapplying, setReapplying] = useState(false);
+  const [reapplyError, setReapplyError] = useState<string | null>(null);
+  const [reapplyMsg, setReapplyMsg] = useState(false);
 
   const companyId = user?.companyMemberships?.[0]?.companyId;
 
@@ -98,6 +101,23 @@ export default function CompanyProfilePage() {
       });
     return () => { cancelled = true; };
   }, [authLoading, user, companyId]);
+
+  async function handleReapply() {
+    if (!companyId) return;
+    setReapplying(true);
+    setReapplyError(null);
+    setReapplyMsg(false);
+    try {
+      const updated = await api.companies.reapply(companyId);
+      setCompany(updated);
+      setReapplyMsg(true);
+      setTimeout(() => setReapplyMsg(false), 3000);
+    } catch (err: unknown) {
+      setReapplyError(err instanceof ApiError ? err.message : 'Failed to re-submit application.');
+    } finally {
+      setReapplying(false);
+    }
+  }
 
   async function handleSave() {
     if (!companyId || !name.trim()) return;
@@ -165,9 +185,46 @@ export default function CompanyProfilePage() {
         <Card padding={28}>
           {/* Verification badge */}
           {company && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-2)', border: '1px solid var(--border-soft)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: company.verification === 'REJECTED' ? 12 : 22, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-2)', border: '1px solid var(--border-soft)' }}>
               <span style={{ fontSize: 12.5, color: 'var(--text-dim)', fontWeight: 500 }}>Verification status:</span>
               <VerificationBadge status={company.verification} />
+            </div>
+          )}
+
+          {/* Rejected — re-apply banner */}
+          {company?.verification === 'REJECTED' && (
+            <div
+              style={{
+                marginBottom: 22,
+                padding: '14px 16px',
+                borderRadius: 10,
+                background: 'color-mix(in oklch, var(--r-master) 10%, transparent)',
+                border: '1px solid color-mix(in oklch, var(--r-master) 28%, transparent)',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
+                Verification declined
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-dim)', marginBottom: 10, lineHeight: 1.5 }}>
+                Your KYC was declined. Update your company details below, then re-submit for review.
+              </div>
+              {reapplyError && (
+                <div style={{ fontSize: 12, color: 'var(--r-master)', marginBottom: 8 }}>{reapplyError}</div>
+              )}
+              {reapplyMsg && (
+                <div style={{ fontSize: 12, color: 'var(--emerald)', marginBottom: 8, fontWeight: 600 }}>
+                  Re-submitted! An admin will review your application shortly.
+                </div>
+              )}
+              <Btn
+                kind="primary"
+                size="sm"
+                disabled={reapplying}
+                style={{ background: 'var(--cool)', color: 'white', opacity: reapplying ? 0.6 : 1 }}
+                onClick={handleReapply}
+              >
+                {reapplying ? 'Submitting…' : 'Re-apply for verification'}
+              </Btn>
             </div>
           )}
 

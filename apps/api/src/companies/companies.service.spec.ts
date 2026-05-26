@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { VerificationStatus } from '@closdex/db';
 import { CompaniesService } from './companies.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -130,6 +131,59 @@ describe('CompaniesService', () => {
           companyId_userId: { companyId: 'co-1', userId: 'user-admin' },
         },
       });
+    });
+  });
+
+  // ─── reapply ──────────────────────────────────────────────────────────────
+
+  describe('reapply', () => {
+    it('throws ForbiddenException when caller has no membership', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(null);
+      await expect(service.reapply('co-1', 'user-1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws ForbiddenException when caller is VIEWER not ADMIN', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue({ ...adminMembership, companyRole: 'VIEWER' });
+      await expect(service.reapply('co-1', 'user-1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFoundException when company does not exist', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(adminMembership);
+      mockPrisma.company.findUnique.mockResolvedValue(null);
+      await expect(service.reapply('co-1', 'user-admin')).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException when company is already PENDING', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(adminMembership);
+      mockPrisma.company.findUnique.mockResolvedValue({ id: 'co-1', verification: VerificationStatus.PENDING });
+      await expect(service.reapply('co-1', 'user-admin')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when company is already VERIFIED', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(adminMembership);
+      mockPrisma.company.findUnique.mockResolvedValue({ id: 'co-1', verification: VerificationStatus.VERIFIED });
+      await expect(service.reapply('co-1', 'user-admin')).rejects.toThrow(BadRequestException);
+    });
+
+    it('resets REJECTED company to PENDING and returns the updated record', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(adminMembership);
+      mockPrisma.company.findUnique.mockResolvedValue({ id: 'co-1', verification: VerificationStatus.REJECTED });
+      const updated = { ...baseCompany, verification: VerificationStatus.PENDING };
+      mockPrisma.company.update.mockResolvedValue(updated);
+
+      const result = await service.reapply('co-1', 'user-admin');
+
+      expect(mockPrisma.company.update).toHaveBeenCalledWith({
+        where: { id: 'co-1' },
+        data: { verification: VerificationStatus.PENDING },
+      });
+      expect(result.verification).toBe(VerificationStatus.PENDING);
+    });
+
+    it('does NOT call company.update when authorization fails', async () => {
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(null);
+      await expect(service.reapply('co-1', 'user-1')).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.company.update).not.toHaveBeenCalled();
     });
   });
 

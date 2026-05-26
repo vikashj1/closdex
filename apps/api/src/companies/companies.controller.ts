@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUser } from '../auth/jwt.strategy';
@@ -28,5 +28,11 @@ export class CompaniesController {
     @Body() dto: UpdateCompanyDto,
   ) {
     return this.companies.update(id, user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/reapply')
+  reapply(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.companies.reapply(id, user.id);
   }
 }

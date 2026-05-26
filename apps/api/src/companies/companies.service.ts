@@ -1,4 +1,5 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { VerificationStatus } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
@@ -50,6 +51,20 @@ export class CompaniesService {
   async update(id: string, actorUserId: string, dto: UpdateCompanyDto) {
     await this.assertAdmin(id, actorUserId);
     return this.prisma.company.update({ where: { id }, data: dto });
+  }
+
+  /** Re-submit for KYC review after a REJECTED decision. Resets status to PENDING. */
+  async reapply(id: string, actorUserId: string) {
+    await this.assertAdmin(id, actorUserId);
+    const company = await this.prisma.company.findUnique({ where: { id } });
+    if (!company) throw new NotFoundException('Company not found.');
+    if (company.verification !== VerificationStatus.REJECTED) {
+      throw new BadRequestException('Only rejected companies can re-apply for verification.');
+    }
+    return this.prisma.company.update({
+      where: { id },
+      data: { verification: VerificationStatus.PENDING },
+    });
   }
 
   private async assertMember(companyId: string, userId: string) {
