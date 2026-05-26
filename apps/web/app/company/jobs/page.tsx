@@ -249,13 +249,22 @@ export default function CompanyJobsPage() {
 
                 {/* Right: actions + meta */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
-                  <Btn
-                    kind="ghost"
-                    size="sm"
-                    onClick={() => router.push(`/company/jobs/${job.id}/applications`)}
-                  >
-                    View applicants
-                  </Btn>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <Btn
+                      kind="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/company/jobs/${job.id}`)}
+                    >
+                      Details
+                    </Btn>
+                    <Btn
+                      kind="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/company/jobs/${job.id}/applications`)}
+                    >
+                      Applicants
+                    </Btn>
+                  </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     {job.status === 'DRAFT' && (
                       <Btn
