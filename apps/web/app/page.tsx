@@ -31,11 +31,11 @@ export default function LandingPage() {
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 64px', borderBottom: '1px solid var(--border-soft)' }}>
         <Logo size={24} />
         <nav style={{ display: 'flex', gap: 28, fontSize: 13.5, color: 'var(--text-dim)' }}>
-          <a style={navLink}>Challenges</a>
-          <a style={navLink}>Leaderboard</a>
-          <a style={navLink}>For Companies</a>
-          <a style={navLink}>Pricing</a>
-          <a style={navLink}>Learn</a>
+          <a onClick={() => go('/challenges')} style={navLink}>Challenges</a>
+          <a onClick={() => go('/leaderboard')} style={navLink}>Leaderboard</a>
+          <a onClick={() => go('/company')} style={navLink}>For Companies</a>
+          <a onClick={() => go('/pricing')} style={navLink}>Pricing</a>
+          <a onClick={() => go('/learn')} style={navLink}>Learn</a>
         </nav>
         <div style={{ display: 'flex', gap: 10 }}>
           <Btn kind="ghost" size="sm" onClick={() => go('/login')}>Log in</Btn>
