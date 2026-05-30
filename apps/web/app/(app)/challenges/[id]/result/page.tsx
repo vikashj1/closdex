@@ -114,8 +114,8 @@ function ResultPageInner({ params }: { params: { id: string } }) {
         >
           <Icon.check /> {achieved ? 'GOAL ACHIEVED' : scoring ? 'SCORING…' : 'GOAL NOT MET'}
         </div>
-        <div className="display" style={{ fontSize: 96, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--gold)' }}>
-          +{finalPts}
+        <div className="display" style={{ fontSize: 96, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: finalPts < 0 ? 'var(--d-expert)' : 'var(--gold)' }}>
+          {finalPts > 0 ? `+${finalPts}` : finalPts}
         </div>
         <div style={{ fontSize: 14, color: 'var(--text-dim)', marginTop: 8 }}>
           {scoring

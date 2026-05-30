@@ -260,7 +260,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
                 </div>
                 {bestAttempt && (
                   <div style={{ fontSize: 12, color: 'var(--text-mute)', textAlign: 'center', marginBottom: 10 }}>
-                    Best score: <span style={{ color: 'var(--gold)', fontWeight: 700 }}>+{bestAttempt.pointsAwarded ?? 0} pts</span>
+                    Best score: <span style={{ color: (bestAttempt.pointsAwarded ?? 0) < 0 ? 'var(--d-expert)' : 'var(--gold)', fontWeight: 700 }}>{(bestAttempt.pointsAwarded ?? 0) > 0 ? `+${bestAttempt.pointsAwarded}` : (bestAttempt.pointsAwarded ?? 0)} pts</span>
                     {bestAttempt.score != null && ` · ${bestAttempt.score}/100`}
                   </div>
                 )}
