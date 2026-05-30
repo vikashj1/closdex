@@ -102,9 +102,31 @@ export default function ConversationPage({ params }: { params: { id: string } })
   async function send() {
     if (!input.trim() || !attempt || sending) return;
     const text = input.trim();
+    const prevAttempt = attempt;
     setInput('');
-    setSending(true);
+    inputBaseRef.current = '';
     setError(null);
+
+    // Optimistic: show the user's message immediately, before the round-trip.
+    // The server response replaces this with the canonical attempt state.
+    setAttempt({
+      ...attempt,
+      messagesUsed: attempt.messagesUsed + 1,
+      conversation: {
+        ...attempt.conversation,
+        messages: [
+          ...attempt.conversation.messages,
+          {
+            id: `temp-${Date.now()}`,
+            sender: 'SALESPERSON',
+            content: text,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      },
+    });
+
+    setSending(true);
     try {
       const res = await api.attempts.send(attempt.id, text);
       setAttempt(res.attempt);
@@ -112,6 +134,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
         router.push(`/challenges/${res.attempt.challenge.id}/result?attempt=${res.attempt.id}`);
       }
     } catch (err) {
+      setAttempt(prevAttempt);
       setError(err instanceof ApiError ? err.message : 'Send failed.');
       setInput(text);
     } finally {
