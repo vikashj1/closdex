@@ -28,7 +28,11 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const inputBaseRef = useRef('');
 
   useEffect(() => {
     if (!user) return;
@@ -48,6 +52,52 @@ export default function ConversationPage({ params }: { params: { id: string } })
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [attempt?.conversation?.messages?.length, sending]);
+
+  // Initialize Web Speech API for voice input (browser-side, free).
+  useEffect(() => {
+    const SR: any =
+      typeof window !== 'undefined' &&
+      ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+    if (!SR) return;
+    setSpeechSupported(true);
+    const r = new SR();
+    r.continuous = true;
+    r.interimResults = true;
+    r.lang = 'en-IN';
+    r.onresult = (e: any) => {
+      let finalTxt = '';
+      let interimTxt = '';
+      for (let i = 0; i < e.results.length; i++) {
+        const txt = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTxt += txt;
+        else interimTxt += txt;
+      }
+      const base = inputBaseRef.current;
+      const sep = base && !base.endsWith(' ') ? ' ' : '';
+      setInput((base + sep + finalTxt + interimTxt).trimStart());
+    };
+    r.onend = () => setListening(false);
+    r.onerror = () => setListening(false);
+    recognitionRef.current = r;
+    return () => { try { r.stop(); } catch {} };
+  }, []);
+
+  function toggleMic() {
+    const r = recognitionRef.current;
+    if (!r) return;
+    if (listening) {
+      try { r.stop(); } catch {}
+      setListening(false);
+      // Commit the dictated text as the new base.
+      inputBaseRef.current = input;
+    } else {
+      inputBaseRef.current = input;
+      try {
+        r.start();
+        setListening(true);
+      } catch {}
+    }
+  }
 
   async function send() {
     if (!input.trim() || !attempt || sending) return;
@@ -237,6 +287,37 @@ export default function ConversationPage({ params }: { params: { id: string } })
               rows={2}
               style={{ flex: 1, resize: 'none', fontSize: 14, color: 'var(--text)' }}
             />
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={toggleMic}
+                disabled={attempt.status !== 'IN_PROGRESS' || sending}
+                title={listening ? 'Stop recording' : 'Speak your reply'}
+                aria-label={listening ? 'Stop voice input' : 'Start voice input'}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 999,
+                  border: '1px solid var(--border)',
+                  background: listening
+                    ? 'color-mix(in oklch, var(--d-expert) 22%, transparent)'
+                    : 'var(--bg-2)',
+                  color: listening ? 'var(--d-expert)' : 'var(--text-dim)',
+                  cursor: attempt.status !== 'IN_PROGRESS' || sending ? 'not-allowed' : 'pointer',
+                  animation: listening ? 'pulseDot 1.2s ease-in-out infinite' : undefined,
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="2" width="6" height="12" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0" />
+                  <line x1="12" y1="18" x2="12" y2="22" />
+                  <line x1="8" y1="22" x2="16" y2="22" />
+                </svg>
+              </button>
+            )}
             <Btn
               kind="primary"
               icon={<Icon.send />}
