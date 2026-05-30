@@ -39,7 +39,7 @@ const BASE_NAV: NavItem[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() || '';
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const streak = user?.salesperson?.currentStreakDays ?? 0;
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -164,6 +164,31 @@ export function AppShell({ children }: { children: ReactNode }) {
               : 'Complete a challenge today to start your streak.'}
           </div>
         </Card>
+        <button
+          onClick={() => { logout(); router.push('/login'); }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '9px 12px',
+            marginTop: 8,
+            borderRadius: 8,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-dim)',
+            fontSize: 13.5,
+            fontWeight: 500,
+            textAlign: 'left',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Sign out
+        </button>
       </aside>
       <main style={{ overflow: 'auto' }}>
         <TopBar />

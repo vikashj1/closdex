@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth, useRequireAuth } from '@/lib/auth';
 
 interface NavItem {
   id: string;
@@ -27,6 +27,7 @@ const NAV: NavItem[] = [
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   useRequireAuth('ADMIN');
+  const { logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || '';
 
@@ -101,6 +102,32 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         >
           ADMIN
         </div>
+        <button
+          onClick={() => { logout(); router.push('/login'); }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '9px 12px',
+            marginTop: 8,
+            borderRadius: 8,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-dim)',
+            fontSize: 13,
+            fontWeight: 500,
+            textAlign: 'left',
+            cursor: 'pointer',
+            width: '100%',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Sign out
+        </button>
       </aside>
 
       <main style={{ overflow: 'auto' }}>{children}</main>

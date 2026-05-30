@@ -31,7 +31,7 @@ const BASE_NAV: NavItem[] = [
 export function CompanyShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() || '';
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [topbarSearch, setTopbarSearch] = useState('');
@@ -166,6 +166,31 @@ export function CompanyShell({ children }: { children: ReactNode }) {
           <div>5 / 5 active postings used</div>
           <a style={{ color: 'var(--cool)', fontSize: 11.5, marginTop: 4, display: 'inline-block', cursor: 'pointer' }}>Upgrade to Scale →</a>
         </div>
+        <button
+          onClick={() => { logout(); router.push('/login'); }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '9px 12px',
+            marginTop: 4,
+            borderRadius: 8,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-dim)',
+            fontSize: 13.5,
+            fontWeight: 500,
+            textAlign: 'left',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Sign out
+        </button>
       </aside>
       <main style={{ overflow: 'auto' }}>
         {/* Topbar */}
