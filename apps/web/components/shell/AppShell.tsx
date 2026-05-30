@@ -20,6 +20,11 @@ interface NavItem {
   count?: number;
 }
 
+interface NavGroup {
+  base: NavItem[];
+  authOnly: Set<string>; // ids that need a signed-in user
+}
+
 const BASE_NAV: NavItem[] = [
   { id: 'home',          label: 'Home',          icon: <Icon.home />,      path: '/dashboard' },
   { id: 'challenges',    label: 'Challenges',    icon: <Icon.bolt />,      path: '/challenges',    prefix: '/challenges' },
@@ -33,6 +38,10 @@ const BASE_NAV: NavItem[] = [
   { id: 'profile',       label: 'Profile',       icon: <Icon.user />,      path: '/profile' },
   { id: 'settings',      label: 'Settings',      icon: <Icon.settings />,  path: '/settings' },
 ];
+
+// Items that should only appear in the sidebar for signed-in users. Anonymous
+// browsing keeps Challenges, Leaderboard, Learn, Jobs visible.
+const AUTH_ONLY_NAV_IDS = new Set(['home', 'attempts', 'disputes', 'applications', 'notifications', 'profile', 'settings']);
 
 /** Sidebar + topbar shell for authenticated salesperson screens. Lives in
  *  app/(app)/layout.tsx so every route under `(app)` inherits it. */
@@ -48,9 +57,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     api.notifications.listMine(true).then((r) => setUnreadCount(r.items.length)).catch(() => {});
   }, [user]);
 
-  const NAV: NavItem[] = BASE_NAV.map((n) =>
-    n.id === 'notifications' && unreadCount > 0 ? { ...n, count: unreadCount } : n,
-  );
+  const NAV: NavItem[] = BASE_NAV
+    .filter((n) => user || !AUTH_ONLY_NAV_IDS.has(n.id))
+    .map((n) =>
+      n.id === 'notifications' && unreadCount > 0 ? { ...n, count: unreadCount } : n,
+    );
 
   const isActive = (n: NavItem) =>
     n.prefix ? pathname.startsWith(n.prefix) : pathname === n.path;
@@ -138,6 +149,57 @@ export function AppShell({ children }: { children: ReactNode }) {
           );
         })}
         <div style={{ flex: 1 }} />
+        {!user ? (
+          <Card
+            padding={14}
+            style={{
+              background: 'color-mix(in oklch, var(--cool) 10%, var(--surface))',
+              borderColor: 'color-mix(in oklch, var(--cool) 30%, transparent)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
+            <div style={{ fontSize: 12, color: 'var(--cool)', fontWeight: 700 }}>
+              Browsing as guest
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+              Sign in to attempt challenges, track points, and apply to jobs.
+            </div>
+            <button
+              onClick={() => router.push('/login')}
+              style={{
+                padding: '7px 12px',
+                borderRadius: 8,
+                border: 'none',
+                background: 'var(--cool)',
+                color: 'white',
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Sign in
+            </button>
+            <button
+              onClick={() => router.push('/signup')}
+              style={{
+                padding: '6px 10px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text)',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Create account
+            </button>
+          </Card>
+        ) : null}
+        {user ? (
+        <>
         <Card
           padding={14}
           style={{
@@ -189,6 +251,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </svg>
           Sign out
         </button>
+        </>
+        ) : null}
       </aside>
       <main style={{ overflow: 'auto' }}>
         <TopBar />

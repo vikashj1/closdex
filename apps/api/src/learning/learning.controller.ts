@@ -5,8 +5,11 @@ import { UserRole } from '@closdex/db';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUser } from '../auth/jwt.strategy';
+
+const ANON_VIEWER: AuthUser = { id: '', email: '', role: UserRole.SALESPERSON };
 import { LearningService } from './learning.service';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
@@ -22,14 +25,16 @@ export class LearningController {
 
   // ─── Tracks ───────────────────────────────────────────────────────────
 
+  @Public()
   @Get('tracks')
   listTracks() {
     return this.learning.listTracks();
   }
 
+  @Public()
   @Get('tracks/:id')
-  getTrack(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.learning.getTrack(user, id);
+  getTrack(@CurrentUser() user: AuthUser | undefined, @Param('id') id: string) {
+    return this.learning.getTrack(user ?? ANON_VIEWER, id);
   }
 
   @UseGuards(RolesGuard)
@@ -56,9 +61,10 @@ export class LearningController {
 
   // ─── Tutorials ────────────────────────────────────────────────────────
 
+  @Public()
   @Get('tutorials/:id')
-  getTutorial(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.learning.getTutorial(user, id);
+  getTutorial(@CurrentUser() user: AuthUser | undefined, @Param('id') id: string) {
+    return this.learning.getTutorial(user ?? ANON_VIEWER, id);
   }
 
   @UseGuards(RolesGuard)

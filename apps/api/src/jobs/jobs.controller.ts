@@ -1,7 +1,9 @@
 import {
   Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
+import { UserRole } from '@closdex/db';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUser } from '../auth/jwt.strategy';
 import { JobsService } from './jobs.service';
@@ -9,6 +11,8 @@ import { ApplicationsService } from './applications.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { ListJobsDto } from './dto/list-jobs.dto';
+
+const ANON_VIEWER: AuthUser = { id: '', email: '', role: UserRole.SALESPERSON };
 
 @Controller('jobs')
 @UseGuards(JwtAuthGuard)
@@ -18,14 +22,16 @@ export class JobsController {
     private readonly applications: ApplicationsService,
   ) {}
 
+  @Public()
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query() query: ListJobsDto) {
-    return this.jobs.list(user, query);
+  list(@CurrentUser() user: AuthUser | undefined, @Query() query: ListJobsDto) {
+    return this.jobs.list(user ?? ANON_VIEWER, query);
   }
 
+  @Public()
   @Get(':id')
-  get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.jobs.get(user, id);
+  get(@CurrentUser() user: AuthUser | undefined, @Param('id') id: string) {
+    return this.jobs.get(user ?? ANON_VIEWER, id);
   }
 
   @Post()

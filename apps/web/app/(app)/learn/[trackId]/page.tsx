@@ -5,14 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { ApiError, LearningTrackSummary, TutorialDetail, TrackProgress, api } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 
 type TrackWithTutorials = LearningTrackSummary & { tutorials: TutorialDetail[] };
 
 export default function TrackDetailPage() {
   const router = useRouter();
   const { trackId } = useParams<{ trackId: string }>();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const { user, loading: authLoading } = useAuth();
 
   const [track, setTrack] = useState<TrackWithTutorials | null>(null);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -20,20 +20,23 @@ export default function TrackDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || !trackId) return;
+    if (authLoading || !trackId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    Promise.all([
-      api.learning.getTrack(trackId),
-      api.learning.myProgress(),
-    ])
-      .then(([trackData, progressData]) => {
+    const calls: Promise<unknown>[] = [api.learning.getTrack(trackId)];
+    if (user) calls.push(api.learning.myProgress());
+
+    Promise.all(calls)
+      .then((results) => {
         if (cancelled) return;
-        setTrack(trackData as TrackWithTutorials);
-        const prog = progressData.find((p: TrackProgress) => p.trackId === trackId);
-        setCompletedIds(new Set(prog?.completedTutorialIds ?? []));
+        setTrack(results[0] as TrackWithTutorials);
+        if (user) {
+          const progressData = results[1] as TrackProgress[];
+          const prog = progressData.find((p) => p.trackId === trackId);
+          setCompletedIds(new Set(prog?.completedTutorialIds ?? []));
+        }
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -43,9 +46,9 @@ export default function TrackDetailPage() {
       });
 
     return () => { cancelled = true; };
-  }, [user, trackId]);
+  }, [authLoading, user, trackId]);
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
   }
 

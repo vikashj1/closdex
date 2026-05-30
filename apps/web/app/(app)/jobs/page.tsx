@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Icon } from '@/components/ui/Icon';
 import { ApiError, JobSummary, api } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 
 interface ApplicationRow { id: string; status: string; job: JobSummary; createdAt: string }
 
@@ -16,7 +16,7 @@ const SPEC_TAGS = ['IT Sales', 'Cloud', 'DevTools', 'Cybersec', 'SaaS', 'FinTech
 
 export default function JobsPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const { user, loading: authLoading } = useAuth();
   const [jobs, setJobs] = useState<JobSummary[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [savedJobs, setSavedJobs] = useState<Array<JobSummary & { savedAt: string }>>([]);
@@ -33,15 +33,25 @@ export default function JobsPage() {
   async function load(tag?: string) {
     setLoading(true);
     setError(null);
-    const [jRes, aRes, idsRes] = await Promise.allSettled([
+    const calls: Promise<unknown>[] = [
       api.jobs.list({ perPage: 30, specializationTag: tag || undefined }),
-      api.applications.mine(),
-      api.jobs.savedJobIds(),
-    ]);
-    if (jRes.status === 'fulfilled') setJobs(jRes.value.items);
-    else setError(jRes.reason instanceof ApiError ? jRes.reason.message : 'Could not load jobs.');
-    if (aRes.status === 'fulfilled') setApps(aRes.value);
-    if (idsRes.status === 'fulfilled') setSavedIds(new Set(idsRes.value));
+    ];
+    if (user) {
+      calls.push(api.applications.mine(), api.jobs.savedJobIds());
+    }
+    const results = await Promise.allSettled(calls);
+    const jRes = results[0];
+    if (jRes.status === 'fulfilled') {
+      setJobs((jRes.value as { items: JobSummary[] }).items);
+    } else {
+      setError(jRes.reason instanceof ApiError ? jRes.reason.message : 'Could not load jobs.');
+    }
+    if (user) {
+      const aRes = results[1];
+      const idsRes = results[2];
+      if (aRes && aRes.status === 'fulfilled') setApps(aRes.value as ApplicationRow[]);
+      if (idsRes && idsRes.status === 'fulfilled') setSavedIds(new Set(idsRes.value as string[]));
+    }
     setLoading(false);
   }
 
@@ -51,9 +61,9 @@ export default function JobsPage() {
   }
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
     void load(tagFilter);
-  }, [user, tagFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [authLoading, user, tagFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!user || tab !== 'saved') return;
@@ -61,6 +71,10 @@ export default function JobsPage() {
   }, [user, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function apply(jobId: string) {
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`);
+      return;
+    }
     setApplying(jobId);
     try {
       await api.jobs.apply(jobId);
@@ -73,6 +87,10 @@ export default function JobsPage() {
   }
 
   async function toggleSave(jobId: string) {
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`);
+      return;
+    }
     setSavingId(jobId);
     try {
       if (savedIds.has(jobId)) {
@@ -90,7 +108,7 @@ export default function JobsPage() {
     }
   }
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
   }
 

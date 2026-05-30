@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api, ApiError, JobDetail } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Chip } from '@/components/ui/Chip';
@@ -34,7 +34,7 @@ export default function JobDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const jobId = params.id;
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const { user, loading: authLoading } = useAuth();
 
   const [job, setJob] = useState<JobDetail | null>(null);
   const [applied, setApplied] = useState(false);
@@ -43,19 +43,28 @@ export default function JobDetailPage() {
   const [applyError, setApplyError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || !jobId) return;
-    Promise.all([api.jobs.get(jobId), api.applications.mine()])
-      .then(([j, myApps]) => {
-        setJob(j);
-        setApplied(myApps.some(a => a.job.id === jobId));
+    if (authLoading || !jobId) return;
+    const calls: Promise<unknown>[] = [api.jobs.get(jobId)];
+    if (user) calls.push(api.applications.mine());
+    Promise.all(calls)
+      .then((results) => {
+        setJob(results[0] as JobDetail);
+        if (user) {
+          const myApps = results[1] as Array<{ job: { id: string } }>;
+          setApplied(myApps.some(a => a.job.id === jobId));
+        }
       })
       .catch((err: unknown) => {
         setLoadError(err instanceof ApiError ? err.message : 'Could not load job.');
       });
-  }, [user, jobId]);
+  }, [authLoading, user, jobId]);
 
   async function handleApply() {
     if (!jobId) return;
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`);
+      return;
+    }
     setApplying(true); setApplyError(null);
     try {
       await api.jobs.apply(jobId);

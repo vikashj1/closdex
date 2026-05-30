@@ -12,8 +12,11 @@ import { ChallengeStatus, UserRole } from '@closdex/db';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUser } from '../auth/jwt.strategy';
+
+const ANON_VIEWER: AuthUser = { id: '', email: '', role: UserRole.SALESPERSON };
 import { ChallengesService } from './challenges.service';
 import { ListChallengesDto } from './dto/list-challenges.dto';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
@@ -24,14 +27,16 @@ import { UpdateChallengeDto } from './dto/update-challenge.dto';
 export class ChallengesController {
   constructor(private readonly challenges: ChallengesService) {}
 
+  @Public()
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query() query: ListChallengesDto) {
-    return this.challenges.list(user, query);
+  list(@CurrentUser() user: AuthUser | undefined, @Query() query: ListChallengesDto) {
+    return this.challenges.list(user ?? ANON_VIEWER, query);
   }
 
+  @Public()
   @Get(':id')
-  get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.challenges.get(user, id);
+  get(@CurrentUser() user: AuthUser | undefined, @Param('id') id: string) {
+    return this.challenges.get(user ?? ANON_VIEWER, id);
   }
 
   @UseGuards(RolesGuard)

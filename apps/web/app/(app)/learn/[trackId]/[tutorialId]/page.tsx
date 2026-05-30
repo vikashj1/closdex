@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api, ApiError, TutorialDetail, TrackProgress } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Icon } from '@/components/ui/Icon';
@@ -23,7 +23,7 @@ export default function TutorialPage() {
   const trackId = params?.trackId as string;
   const tutorialId = params?.tutorialId as string;
 
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const { user, loading: authLoading } = useAuth();
 
   const [tutorial, setTutorial] = useState<TutorialDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,20 +36,23 @@ export default function TutorialPage() {
   const [quizSubmitting, setQuizSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
     let cancelled = false;
 
-    Promise.all([
-      api.learning.getTutorial(tutorialId),
-      api.learning.myProgress(),
-    ])
-      .then(([tut, progress]: [TutorialDetail, TrackProgress[]]) => {
+    const calls: Promise<unknown>[] = [api.learning.getTutorial(tutorialId)];
+    if (user) calls.push(api.learning.myProgress());
+
+    Promise.all(calls)
+      .then((results) => {
         if (cancelled) return;
-        setTutorial(tut);
-        const alreadyDone = progress.some((tp) =>
-          tp.completedTutorialIds.includes(tutorialId),
-        );
-        setCompleted(alreadyDone);
+        setTutorial(results[0] as TutorialDetail);
+        if (user) {
+          const progress = results[1] as TrackProgress[];
+          const alreadyDone = progress.some((tp) =>
+            tp.completedTutorialIds.includes(tutorialId),
+          );
+          setCompleted(alreadyDone);
+        }
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -59,10 +62,14 @@ export default function TutorialPage() {
       });
 
     return () => { cancelled = true; };
-  }, [user, tutorialId]);
+  }, [authLoading, user, tutorialId]);
 
   async function handleComplete() {
     if (!tutorial) return;
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/learn/${trackId}/${tutorialId}`)}`);
+      return;
+    }
     setCompleting(true);
     try {
       await api.learning.completeTutorial(tutorial.id);
@@ -76,6 +83,10 @@ export default function TutorialPage() {
 
   function startQuiz() {
     if (!tutorial?.quiz) return;
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/learn/${trackId}/${tutorialId}`)}`);
+      return;
+    }
     setSelectedAnswers(new Array(tutorial.quiz.questions.length).fill(-1));
     setQuizResult(null);
     setQuizState('taking');
@@ -83,6 +94,10 @@ export default function TutorialPage() {
 
   async function submitQuiz() {
     if (!tutorial?.quiz) return;
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/learn/${trackId}/${tutorialId}`)}`);
+      return;
+    }
     setQuizSubmitting(true);
     try {
       const res = await api.learning.attemptQuiz(tutorial.quiz.id, selectedAnswers);
@@ -100,7 +115,7 @@ export default function TutorialPage() {
     }
   }
 
-  if (authLoading || !user || loading) {
+  if (authLoading || loading) {
     return (
       <div style={{ padding: 32, color: 'var(--text-mute)', fontSize: 13.5 }}>
         Loading tutorial…

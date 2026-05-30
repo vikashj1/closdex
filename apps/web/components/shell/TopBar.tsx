@@ -94,6 +94,41 @@ export function TopBar() {
         />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {!user ? (
+          <>
+            <button
+              onClick={() => router.push('/login')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Sign in
+            </button>
+            <button
+              onClick={() => router.push('/signup')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 8,
+                border: 'none',
+                background: 'var(--cool)',
+                color: 'white',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Sign up
+            </button>
+          </>
+        ) : (
+          <>
         {/* Notification bell */}
         <div ref={dropRef} style={{ position: 'relative' }}>
           <button
@@ -209,6 +244,8 @@ export function TopBar() {
           <span style={{ fontSize: 12.5, fontWeight: 600 }}>{displayName}</span>
           <RankBadge rank={rank} size={16} />
         </div>
+          </>
+        )}
       </div>
     </div>
   );

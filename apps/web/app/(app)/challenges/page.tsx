@@ -8,7 +8,7 @@ import { Chip } from '@/components/ui/Chip';
 import { DifficultyTag } from '@/components/ui/DifficultyTag';
 import { Icon } from '@/components/ui/Icon';
 import { ApiError, ChallengeSummary, api, AttemptDetail } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import { DIFFICULTY, type DifficultyLevel, difficultyFromEnum } from '@/lib/constants';
 
 type DiffFilter = 'All' | DifficultyLevel;
@@ -43,7 +43,7 @@ export default function ChallengesPage() {
 function ChallengesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const { user, loading: authLoading } = useAuth();
   const [diff, setDiff] = useState<DiffFilter>('All');
   const [goalFilter, setGoalFilter] = useState('');
   const [items, setItems] = useState<ChallengeSummary[]>([]);
@@ -73,7 +73,7 @@ function ChallengesPageInner() {
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -97,7 +97,7 @@ function ChallengesPageInner() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [user, diff, goalFilter]);
+  }, [authLoading, diff, goalFilter]);
 
   async function loadMore() {
     if (loadingMore) return;
@@ -130,7 +130,7 @@ function ChallengesPageInner() {
     );
   }, [items, searchQuery]);
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
   }
 

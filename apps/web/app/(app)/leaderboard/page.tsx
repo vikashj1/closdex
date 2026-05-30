@@ -2,7 +2,7 @@
 
 import { CSSProperties, useEffect, useState } from 'react';
 import { api, ApiError, LeaderboardEntry } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
@@ -17,7 +17,7 @@ const PERIODS: { key: Period; label: string }[] = [
 ];
 
 export default function LeaderboardPage() {
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const { user, loading: authLoading } = useAuth();
   const [period, setPeriod] = useState<Period>('weekly');
   const [category, setCategory] = useState('');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -25,7 +25,7 @@ export default function LeaderboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -33,7 +33,7 @@ export default function LeaderboardPage() {
       .then(res => { if (!cancelled) { setEntries(res.entries); setLoading(false); } })
       .catch(err => { if (!cancelled) { setError(err instanceof ApiError ? err.message : 'Failed to load leaderboard.'); setLoading(false); } });
     return () => { cancelled = true; };
-  }, [user, period, category]);
+  }, [authLoading, period, category]);
 
   if (authLoading) return null;
 

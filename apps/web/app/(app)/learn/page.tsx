@@ -7,11 +7,11 @@ import { Btn } from '@/components/ui/Btn';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { ApiError, LearningTrackSummary, TrackProgress, api } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 
 export default function LearnPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const { user, loading: authLoading } = useAuth();
 
   const [tracks, setTracks] = useState<LearningTrackSummary[]>([]);
   const [progressMap, setProgressMap] = useState<Map<string, TrackProgress>>(new Map());
@@ -19,23 +19,26 @@ export default function LearnPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    Promise.all([
-      api.learning.listTracks(),
-      api.learning.myProgress(),
-    ])
-      .then(([tracksData, progressData]) => {
+    const calls: Promise<unknown>[] = [api.learning.listTracks()];
+    if (user) calls.push(api.learning.myProgress());
+
+    Promise.all(calls)
+      .then((results) => {
         if (cancelled) return;
-        setTracks(tracksData);
-        const map = new Map<string, TrackProgress>();
-        for (const p of progressData) {
-          map.set(p.trackId, p);
+        setTracks(results[0] as LearningTrackSummary[]);
+        if (user) {
+          const progressData = results[1] as TrackProgress[];
+          const map = new Map<string, TrackProgress>();
+          for (const p of progressData) {
+            map.set(p.trackId, p);
+          }
+          setProgressMap(map);
         }
-        setProgressMap(map);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -45,9 +48,9 @@ export default function LearnPage() {
       });
 
     return () => { cancelled = true; };
-  }, [user]);
+  }, [authLoading, user]);
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
   }
 

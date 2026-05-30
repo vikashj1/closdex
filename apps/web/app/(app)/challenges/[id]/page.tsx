@@ -8,12 +8,12 @@ import { Avatar } from '@/components/ui/Avatar';
 import { DifficultyTag } from '@/components/ui/DifficultyTag';
 import { Icon } from '@/components/ui/Icon';
 import { ApiError, AttemptDetail, ChallengeSummary, api } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import { DIFFICULTY, difficultyFromEnum } from '@/lib/constants';
 
 export default function ChallengeDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
+  const { user, loading: authLoading } = useAuth();
   const [challenge, setChallenge] = useState<ChallengeSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,17 +23,18 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   const [bestAttempt, setBestAttempt] = useState<AttemptDetail | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
     let cancelled = false;
     setLoading(true);
-    Promise.allSettled([
-      api.challenges.get(params.id),
-      api.attempts.listMine(),
-    ]).then(([cRes, aRes]) => {
+    const calls: Promise<unknown>[] = [api.challenges.get(params.id)];
+    if (user) calls.push(api.attempts.listMine());
+    Promise.allSettled(calls).then((results) => {
       if (cancelled) return;
-      if (cRes.status === 'fulfilled') setChallenge(cRes.value);
-      if (aRes.status === 'fulfilled') {
-        const mine: AttemptDetail[] = aRes.value;
+      const cRes = results[0];
+      const aRes = user ? results[1] : null;
+      if (cRes.status === 'fulfilled') setChallenge(cRes.value as ChallengeSummary);
+      if (aRes && aRes.status === 'fulfilled') {
+        const mine = aRes.value as AttemptDetail[];
         const completed = mine.filter(
           (a) => a.challenge.id === params.id && a.status === 'COMPLETED',
         );
@@ -55,7 +56,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
       }
     });
     return () => { cancelled = true; };
-  }, [user, params.id]);
+  }, [authLoading, user, params.id]);
 
   const canRetry = challenge
     ? !challenge.attemptsAllowed || completedCount < challenge.attemptsAllowed
@@ -63,6 +64,10 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
 
   async function onStart() {
     if (!challenge || (isCompleted && !canRetry)) return;
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/challenges/${challenge.id}`)}`);
+      return;
+    }
     setStarting(true);
     setError(null);
     try {
@@ -74,7 +79,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
     }
   }
 
-  if (authLoading || !user || loading) {
+  if (authLoading || loading) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading challenge…</div>;
   }
   if (!challenge) {
