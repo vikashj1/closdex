@@ -43,6 +43,11 @@ const BASE_NAV: NavItem[] = [
 // browsing keeps Challenges, Leaderboard, Learn, Jobs visible.
 const AUTH_ONLY_NAV_IDS = new Set(['home', 'attempts', 'disputes', 'applications', 'notifications', 'profile', 'settings']);
 
+// Routes that render their own full-bleed marketing chrome when the visitor is
+// anonymous. On these, AppShell should step aside entirely so the page can show
+// its own header/footer instead of the salesperson sidebar.
+const MARKETING_ROUTE_PREFIXES = ['/challenges', '/leaderboard', '/learn'];
+
 /** Sidebar + topbar shell for authenticated salesperson screens. Lives in
  *  app/(app)/layout.tsx so every route under `(app)` inherits it. */
 export function AppShell({ children }: { children: ReactNode }) {
@@ -65,6 +70,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const isActive = (n: NavItem) =>
     n.prefix ? pathname.startsWith(n.prefix) : pathname === n.path;
+
+  // Anonymous + marketing route: pass children through unwrapped so the page's
+  // own PublicHeader/PublicFooter chrome owns the layout.
+  if (!user && MARKETING_ROUTE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return <>{children}</>;
+  }
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh' }}>

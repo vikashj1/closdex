@@ -9,6 +9,7 @@ import { DifficultyTag } from '@/components/ui/DifficultyTag';
 import { Icon } from '@/components/ui/Icon';
 import { ApiError, ChallengeSummary, api, AttemptDetail } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { PublicChallengesView } from '@/components/marketing/PublicChallengesView';
 import { DIFFICULTY, type DifficultyLevel, difficultyFromEnum } from '@/lib/constants';
 
 type DiffFilter = 'All' | DifficultyLevel;
@@ -132,6 +133,11 @@ function ChallengesPageInner() {
 
   if (authLoading) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
+  }
+
+  // Anonymous visitors get the marketing/info screen instead of the live library.
+  if (!user) {
+    return <PublicChallengesView />;
   }
 
   return (
