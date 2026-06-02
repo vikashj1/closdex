@@ -237,6 +237,58 @@ body { min-height: 100vh; }
   }
 }
 
+/* ─── Landing-page mobile rules ────────────────────────────────────────────
+   The landing page hosts custom layouts (hero, How It Works, ProductShowcase,
+   PersonaShowcase, etc.) and isn't inside an auth shell, so the data-resp
+   blanket above doesn't reach it. We tag the landing root with
+   data-resp="landing" and add targeted rules that collapse only the
+   multi-column display grids (matching `repeat(N, 1fr)` or `1fr 1fr...`
+   patterns) — never the irregular grids like the leaderboard table's
+   `32px 1fr auto auto auto`. */
+@media (max-width: 767px) {
+  [data-resp="landing"] [style*="repeat(2, 1fr)"],
+  [data-resp="landing"] [style*="repeat(3, 1fr)"],
+  [data-resp="landing"] [style*="repeat(4, 1fr)"],
+  [data-resp="landing"] [style*="repeat(5, 1fr)"],
+  [data-resp="landing"] [style*="1fr 1fr 1fr"],
+  [data-resp="landing"] [style*="1.05fr 0.95fr"],
+  [data-resp="landing"] [style*="0.85fr 1.15fr"],
+  [data-resp="landing"] [style*="1.2fr 1fr"],
+  [data-resp="landing"] [style*="1fr 1.1fr"],
+  [data-resp="landing"] [style*="0.9fr 1.1fr"],
+  [data-resp="landing"] [style*="1.4fr 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+  /* Hero CTA button row + similar inline-flex toolbars wrap so the buttons
+     stack on phones instead of squashing into a side-by-side row. Constrain
+     to flex containers that explicitly use gap (toolbars), not Btn internals
+     (icon + label). */
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 12"],
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 10"],
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 28"],
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 32"] {
+    flex-wrap: wrap !important;
+  }
+  /* Section headers with justify-content space-between (title + sub-label)
+     drop the sub-label to its own line cleanly. */
+  [data-resp="landing"] [style*="justify-content: 'space-between'"][style*="display: flex"],
+  [data-resp="landing"] [style*="justify-content: space-between"][style*="display: flex"] {
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+  }
+  /* Section padding — landing uses 56–80px which is too much on phones. */
+  [data-resp="landing"] section {
+    padding-left:  clamp(14px, 4vw, 64px) !important;
+    padding-right: clamp(14px, 4vw, 64px) !important;
+    padding-top:    clamp(36px, 8vw, 80px) !important;
+    padding-bottom: clamp(36px, 8vw, 80px) !important;
+  }
+  /* Big hero headline shrinks. */
+  [data-resp="landing"] h1 { font-size: clamp(2rem, 8vw, 4.75rem) !important; line-height: 1.05 !important; }
+  [data-resp="landing"] h2 { font-size: clamp(1.6rem, 5.5vw, 2.75rem) !important; line-height: 1.15 !important; }
+}
+
 .stripe-ph {
   background-image: repeating-linear-gradient(135deg, var(--surface-2) 0 8px, var(--surface) 8px 16px);
 }

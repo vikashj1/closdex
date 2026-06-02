@@ -26,7 +26,7 @@ export default function LandingPage() {
   const go = (path: string) => router.push(path);
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100%' }}>
+    <div data-resp="landing" style={{ background: 'var(--bg)', minHeight: '100%' }}>
       {/* Header */}
       <header className="pad-x-fluid" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 64px', borderBottom: '1px solid var(--border-soft)' }}>
         <Logo size={24} />
