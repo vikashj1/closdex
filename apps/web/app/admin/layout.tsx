@@ -130,7 +130,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </button>
       </aside>
 
-      <main style={{ overflow: 'auto' }}>{children}</main>
+      <main data-resp="admin" style={{ overflow: 'auto' }}>{children}</main>
     </div>
   );
 }

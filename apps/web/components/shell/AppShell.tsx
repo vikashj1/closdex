@@ -266,7 +266,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </>
         ) : null}
       </aside>
-      <main style={{ overflow: 'auto' }}>
+      <main data-resp="app" style={{ overflow: 'auto' }}>
         <TopBar />
         {children}
       </main>

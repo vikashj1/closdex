@@ -198,7 +198,7 @@ export function CompanyShell({ children }: { children: ReactNode }) {
           Sign out
         </button>
       </aside>
-      <main style={{ overflow: 'auto' }}>
+      <main data-resp="company" style={{ overflow: 'auto' }}>
         {/* Topbar */}
         <div
           style={{

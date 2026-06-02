@@ -195,6 +195,48 @@ body { min-height: 100vh; }
   .grid-hero { gap: 32px !important; }
 }
 
+/* ─── Auth-shell auto-responsive blanket ───────────────────────────────────
+   For every page rendered inside an auth shell (salesperson AppShell,
+   CompanyShell, AdminLayout), we tag the wrapping <main> with
+   data-resp="..." so these descendant rules can rein in the dashboards,
+   forms, tables, and admin panels without per-page edits.
+
+   The rules are intentionally aggressive on small screens — they force
+   horizontal padding down to ~14px and collapse every multi-column grid
+   to one column. Specific pages can opt out later by adding a higher-
+   specificity class. */
+@media (max-width: 767px) {
+  /* Shrink oversized horizontal padding on direct children + sections + headers. */
+  [data-resp] > div,
+  [data-resp] section,
+  [data-resp] > header,
+  [data-resp] > main {
+    padding-left:  clamp(12px, 4vw, 32px) !important;
+    padding-right: clamp(12px, 4vw, 32px) !important;
+  }
+  /* Collapse every inline-style grid to a single column on phones. */
+  [data-resp] [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+  /* Tighten large headings inside dashboards/admin so they don't blow up. */
+  [data-resp] h1 { font-size: clamp(1.5rem, 5vw, 2rem)   !important; line-height: 1.15 !important; }
+  [data-resp] h2 { font-size: clamp(1.2rem, 4vw, 1.6rem) !important; line-height: 1.2  !important; }
+  /* Wrap rows of inline-flex toolbars so chips/filters don't overflow. */
+  [data-resp] [style*="display: flex"] {
+    flex-wrap: wrap !important;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  /* Tablet sweet-spot for dashboard grids — collapse 3+ to 2 columns. */
+  [data-resp] [style*="repeat(3, 1fr)"],
+  [data-resp] [style*="repeat(4, 1fr)"],
+  [data-resp] [style*="repeat(5, 1fr)"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
 .stripe-ph {
   background-image: repeating-linear-gradient(135deg, var(--surface-2) 0 8px, var(--surface) 8px 16px);
 }
