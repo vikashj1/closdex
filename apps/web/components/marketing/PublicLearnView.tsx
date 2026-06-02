@@ -53,6 +53,7 @@ export function PublicLearnView() {
       <PublicHeader active="info-learn" />
 
       <section
+        className="pad-x-fluid pad-y-hero"
         style={{
           padding: '72px 64px 48px',
           textAlign: 'center',
@@ -69,7 +70,7 @@ export function PublicLearnView() {
             Learn · scoring, ranks & sales craft
           </div>
           <h1
-            className="display"
+            className="display h-hero"
             style={{
               fontSize: 60,
               fontWeight: 700,
@@ -89,6 +90,7 @@ export function PublicLearnView() {
       </section>
 
       <section
+        className="pad-x-fluid pad-y-section"
         style={{ padding: '64px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}
       >
         <div style={{ marginBottom: 36 }}>
@@ -99,7 +101,7 @@ export function PublicLearnView() {
             outcome and difficulty to produce the points that move your rank.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
+        <div className="grid-5-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
           {DIMS.map((d, i) => (
             <Card key={d.t} padding={18}>
               <div className="mono" style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, marginBottom: 10 }}>
@@ -169,7 +171,7 @@ export function PublicLearnView() {
         </Card>
       </section>
 
-      <section style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
         <div style={{ marginBottom: 32 }}>
           <div style={mp('var(--gold)')}>The rank system</div>
           <h2 className="display" style={mSectionHead}>Eight ranks. Points are the only currency.</h2>
@@ -178,7 +180,7 @@ export function PublicLearnView() {
             to hiring partners.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        <div className="grid-4-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
           {RANKS.map((r) => (
             <Card key={r.name} padding={20} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <RankBadge rank={r.name} size={32} />
@@ -194,6 +196,7 @@ export function PublicLearnView() {
       </section>
 
       <section
+        className="pad-x-fluid pad-y-section"
         style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
@@ -205,7 +208,7 @@ export function PublicLearnView() {
             All guides
           </Btn>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+        <div className="grid-3-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
           {GUIDES.map((g) => (
             <Card
               key={g.t}
@@ -271,7 +274,7 @@ export function PublicLearnView() {
         </div>
       </section>
 
-      <section style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
         <div style={{ marginBottom: 32 }}>
           <div style={mp('var(--cool)')}>Methodology primers</div>
           <h2 className="display" style={mSectionHead}>The frameworks behind the rubric.</h2>
@@ -280,7 +283,7 @@ export function PublicLearnView() {
             Enablement customers can weight the rubric to any of them.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div className="grid-4-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
           {METHODS.map((m) => (
             <Card key={m.k} padding={24}>
               <div

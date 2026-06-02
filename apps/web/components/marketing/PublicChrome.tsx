@@ -42,6 +42,7 @@ export function PublicHeader({ active }: { active?: PublicNavId }) {
   const go = (id: PublicNavId) => router.push(ROUTE_MAP[id]);
   return (
     <header
+      className="pad-x-fluid"
       style={{
         position: 'sticky',
         top: 0,
@@ -58,7 +59,7 @@ export function PublicHeader({ active }: { active?: PublicNavId }) {
       <div style={{ cursor: 'pointer' }} onClick={() => go('landing')}>
         <Logo size={24} />
       </div>
-      <nav style={{ display: 'flex', gap: 28, fontSize: 13.5 }}>
+      <nav className="hide-mobile" style={{ display: 'flex', gap: 28, fontSize: 13.5 }}>
         {PUBLIC_NAV.map((n) => (
           <a
             key={n.id}
@@ -137,6 +138,7 @@ export function PublicFooter() {
   return (
     <>
       <footer
+        className="pad-x-fluid grid-4-2"
         style={{
           padding: '48px 64px',
           borderTop: '1px solid var(--border-soft)',
@@ -169,6 +171,7 @@ export function PublicFooter() {
         ))}
       </footer>
       <div
+        className="pad-x-fluid stack-mobile"
         style={{
           padding: '16px 64px',
           borderTop: '1px solid var(--border-soft)',
@@ -176,6 +179,7 @@ export function PublicFooter() {
           fontSize: 11.5,
           display: 'flex',
           justifyContent: 'space-between',
+          gap: 8,
           background: 'var(--bg-2)',
         }}
       >
@@ -202,7 +206,7 @@ export function MarketingCTA({
   const router = useRouter();
   const go = (id: PublicNavId) => router.push(ROUTE_MAP[id]);
   return (
-    <section style={{ padding: '0 64px 72px' }}>
+    <section className="pad-x-fluid" style={{ padding: '0 64px 72px' }}>
       <Card
         padding={0}
         style={{
@@ -225,7 +229,7 @@ export function MarketingCTA({
         <div style={{ padding: '56px 56px', position: 'relative', maxWidth: 760 }}>
           <div style={mp('var(--gold)')}>{eyebrow}</div>
           <h2
-            className="display"
+            className="display h-section"
             style={{
               fontSize: 48,
               fontWeight: 700,

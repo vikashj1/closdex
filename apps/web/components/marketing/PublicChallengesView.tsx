@@ -91,6 +91,7 @@ export function PublicChallengesView() {
 
       {/* Hero */}
       <section
+        className="pad-x-fluid pad-y-hero grid-hero"
         style={{
           padding: '72px 64px 56px',
           display: 'grid',
@@ -105,7 +106,7 @@ export function PublicChallengesView() {
         <div className="reveal-up" style={{ position: 'relative', zIndex: 1 }}>
           <div style={mp('var(--gold)')}>The arena floor · 80+ live scenarios</div>
           <h1
-            className="display"
+            className="display h-hero"
             style={{
               fontSize: 64,
               fontWeight: 700,
@@ -150,6 +151,7 @@ export function PublicChallengesView() {
 
       {/* Anatomy */}
       <section
+        className="pad-x-fluid pad-y-section"
         style={{ padding: '72px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}
       >
         <div style={{ marginBottom: 36 }}>
@@ -160,7 +162,7 @@ export function PublicChallengesView() {
             a goal you have to earn.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div className="grid-4-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
           {ANATOMY.map((c) => (
             <Card key={c.s} padding={22} hover>
               <div className="mono" style={{ color: 'var(--gold)', fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
@@ -177,7 +179,7 @@ export function PublicChallengesView() {
       </section>
 
       {/* Difficulty tiers */}
-      <section style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
         <div style={{ marginBottom: 36 }}>
           <div style={mp('var(--gold)')}>Five tiers · unlocked as you rank up</div>
           <h2 className="display" style={mSectionHead}>
@@ -188,7 +190,7 @@ export function PublicChallengesView() {
             Your skill ceiling keeps moving, and so do the points on offer.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
+        <div className="grid-5-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
           {TIERS.map((t) => {
             const d = DIFFICULTY[t.name];
             return (
@@ -243,7 +245,7 @@ export function PublicChallengesView() {
       </section>
 
       {/* Personas */}
-      <section style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 36 }}>
           <div>
             <div style={mp('var(--gold)')}>Six persona archetypes</div>
@@ -257,7 +259,7 @@ export function PublicChallengesView() {
             Browse all 80+
           </Btn>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div className="grid-3-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
           {PERSONAS.map((p) => (
             <Card key={p.n} padding={22} hover onClick={goSignup}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
@@ -295,13 +297,13 @@ export function PublicChallengesView() {
       </section>
 
       {/* Library preview (gated) */}
-      <section style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
         <div style={{ marginBottom: 32 }}>
           <div style={mp('var(--gold)')}>A peek at the library</div>
           <h2 className="display" style={mSectionHead}>Fresh challenges drop every week.</h2>
         </div>
         <div style={{ position: 'relative' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          <div className="grid-3-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {LIBRARY.map((c, i) => (
               <Card key={c.title} padding={18} hover style={i >= 3 ? { opacity: 0.5 } : undefined}>
                 <div
@@ -377,9 +379,10 @@ export function PublicChallengesView() {
       </section>
 
       {/* Scoring teaser */}
-      <section style={{ padding: '0 64px 72px' }}>
+      <section className="pad-x-fluid" style={{ padding: '0 64px 72px' }}>
         <Card padding={0} style={{ overflow: 'hidden', background: 'var(--bg-2)' }}>
           <div
+            className="grid-2-1"
             style={{
               padding: 40,
               display: 'grid',

@@ -59,8 +59,9 @@ export function CompanyShell({ children }: { children: ReactNode }) {
     n.prefix ? pathname.startsWith(n.prefix) : pathname === n.path;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh' }}>
+    <div className="app-grid" style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh' }}>
       <aside
+        className="app-aside"
         style={{
           background: 'var(--bg-2)',
           borderRight: '1px solid var(--border-soft)',

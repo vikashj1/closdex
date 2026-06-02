@@ -56,6 +56,7 @@ export function PublicCompaniesView() {
       <PublicHeader active="info-companies" />
 
       <section
+        className="pad-x-fluid pad-y-hero grid-hero"
         style={{
           padding: '72px 64px 56px',
           display: 'grid',
@@ -70,7 +71,7 @@ export function PublicCompaniesView() {
         <div className="reveal-up" style={{ position: 'relative', zIndex: 1 }}>
           <div style={mp('var(--cool)')}>For hiring teams · IT Sales vertical</div>
           <h1
-            className="display"
+            className="display h-hero"
             style={{
               fontSize: 60,
               fontWeight: 700,
@@ -115,9 +116,10 @@ export function PublicCompaniesView() {
       </section>
 
       <section
+        className="pad-x-fluid pad-y-section"
         style={{ padding: '72px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        <div className="grid-2-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
           <Card padding={32} style={{ borderColor: 'color-mix(in oklch, var(--d-expert) 25%, var(--border))' }}>
             <div
               style={{
@@ -169,12 +171,12 @@ export function PublicCompaniesView() {
         </div>
       </section>
 
-      <section style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
         <div style={{ marginBottom: 40 }}>
           <div style={mp('var(--cool)')}>Three steps to a confirmed hire</div>
           <h2 className="display" style={mSectionHead}>Search. Evaluate. Hire.</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+        <div className="grid-3-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
           {STEPS.map((c) => (
             <div key={c.s}>
               <ImgPh label={c.label} height={180} style={{ marginBottom: 16 }} />
@@ -189,13 +191,14 @@ export function PublicCompaniesView() {
       </section>
 
       <section
+        className="pad-x-fluid pad-y-section"
         style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}
       >
         <div style={{ marginBottom: 36 }}>
           <div style={mp('var(--cool)')}>Everything in the hiring console</div>
           <h2 className="display" style={mSectionHead}>Built for sales-hiring decisions.</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div className="grid-3-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
           {FEATURES.map((c) => (
             <Card key={c.t} padding={22} hover>
               <div style={{ color: 'var(--cool)', marginBottom: 12 }}>{c.icon}</div>
@@ -206,7 +209,7 @@ export function PublicCompaniesView() {
         </div>
       </section>
 
-      <section style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
           <div>
             <div style={mp('var(--cool)')}>A glimpse of the pool</div>
@@ -216,7 +219,7 @@ export function PublicCompaniesView() {
             Open talent search
           </Btn>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div className="grid-3-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
           {CANDIDATES.map((c) => (
             <Card key={c.name} padding={20} hover onClick={() => router.push('/signup')}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -269,9 +272,10 @@ export function PublicCompaniesView() {
         </div>
       </section>
 
-      <section style={{ padding: '0 64px 72px' }}>
+      <section className="pad-x-fluid" style={{ padding: '0 64px 72px' }}>
         <Card padding={0} style={{ overflow: 'hidden', background: 'var(--bg-2)' }}>
           <div
+            className="grid-2-1"
             style={{
               padding: 40,
               display: 'grid',
@@ -340,6 +344,7 @@ export function PublicCompaniesView() {
       </section>
 
       <section
+        className="pad-x-fluid pad-y-section"
         style={{ padding: '48px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}
       >
         <div
@@ -373,7 +378,7 @@ export function PublicCompaniesView() {
         </div>
       </section>
 
-      <section style={{ padding: '64px 64px 8px' }}>
+      <section className="pad-x-fluid" style={{ padding: '64px 64px 8px' }}>
         <Card padding={40} style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
           <div
             className="display"

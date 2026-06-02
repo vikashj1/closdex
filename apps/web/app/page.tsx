@@ -28,9 +28,9 @@ export default function LandingPage() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100%' }}>
       {/* Header */}
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 64px', borderBottom: '1px solid var(--border-soft)' }}>
+      <header className="pad-x-fluid" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 64px', borderBottom: '1px solid var(--border-soft)' }}>
         <Logo size={24} />
-        <nav style={{ display: 'flex', gap: 28, fontSize: 13.5, color: 'var(--text-dim)' }}>
+        <nav className="hide-mobile" style={{ display: 'flex', gap: 28, fontSize: 13.5, color: 'var(--text-dim)' }}>
           <a onClick={() => go('/challenges')} style={navLink}>Challenges</a>
           <a onClick={() => go('/leaderboard')} style={navLink}>Leaderboard</a>
           <a onClick={() => go('/company')} style={navLink}>For Companies</a>
@@ -44,14 +44,14 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section style={{ padding: '72px 64px 56px', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 48, alignItems: 'center' }}>
+      <section className="pad-x-fluid grid-hero pad-y-hero" style={{ padding: '72px 64px 56px', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 48, alignItems: 'center' }}>
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, background: 'color-mix(in oklch, var(--gold) 12%, transparent)', border: '1px solid color-mix(in oklch, var(--gold) 30%, transparent)', color: 'var(--gold)', fontSize: 12, fontWeight: 600, marginBottom: 24 }}>
             <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--gold)', animation: 'pulseDot 1.6s infinite' }} />
             BETA · IT Sales vertical · Bangalore / Mumbai / Delhi NCR
           </div>
-          <h1 className="display" style={{ fontSize: 76, fontWeight: 700, lineHeight: 0.95, letterSpacing: '-0.04em', margin: '0 0 20px' }}>
-            Compete.<br />Climb.<br /><span style={{ color: 'var(--gold)' }}>Get hired.</span>
+          <h1 className="display h-hero" style={{ fontSize: 76, fontWeight: 700, lineHeight: 0.95, letterSpacing: '-0.04em', margin: '0 0 20px' }}>
+            Compete.<br />Climb.<br /><span className="grad-text-gold">Get hired.</span>
           </h1>
           <p style={{ fontSize: 18, color: 'var(--text-dim)', lineHeight: 1.5, maxWidth: 520, margin: '0 0 32px' }}>
             India&apos;s first sales talent leaderboard. Practice realistic AI-driven lead conversations, climb the ranks, and get discovered by hiring companies — all on merit.

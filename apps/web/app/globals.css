@@ -145,6 +145,56 @@ body { min-height: 100vh; }
   }
 }
 
+/* ─── Responsive primitives ────────────────────────────────────────────────
+   Breakpoints (mobile-first):
+     base:  <640px (small phones)
+     md:    >=768px
+     lg:    >=1024px
+   Use these classes on layout containers — they tame fixed widths, big paddings,
+   and multi-column grids on small screens. */
+
+/* Fluid horizontal padding for top-level sections. 16px mobile → 64px desktop. */
+.pad-x-fluid { padding-left: clamp(16px, 4vw, 64px); padding-right: clamp(16px, 4vw, 64px); }
+
+/* Fluid hero typography. */
+.h-hero    { font-size: clamp(2.2rem, 5.5vw, 4rem) !important;   line-height: 1.02 !important; }
+.h-section { font-size: clamp(1.6rem, 3.6vw, 2.75rem) !important; line-height: 1.1  !important; }
+
+/* Hide on mobile (<768px). Use on decorative columns or wide-only widgets. */
+@media (max-width: 767px) {
+  .hide-mobile { display: none !important; }
+  /* Hero: stack the two-column layout vertically. */
+  .grid-hero { grid-template-columns: 1fr !important; gap: 28px !important; }
+  /* General 2-col → 1-col. */
+  .grid-2-1 { grid-template-columns: 1fr !important; }
+  /* 3-col grids → 1-col. */
+  .grid-3-1 { grid-template-columns: 1fr !important; }
+  /* 4-col → 2-col. */
+  .grid-4-2 { grid-template-columns: 1fr 1fr !important; }
+  /* 5-col → 2-col. */
+  .grid-5-2 { grid-template-columns: 1fr 1fr !important; }
+  /* 6-col → 3-col. */
+  .grid-6-3 { grid-template-columns: 1fr 1fr 1fr !important; }
+  /* Generic "stack on mobile" for flex rows. */
+  .stack-mobile { flex-direction: column !important; align-items: stretch !important; }
+  /* Top-of-page padding compression. */
+  .pad-y-hero { padding-top: 40px !important; padding-bottom: 32px !important; }
+  /* Tighter section padding on phones. */
+  .pad-y-section { padding-top: 48px !important; padding-bottom: 48px !important; }
+  /* Sidebars in (app)/ and /company become hidden on mobile until we ship a
+     proper hamburger drawer. The shell falls back to topbar-only nav. */
+  .app-aside { display: none !important; }
+  .app-grid { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .grid-3-1 { grid-template-columns: 1fr 1fr !important; }
+  .grid-4-2 { grid-template-columns: 1fr 1fr !important; }
+  .grid-5-2 { grid-template-columns: 1fr 1fr 1fr !important; }
+  .grid-6-3 { grid-template-columns: 1fr 1fr 1fr !important; }
+  .grid-hero { gap: 32px !important; }
+}
+
 .stripe-ph {
   background-image: repeating-linear-gradient(135deg, var(--surface-2) 0 8px, var(--surface) 8px 16px);
 }

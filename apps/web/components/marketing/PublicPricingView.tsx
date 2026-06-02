@@ -88,6 +88,7 @@ export function PublicPricingView() {
       <PublicHeader active="info-pricing" />
 
       <section
+        className="pad-x-fluid pad-y-hero"
         style={{
           padding: '72px 64px 32px',
           textAlign: 'center',
@@ -102,7 +103,7 @@ export function PublicPricingView() {
         <div className="reveal-up" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ ...mp('var(--gold)'), margin: '0 auto' }}>Pricing · IT Sales vertical</div>
         <h1
-          className="display"
+          className="display h-hero"
           style={{
             fontSize: 58,
             fontWeight: 700,
@@ -151,7 +152,7 @@ export function PublicPricingView() {
         </div>
       </section>
 
-      <section style={{ padding: '16px 64px 0' }}>
+      <section className="pad-x-fluid" style={{ padding: '16px 64px 0' }}>
         <Card padding={0} style={{ overflow: 'hidden', borderColor: 'color-mix(in oklch, var(--gold) 35%, var(--border))' }}>
           <div
             style={{
@@ -203,14 +204,14 @@ export function PublicPricingView() {
         </Card>
       </section>
 
-      <section style={{ padding: '48px 64px 0' }}>
+      <section className="pad-x-fluid" style={{ padding: '48px 64px 0' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ ...mp('var(--cool)'), margin: '0 auto' }}>For companies</div>
           <h2 className="display" style={{ ...mSectionHead, margin: '16px auto 0', fontSize: 36 }}>
             Plans that scale with your hiring.
           </h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18, alignItems: 'stretch' }}>
+        <div className="grid-3-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18, alignItems: 'stretch' }}>
           {COMPANY_TIERS.map((t) => (
             <Card
               key={t.name}
@@ -303,7 +304,7 @@ export function PublicPricingView() {
         </div>
       </section>
 
-      <section style={{ padding: '72px 64px 0' }}>
+      <section className="pad-x-fluid" style={{ padding: '72px 64px 0' }}>
         <Card padding={0} style={{ overflow: 'hidden', background: 'var(--bg-2)' }}>
           <div
             style={{
@@ -380,7 +381,7 @@ export function PublicPricingView() {
         </Card>
       </section>
 
-      <section style={{ padding: '48px 64px 0' }}>
+      <section className="pad-x-fluid" style={{ padding: '48px 64px 0' }}>
         <Card
           padding={32}
           style={{
@@ -420,7 +421,7 @@ export function PublicPricingView() {
         </Card>
       </section>
 
-      <section style={{ padding: '72px 64px 0' }}>
+      <section className="pad-x-fluid" style={{ padding: '72px 64px 0' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ ...mp('var(--text-dim)'), color: 'var(--text-mute)', margin: '0 auto' }}>
             Compare company plans
@@ -500,8 +501,8 @@ export function PublicPricingView() {
         </Card>
       </section>
 
-      <section style={{ padding: '72px 64px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: 56 }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '72px 64px' }}>
+        <div className="grid-2-1" style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: 56 }}>
           <div>
             <div style={mp('var(--gold)')}>Pricing questions</div>
             <h2 className="display" style={{ ...mSectionHead, fontSize: 36 }}>Before you commit.</h2>

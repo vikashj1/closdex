@@ -58,6 +58,7 @@ export function PublicLeaderboardView() {
       <PublicHeader active="info-leaderboard" />
 
       <section
+        className="pad-x-fluid pad-y-hero grid-hero"
         style={{
           padding: '64px 64px 40px',
           display: 'grid',
@@ -83,7 +84,7 @@ export function PublicLeaderboardView() {
             Live · IT Sales · India · resets in 2d 14h
           </div>
           <h1
-            className="display"
+            className="display h-hero"
             style={{
               fontSize: 60,
               fontWeight: 700,
@@ -112,7 +113,7 @@ export function PublicLeaderboardView() {
         </div>
       </section>
 
-      <section style={{ padding: '0 64px 8px' }}>
+      <section className="pad-x-fluid" style={{ padding: '0 64px 8px' }}>
         <Card padding={16} style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap' }}>
           {FILTER_CHIPS.map((f) => (
             <div key={f.g} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -149,7 +150,7 @@ export function PublicLeaderboardView() {
         </Card>
       </section>
 
-      <section style={{ padding: '24px 64px 0' }}>
+      <section className="pad-x-fluid" style={{ padding: '24px 64px 0' }}>
         <Card padding={0} style={{ overflow: 'hidden' }}>
           <div
             style={{
@@ -259,9 +260,10 @@ export function PublicLeaderboardView() {
       </section>
 
       <section
+        className="pad-x-fluid pad-y-section"
         style={{ padding: '72px 64px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-2)' }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: 56, alignItems: 'center' }}>
+        <div className="grid-2-1" style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: 56, alignItems: 'center' }}>
           <div>
             <div style={mp('var(--gold)')}>Eight ranks · one ladder</div>
             <h2 className="display" style={mSectionHead}>Everyone starts at Rookie. The rest you earn.</h2>
@@ -299,14 +301,14 @@ export function PublicLeaderboardView() {
         </div>
       </section>
 
-      <section style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
+      <section className="pad-x-fluid pad-y-section" style={{ padding: '80px 64px', borderTop: '1px solid var(--border-soft)' }}>
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <div style={{ ...mp('var(--emerald)'), margin: '0 auto' }}>Built to be trusted</div>
           <h2 className="display" style={{ ...mSectionHead, margin: '16px auto 8px' }}>
             Why companies treat this as a hiring signal.
           </h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+        <div className="grid-3-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
           {FAIRNESS.map((c) => (
             <Card key={c.t} padding={24}>
               <div style={{ color: 'var(--emerald)', marginBottom: 12 }}>{c.icon}</div>
