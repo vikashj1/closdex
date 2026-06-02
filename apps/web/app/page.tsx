@@ -84,8 +84,19 @@ export default function LandingPage() {
               Live · resets in 2d 14h
             </span>
           </div>
-          {LEADERBOARD_PREVIEW.map((row) => (
-            <div key={row.r} style={{ display: 'grid', gridTemplateColumns: '32px 1fr auto auto auto', gap: 14, padding: '11px 18px', alignItems: 'center', borderBottom: '1px solid var(--border-soft)' }}>
+          {LEADERBOARD_PREVIEW.map((row, i) => (
+            <div
+              key={row.r}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '32px 1fr auto auto auto',
+                gap: 14,
+                padding: '11px 18px',
+                alignItems: 'center',
+                borderBottom: '1px solid var(--border-soft)',
+                animation: `fadeInUp 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) ${0.25 + i * 0.08}s both`,
+              }}
+            >
               <div className="mono" style={{ color: row.r <= 3 ? 'var(--gold)' : 'var(--text-mute)', fontSize: 13, fontWeight: 700 }}>#{row.r}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Avatar name={row.name} size={28} />
@@ -111,8 +122,9 @@ export default function LandingPage() {
           <span style={{ color: 'var(--text-mute)', fontSize: 13 }}>For salespersons</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
-          {HOW_IT_WORKS.map((c) => (
-            <Card key={c.step} padding={24} hover>
+          {HOW_IT_WORKS.map((c, i) => (
+            <div key={c.step} style={{ animation: `fadeInUp 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) ${i * 0.12}s both` }}>
+            <Card padding={24} hover>
               <div className="mono" style={{ color: 'var(--gold)', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{c.step}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, color: 'var(--gold)' }}>
                 {c.icon}
@@ -120,6 +132,7 @@ export default function LandingPage() {
               </div>
               <p style={{ color: 'var(--text-dim)', margin: 0, fontSize: 14, lineHeight: 1.55 }}>{c.body}</p>
             </Card>
+            </div>
           ))}
         </div>
       </section>

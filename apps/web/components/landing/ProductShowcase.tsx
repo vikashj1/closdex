@@ -37,15 +37,23 @@ export function ProductShowcase({ go }: Props) {
           </div>
         </div>
 
-        {/* 2-column UI preview collage */}
+        {/* 2-column UI preview collage — staggered entrance + soft float */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 14 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <UIPreviewChat />
-            <UIPreviewLeaderboard />
+            <div className="reveal-up" style={{ animation: 'fadeInUp 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both, floatY 6s ease-in-out 0.8s infinite' }}>
+              <UIPreviewChat />
+            </div>
+            <div className="reveal-up d-200" style={{ animation: 'fadeInUp 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s both, floatY 6.8s ease-in-out 1.4s infinite' }}>
+              <UIPreviewLeaderboard />
+            </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <UIPreviewScore />
-            <UIPreviewHeatmap />
+            <div className="reveal-up d-100" style={{ animation: 'fadeInUp 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s both, floatY 7.2s ease-in-out 1.1s infinite' }}>
+              <UIPreviewScore />
+            </div>
+            <div className="reveal-up d-300" style={{ animation: 'fadeInUp 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s both, floatY 6.4s ease-in-out 1.7s infinite' }}>
+              <UIPreviewHeatmap />
+            </div>
           </div>
         </div>
       </div>
