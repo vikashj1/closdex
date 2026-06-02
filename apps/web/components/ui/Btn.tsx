@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties, ReactNode, useState } from 'react';
 
 type Kind = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
 type Size = 'sm' | 'md' | 'lg';
@@ -38,6 +38,10 @@ export function Btn({
   const s = SIZES[size];
   const v = VARIANTS[kind];
   const isDisabled = disabled || loading;
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const live = !isDisabled && hovered;
+  const tinted = kind === 'primary' || kind === 'danger' || kind === 'success';
   return (
     <button
       type={type}
@@ -58,12 +62,20 @@ export function Btn({
         width: full ? '100%' : 'auto',
         cursor: isDisabled ? 'not-allowed' : 'pointer',
         opacity: isDisabled ? 0.55 : 1,
-        transition: 'transform 0.08s ease, filter 0.15s, opacity 0.15s',
+        transform: pressed && live ? 'translateY(0) scale(0.985)' : live ? 'translateY(-1px)' : 'translateY(0)',
+        filter: live ? 'brightness(1.08) saturate(1.06)' : 'none',
+        boxShadow: live
+          ? tinted
+            ? `0 8px 22px -10px color-mix(in oklch, ${v.bg} 70%, transparent), 0 0 0 1px color-mix(in oklch, ${v.bg} 50%, transparent)`
+            : '0 6px 18px -10px rgba(0,0,0,0.45)'
+          : 'none',
+        transition: 'transform 0.14s ease, filter 0.18s ease, box-shadow 0.2s ease, opacity 0.15s ease',
         ...style,
       }}
-      onMouseDown={(e) => { if (!isDisabled) e.currentTarget.style.transform = 'scale(0.98)'; }}
-      onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => { if (!isDisabled) setPressed(true); }}
+      onMouseUp={() => setPressed(false)}
     >
       {loading ? (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"

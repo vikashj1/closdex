@@ -52,21 +52,36 @@ export function PublicLearnView() {
     <PublicScreen>
       <PublicHeader active="info-learn" />
 
-      <section style={{ padding: '72px 64px 48px', textAlign: 'center' }}>
-        <div style={{ ...mp('var(--gold)'), margin: '0 auto' }}>Learn · scoring, ranks & sales craft</div>
-        <h1
-          className="display"
-          style={{
-            fontSize: 60,
-            fontWeight: 700,
-            lineHeight: 1,
-            letterSpacing: '-0.035em',
-            margin: '18px auto 16px',
-            maxWidth: 740,
-          }}
-        >
-          Learn the game. <span style={{ color: 'var(--gold)' }}>Then go win it.</span>
-        </h1>
+      <section
+        style={{
+          padding: '72px 64px 48px',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          className="hero-blob gold"
+          style={{ top: -200, left: '50%', transform: 'translateX(-50%)' }}
+        />
+        <div className="reveal-up" style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ ...mp('var(--gold)'), margin: '0 auto' }}>
+            Learn · scoring, ranks & sales craft
+          </div>
+          <h1
+            className="display"
+            style={{
+              fontSize: 60,
+              fontWeight: 700,
+              lineHeight: 1,
+              letterSpacing: '-0.035em',
+              margin: '18px auto 16px',
+              maxWidth: 740,
+            }}
+          >
+            Learn the game. <span className="grad-text-gold">Then go win it.</span>
+          </h1>
+        </div>
         <p style={{ ...mLede, fontSize: 16.5, margin: '0 auto' }}>
           Exactly how scoring works, how ranks are earned, and the sales craft behind every
           challenge. All out in the open. No black box, no gatekeeping.

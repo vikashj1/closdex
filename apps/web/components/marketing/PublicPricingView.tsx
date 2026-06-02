@@ -87,7 +87,19 @@ export function PublicPricingView() {
     <PublicScreen>
       <PublicHeader active="info-pricing" />
 
-      <section style={{ padding: '72px 64px 32px', textAlign: 'center' }}>
+      <section
+        style={{
+          padding: '72px 64px 32px',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          className="hero-blob gold"
+          style={{ top: -220, left: '50%', transform: 'translateX(-50%)' }}
+        />
+        <div className="reveal-up" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ ...mp('var(--gold)'), margin: '0 auto' }}>Pricing · IT Sales vertical</div>
         <h1
           className="display"
@@ -100,8 +112,9 @@ export function PublicPricingView() {
             maxWidth: 760,
           }}
         >
-          Free to compete. <span style={{ color: 'var(--gold)' }}>Aligned to outcomes.</span>
+          Free to compete. <span className="grad-text-gold">Aligned to outcomes.</span>
         </h1>
+        </div>
         <p style={{ ...mLede, fontSize: 16.5, margin: '0 auto 28px' }}>
           Salespersons never pay. Companies browse for free and pay on results. No hidden seats, no
           surprise overages.

@@ -62,9 +62,12 @@ export function PublicCompaniesView() {
           gridTemplateColumns: '1.05fr 0.95fr',
           gap: 48,
           alignItems: 'center',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <div>
+        <div className="hero-blob cool" style={{ top: -160, right: -120 }} />
+        <div className="reveal-up" style={{ position: 'relative', zIndex: 1 }}>
           <div style={mp('var(--cool)')}>For hiring teams · IT Sales vertical</div>
           <h1
             className="display"
@@ -77,7 +80,7 @@ export function PublicCompaniesView() {
             }}
           >
             Hire sales talent on{' '}
-            <span style={{ color: 'var(--cool)' }}>objective performance.</span>
+            <span className="grad-text-cool">objective performance.</span>
           </h1>
           <p style={{ ...mLede, fontSize: 17, maxWidth: 540, marginBottom: 28 }}>
             Stop reading the same 200 &quot;results-driven, dynamic SDR&quot; resumes. Search a
@@ -106,7 +109,9 @@ export function PublicCompaniesView() {
             ))}
           </div>
         </div>
-        <ImgPh label="talent search dashboard" height={380} />
+        <div className="float-soft reveal-up d-200" style={{ position: 'relative', zIndex: 1 }}>
+          <ImgPh label="talent search dashboard" height={380} />
+        </div>
       </section>
 
       <section

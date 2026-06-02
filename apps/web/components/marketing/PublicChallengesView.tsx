@@ -97,9 +97,12 @@ export function PublicChallengesView() {
           gridTemplateColumns: '1.05fr 0.95fr',
           gap: 48,
           alignItems: 'center',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <div>
+        <div className="hero-blob gold" style={{ top: -160, right: -120 }} />
+        <div className="reveal-up" style={{ position: 'relative', zIndex: 1 }}>
           <div style={mp('var(--gold)')}>The arena floor · 80+ live scenarios</div>
           <h1
             className="display"
@@ -111,7 +114,7 @@ export function PublicChallengesView() {
               margin: '18px 0 18px',
             }}
           >
-            Every lead you&apos;re<br />afraid of. <span style={{ color: 'var(--gold)' }}>On demand.</span>
+            Every lead you&apos;re<br />afraid of. <span className="grad-text-gold">On demand.</span>
           </h1>
           <p style={{ ...mLede, fontSize: 17.5, maxWidth: 520, marginBottom: 28 }}>
             Challenges are realistic, dynamic conversations with AI-simulated buyers. Same
@@ -140,7 +143,9 @@ export function PublicChallengesView() {
             ))}
           </div>
         </div>
-        <ImgPh label="hero — conversation screenshot" height={380} />
+        <div className="float-soft reveal-up d-200" style={{ position: 'relative', zIndex: 1 }}>
+          <ImgPh label="hero — conversation screenshot" height={380} />
+        </div>
       </section>
 
       {/* Anatomy */}

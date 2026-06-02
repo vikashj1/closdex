@@ -64,9 +64,12 @@ export function PublicLeaderboardView() {
           gridTemplateColumns: '1fr auto',
           gap: 40,
           alignItems: 'flex-end',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <div>
+        <div className="hero-blob gold" style={{ top: -180, right: -140 }} />
+        <div className="reveal-up" style={{ position: 'relative', zIndex: 1 }}>
           <div style={mp('var(--gold)')}>
             <span
               style={{
@@ -90,7 +93,7 @@ export function PublicLeaderboardView() {
             }}
           >
             The board companies<br />
-            <span style={{ color: 'var(--gold)' }}>actually watch.</span>
+            <span className="grad-text-gold">actually watch.</span>
           </h1>
           <p style={{ ...mLede, fontSize: 17 }}>
             2,481 salespersons ranked purely on performance. No resumes, no referrals, no inflated

@@ -67,10 +67,83 @@ body { min-height: 100vh; }
 ::-webkit-scrollbar-thumb:hover { background: var(--surface-3); }
 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-3px); opacity: 1; } }
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+@keyframes gradientFlow {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+@keyframes haloPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--gold) 32%, transparent); }
+  50%      { box-shadow: 0 0 32px 8px color-mix(in oklch, var(--gold) 12%, transparent); }
+}
+@keyframes blobDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(40px, -20px) scale(1.05); }
+  66%      { transform: translate(-30px, 30px) scale(0.95); }
+}
+
+/* Reveal-on-load utility — drop on a section, get a soft slide-up entrance. */
+.reveal-up        { animation: fadeInUp 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.reveal-up.d-100  { animation-delay: 0.10s; }
+.reveal-up.d-200  { animation-delay: 0.20s; }
+.reveal-up.d-300  { animation-delay: 0.30s; }
+.reveal-up.d-400  { animation-delay: 0.40s; }
+
+/* Gold/cool gradient text — shifts subtly so the headline feels alive. */
+.grad-text-gold {
+  background: linear-gradient(120deg, var(--gold) 0%, color-mix(in oklch, var(--gold) 60%, white) 50%, var(--gold) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+  animation: gradientFlow 6s ease-in-out infinite;
+}
+.grad-text-cool {
+  background: linear-gradient(120deg, var(--cool) 0%, color-mix(in oklch, var(--cool) 60%, white) 50%, var(--cool) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+  animation: gradientFlow 6s ease-in-out infinite;
+}
+
+.float-soft { animation: floatY 5.5s ease-in-out infinite; }
+.halo-pulse { animation: haloPulse 3.2s ease-in-out infinite; }
+
+/* Hero background blob — gentle drifting orb behind hero sections. */
+.hero-blob {
+  position: absolute;
+  pointer-events: none;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+  animation: blobDrift 18s ease-in-out infinite;
+  z-index: 0;
+}
+.hero-blob.gold { background: radial-gradient(circle, color-mix(in oklch, var(--gold) 60%, transparent) 0%, transparent 70%); }
+.hero-blob.cool { background: radial-gradient(circle, color-mix(in oklch, var(--cool) 60%, transparent) 0%, transparent 70%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-up, .grad-text-gold, .grad-text-cool, .float-soft, .halo-pulse, .hero-blob {
+    animation: none !important;
+  }
+}
 
 .stripe-ph {
   background-image: repeating-linear-gradient(135deg, var(--surface-2) 0 8px, var(--surface) 8px 16px);
