@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError, JobSummary, NotificationItem, TalentSummary } from '@/lib/api';
-import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
+import { PublicCompaniesView } from '@/components/marketing/PublicCompaniesView';
 import { rankFromEnum } from '@/lib/constants';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -38,7 +39,12 @@ function timeAgo(iso: string): string {
 
 export default function CompanyDashboardPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useRequireAuth('COMPANY');
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user && user.role !== 'COMPANY') router.replace('/dashboard');
+  }, [authLoading, user, router]);
 
   const [jobs, setJobs] = useState<JobSummary[]>([]);
   const [candidates, setCandidates] = useState<TalentSummary[]>([]);
@@ -72,6 +78,11 @@ export default function CompanyDashboardPage() {
       })
       .finally(() => setDataLoading(false));
   }, [authLoading, user, companyId]);
+
+  // Anonymous visitors get the "For Companies" marketing screen.
+  if (!authLoading && !user) {
+    return <PublicCompaniesView />;
+  }
 
   if (authLoading || dataLoading) {
     return (

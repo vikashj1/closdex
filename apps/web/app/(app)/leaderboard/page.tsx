@@ -3,6 +3,7 @@
 import { CSSProperties, useEffect, useState } from 'react';
 import { api, ApiError, LeaderboardEntry } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { PublicLeaderboardView } from '@/components/marketing/PublicLeaderboardView';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
@@ -36,6 +37,7 @@ export default function LeaderboardPage() {
   }, [authLoading, period, category]);
 
   if (authLoading) return null;
+  if (!user) return <PublicLeaderboardView />;
 
   const top3Raw = entries.filter(e => e.position <= 3);
   const podium: LeaderboardEntry[] = [

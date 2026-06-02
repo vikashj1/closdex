@@ -8,6 +8,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { ApiError, LearningTrackSummary, TrackProgress, api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { PublicLearnView } from '@/components/marketing/PublicLearnView';
 
 export default function LearnPage() {
   const router = useRouter();
@@ -53,6 +54,7 @@ export default function LearnPage() {
   if (authLoading) {
     return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
   }
+  if (!user) return <PublicLearnView />;
 
   return (
     <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>

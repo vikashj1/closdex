@@ -33,6 +33,11 @@ export function CompanyShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() || '';
   const { user, logout } = useAuth();
 
+  // Anonymous visit to /company → let the marketing view render full-bleed without the company sidebar.
+  if (!user && pathname === '/company') {
+    return <>{children}</>;
+  }
+
   const [unreadCount, setUnreadCount] = useState(0);
   const [topbarSearch, setTopbarSearch] = useState('');
 
