@@ -126,7 +126,7 @@ export default function LandingPage() {
           <p style={{ fontSize: 18, color: 'var(--text-dim)', lineHeight: 1.5, maxWidth: 520, margin: '0 0 32px' }}>
             India&apos;s first sales talent leaderboard. Practice realistic AI-driven lead conversations, climb the ranks, and get discovered by hiring companies — all on merit.
           </p>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div data-hero-cta style={{ display: 'flex', gap: 12 }}>
             <Btn kind="primary" size="lg" icon={<Icon.bolt />} onClick={() => go('/signup')}>Start competing — free</Btn>
             <Btn kind="ghost" size="lg" icon={<Icon.briefcase />} onClick={() => go('/company')}>Hire top sales talent</Btn>
           </div>
@@ -135,7 +135,7 @@ export default function LandingPage() {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon.check /> Free forever for salespersons</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon.check /> 5-min onboarding</span>
           </div>
-          <div style={{ display: 'flex', gap: 28, marginTop: 40, color: 'var(--text-mute)', fontSize: 12.5 }}>
+          <div data-hero-stats style={{ display: 'flex', gap: 28, marginTop: 40, color: 'var(--text-mute)', fontSize: 12.5 }}>
             <div><span className="display mono" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, marginRight: 6 }}>2,481</span>salespersons</div>
             <div><span className="display mono" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, marginRight: 6 }}>47</span>hiring partners</div>
             <div><span className="display mono" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, marginRight: 6 }}>12.5%</span>placement fee</div>

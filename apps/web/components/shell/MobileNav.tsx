@@ -62,7 +62,6 @@ export function MobileNav({
         onClick={() => setOpen((o) => !o)}
         className="show-mobile-only"
         style={{
-          display: 'none',
           alignItems: 'center',
           justifyContent: 'center',
           width: 40,
@@ -73,6 +72,7 @@ export function MobileNav({
           borderRadius: 10,
           color: 'var(--text)',
           cursor: 'pointer',
+          flexShrink: 0,
         }}
       >
         {open ? (

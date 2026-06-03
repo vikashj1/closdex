@@ -245,7 +245,6 @@ function ChallengesPageInner() {
               onClick={() => setFiltersOpen((o) => !o)}
               aria-label={filtersOpen ? 'Hide filters' : 'Show filters'}
               style={{
-                display: 'none',
                 alignItems: 'center',
                 gap: 6,
                 padding: '7px 12px',

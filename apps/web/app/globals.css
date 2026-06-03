@@ -335,9 +335,30 @@ body { min-height: 100vh; }
 
 /* show-mobile-only — inverse of hide-mobile. Hides on tablet+ and reveals on
    phones. Used by the hamburger button + the slide-down nav drawer. */
-.show-mobile-only { display: none; }
+.show-mobile-only { display: none !important; }
 @media (max-width: 767px) {
-  .show-mobile-only { display: flex !important; }
+  .show-mobile-only { display: inline-flex !important; }
+}
+
+/* Hero CTA + stats rows on the landing page — bulletproof selectors (data
+   attributes survive inline-style serialization quirks). On phones the
+   buttons stack full-width; on the stats row the three numbers stack into
+   a vertical list so none of them clip the right edge. */
+@media (max-width: 767px) {
+  [data-hero-cta] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+  [data-hero-cta] > button {
+    width: 100% !important;
+  }
+  [data-hero-stats] {
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
 }
 
 /* ─── Leaderboard mobile row layout ───────────────────────────────────────
@@ -415,19 +436,23 @@ body { min-height: 100vh; }
   }
 }
 
-/* ─── Auth-shell topbar (search input shrinks, gaps tighten) ───────────────
+/* ─── Auth-shell topbar (search hides, gaps tighten) ──────────────────────
    The topbar search hogs `flex: 0 1 420px` which on phones squashes the
-   avatar/bell pair into the right edge. Shrink the input + tighten gaps. */
+   hamburger + avatar pair off-screen. On phones the search input wrapper
+   hides entirely (Enter-to-go was the only nav, and the hamburger menu now
+   gives the same surfaces). */
 @media (max-width: 767px) {
-  main[data-resp="app"] > div:first-of-type input[placeholder*="Search"],
-  main[data-resp="company"] > div:first-of-type input[placeholder*="Search"] {
-    font-size: 12.5px !important;
-    padding: 8px 10px 8px 32px !important;
+  /* Search input wrapper has inline `flex: 0 1 420px`. Hide on phones so
+     the hamburger + avatar/CTA cluster gets the full row width. */
+  main[data-resp="app"] > div:first-of-type > div[style*="420px"],
+  main[data-resp="company"] > div:first-of-type > div[style*="420px"] {
+    display: none !important;
   }
   main[data-resp="app"] > div:first-of-type,
   main[data-resp="company"] > div:first-of-type {
     padding: 10px 14px !important;
     gap: 10px !important;
+    justify-content: flex-end !important;
   }
   /* Dashboard header row (h1 + CTA) — give the title room then drop the
      button to its own line, full-width. */
