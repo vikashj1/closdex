@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
+import { MobileNav } from './MobileNav';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 
@@ -239,6 +240,11 @@ export function CompanyShell({ children }: { children: ReactNode }) {
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <MobileNav
+              items={NAV.map((n) => ({ label: n.label, href: n.path, active: isActive(n) }))}
+              go={(href) => router.push(href)}
+              onLogout={() => { logout(); router.push('/login'); }}
+            />
             <button
               onClick={() => router.push('/company/notifications')}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', position: 'relative' }}

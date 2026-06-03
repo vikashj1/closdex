@@ -340,6 +340,121 @@ body { min-height: 100vh; }
   .show-mobile-only { display: flex !important; }
 }
 
+/* ─── Leaderboard mobile row layout ───────────────────────────────────────
+   Desktop layout uses 5/6 columns (rank, name, tier, points, win-rate, trend).
+   On phones we compress to 2 columns: rank+name on the left, points on the
+   right. Tier / win-rate / trend stack as a small secondary row beneath. The
+   `data-resp` blanket already collapses grids to 1fr — these rules override
+   the rows to a "name | points" split instead. */
+@media (max-width: 767px) {
+  /* Authenticated salesperson leaderboard table (60px 1fr 100px 130px 80px). */
+  main[data-resp="app"] [style*="60px 1fr 100px 130px 80px"] {
+    grid-template-columns: 40px 1fr auto !important;
+    column-gap: 10px !important;
+    row-gap: 4px !important;
+    padding: 10px 14px !important;
+  }
+  /* Hide tier (3rd col) + change (5th col) on mobile — too cramped to keep. */
+  main[data-resp="app"] [style*="60px 1fr 100px 130px 80px"] > :nth-child(3),
+  main[data-resp="app"] [style*="60px 1fr 100px 130px 80px"] > :nth-child(5) {
+    display: none !important;
+  }
+  /* Marketing public leaderboard (56px 1fr 130px 120px 110px 100px) — same idea. */
+  [data-resp="landing"] [style*="56px 1fr 130px 120px 110px 100px"],
+  body [style*="56px 1fr 130px 120px 110px 100px"] {
+    grid-template-columns: 36px 1fr auto !important;
+    column-gap: 10px !important;
+    padding: 11px 14px !important;
+  }
+  body [style*="56px 1fr 130px 120px 110px 100px"] > :nth-child(3),
+  body [style*="56px 1fr 130px 120px 110px 100px"] > :nth-child(5),
+  body [style*="56px 1fr 130px 120px 110px 100px"] > :nth-child(6) {
+    display: none !important;
+  }
+  /* Landing page hero leaderboard preview (32px 1fr auto auto auto). Keep
+     rank + name, hide the trailing trend/rank-badge cluster. */
+  [data-resp="landing"] [style*="32px 1fr auto auto auto"] {
+    grid-template-columns: 28px 1fr auto !important;
+    column-gap: 10px !important;
+  }
+  [data-resp="landing"] [style*="32px 1fr auto auto auto"] > :nth-child(3),
+  [data-resp="landing"] [style*="32px 1fr auto auto auto"] > :nth-child(5) {
+    display: none !important;
+  }
+}
+
+/* ─── Challenges page filter sidebar (mobile) ──────────────────────────────
+   The challenges page uses a 240px sidebar + content layout. The data-resp
+   blanket already collapses grids — but we want the filter aside hidden by
+   default on mobile and reachable via a toggle button. The challenges page
+   adds a `[data-filter-open]` attribute to the wrapper when expanded; we
+   show the sidebar only when that flips on. */
+@media (max-width: 767px) {
+  [data-filter-open="false"] > aside {
+    display: none !important;
+  }
+  [data-filter-open="true"] > aside {
+    grid-column: 1 / -1 !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-soft) !important;
+  }
+}
+
+/* ─── Hero right-side breathing room ──────────────────────────────────────
+   On phones the hero headline + body still rendered tight against the right
+   edge because the leaderboard card sat directly below with the same padding.
+   Add a touch of right-side margin so content visually settles inside the
+   viewport without clipping. */
+@media (max-width: 767px) {
+  [data-resp="landing"] > section:first-of-type h1.h-hero,
+  [data-resp="landing"] > section:first-of-type p {
+    padding-right: 4px;
+  }
+  [data-resp="landing"] > section:first-of-type {
+    padding-right: clamp(16px, 5vw, 64px) !important;
+  }
+}
+
+/* ─── Auth-shell topbar (search input shrinks, gaps tighten) ───────────────
+   The topbar search hogs `flex: 0 1 420px` which on phones squashes the
+   avatar/bell pair into the right edge. Shrink the input + tighten gaps. */
+@media (max-width: 767px) {
+  main[data-resp="app"] > div:first-of-type input[placeholder*="Search"],
+  main[data-resp="company"] > div:first-of-type input[placeholder*="Search"] {
+    font-size: 12.5px !important;
+    padding: 8px 10px 8px 32px !important;
+  }
+  main[data-resp="app"] > div:first-of-type,
+  main[data-resp="company"] > div:first-of-type {
+    padding: 10px 14px !important;
+    gap: 10px !important;
+  }
+  /* Dashboard header row (h1 + CTA) — give the title room then drop the
+     button to its own line, full-width. */
+  main[data-resp="app"] [style*="justify-content: space-between"][style*="align-items: flex-end"] {
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  main[data-resp="app"] [style*="justify-content: space-between"][style*="align-items: flex-end"] > button {
+    width: 100% !important;
+  }
+}
+
+/* ─── Play / chat page mobile polish ──────────────────────────────────────
+   The chat page packs a persona avatar + goal + counters + the chat scroller
+   into a fixed layout. On phones we need the message stream to fill the
+   viewport without crowding. */
+@media (max-width: 767px) {
+  main[data-resp="app"] header {
+    padding: 10px 14px !important;
+  }
+  /* Composer + send button — stack the toolbar so the textarea spans full
+     width before the send button. */
+  main[data-resp="app"] textarea {
+    font-size: 14px !important;
+  }
+}
+
 /* ─── Auth pages (login + signup) responsive ──────────────────────────────
    Both wrap content in a 2-col grid (`1fr 1fr` + `100vh`). On phones we
    collapse it to a single column so the form is reachable without 100vh of

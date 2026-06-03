@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { Logo } from '@/components/ui/Logo';
 import { Icon } from '@/components/ui/Icon';
+import { MobileNav } from '@/components/shell/MobileNav';
 import { mp } from './styles';
 
 type PublicNavId =
@@ -75,10 +76,18 @@ export function PublicHeader({ active }: { active?: PublicNavId }) {
           </a>
         ))}
       </nav>
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div className="hide-mobile" style={{ display: 'flex', gap: 10 }}>
         <Btn kind="ghost" size="sm" onClick={() => go('login')}>Log in</Btn>
         <Btn kind="primary" size="sm" onClick={() => go('signup')}>Sign up</Btn>
       </div>
+      <MobileNav
+        items={PUBLIC_NAV.map((n) => ({ label: n.label, href: ROUTE_MAP[n.id], active: active === n.id }))}
+        primaryCtaLabel="Sign up"
+        primaryCtaHref={ROUTE_MAP.signup}
+        secondaryCtaLabel="Log in"
+        secondaryCtaHref={ROUTE_MAP.login}
+        go={(href) => router.push(href)}
+      />
     </header>
   );
 }

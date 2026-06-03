@@ -5,13 +5,35 @@ import { useRouter } from 'next/navigation';
 import { Avatar } from '@/components/ui/Avatar';
 import { RankBadge } from '@/components/ui/RankBadge';
 import { Icon } from '@/components/ui/Icon';
+import { MobileNav } from './MobileNav';
 import { useAuth } from '@/lib/auth';
 import { api, NotificationItem } from '@/lib/api';
 import { rankFromEnum } from '@/lib/constants';
 
+const APP_NAV_ITEMS = [
+  { label: 'Home', href: '/dashboard' },
+  { label: 'Challenges', href: '/challenges' },
+  { label: 'My Attempts', href: '/attempts' },
+  { label: 'Leaderboard', href: '/leaderboard' },
+  { label: 'Learn', href: '/learn' },
+  { label: 'My Disputes', href: '/disputes' },
+  { label: 'Jobs', href: '/jobs' },
+  { label: 'Applications', href: '/applications' },
+  { label: 'Notifications', href: '/notifications' },
+  { label: 'Profile', href: '/profile' },
+  { label: 'Settings', href: '/settings' },
+];
+
+const PUBLIC_APP_NAV_ITEMS = [
+  { label: 'Challenges', href: '/challenges' },
+  { label: 'Leaderboard', href: '/leaderboard' },
+  { label: 'Learn', href: '/learn' },
+  { label: 'Jobs', href: '/jobs' },
+];
+
 export function TopBar() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [topbarSearch, setTopbarSearch] = useState('');
   const [notifs, setNotifs] = useState<NotificationItem[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -94,8 +116,17 @@ export function TopBar() {
         />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <MobileNav
+          items={(user ? APP_NAV_ITEMS : PUBLIC_APP_NAV_ITEMS).map((i) => ({ ...i }))}
+          primaryCtaLabel={!user ? 'Sign up' : undefined}
+          primaryCtaHref={!user ? '/signup' : undefined}
+          secondaryCtaLabel={!user ? 'Log in' : undefined}
+          secondaryCtaHref={!user ? '/login' : undefined}
+          go={(href) => router.push(href)}
+          onLogout={user ? () => { logout(); router.push('/login'); } : undefined}
+        />
         {!user ? (
-          <>
+          <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <button
               onClick={() => router.push('/login')}
               style={{
@@ -126,7 +157,7 @@ export function TopBar() {
             >
               Sign up
             </button>
-          </>
+          </div>
         ) : (
           <>
         {/* Notification bell */}

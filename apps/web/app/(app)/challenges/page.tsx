@@ -56,6 +56,7 @@ function ChallengesPageInner() {
   const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') ?? '');
   const [pageLoaded, setPageLoaded] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Load attempt state once on mount (independent of diff filter)
   useEffect(() => {
@@ -141,7 +142,10 @@ function ChallengesPageInner() {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 0, minHeight: 'calc(100vh - 60px)' }}>
+    <div
+      data-filter-open={filtersOpen ? 'true' : 'false'}
+      style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 0, minHeight: 'calc(100vh - 60px)' }}
+    >
       {/* Filter sidebar */}
       <aside
         style={{
@@ -236,8 +240,28 @@ function ChallengesPageInner() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>Sort by</span>
-            <button style={SORT_BTN}>Trending <Icon.chevDown /></button>
+            <button
+              className="show-mobile-only"
+              onClick={() => setFiltersOpen((o) => !o)}
+              aria-label={filtersOpen ? 'Hide filters' : 'Show filters'}
+              style={{
+                display: 'none',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 12px',
+                borderRadius: 8,
+                background: filtersOpen ? 'var(--gold)' : 'var(--bg-2)',
+                border: '1px solid var(--border)',
+                color: filtersOpen ? 'oklch(0.18 0.02 75)' : 'var(--text)',
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <Icon.filter /> Filters
+            </button>
+            <span className="hide-mobile" style={{ fontSize: 12, color: 'var(--text-mute)' }}>Sort by</span>
+            <button className="hide-mobile" style={SORT_BTN}>Trending <Icon.chevDown /></button>
           </div>
         </div>
         {/* Search bar */}
