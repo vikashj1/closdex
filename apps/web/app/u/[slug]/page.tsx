@@ -117,7 +117,7 @@ export default function PublicProfilePage() {
   const heatSeed = talent.totalPoints % 200;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div data-resp="profile" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {/* Hero banner */}
       <div
         style={{

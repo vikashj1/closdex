@@ -173,7 +173,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const cap = challenge.maxMessages;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', height: '100vh', background: 'var(--bg)' }}>
+    <div data-resp="play" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', height: '100vh', background: 'var(--bg)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border-soft)' }}>
         {/* Top bar */}
         <div

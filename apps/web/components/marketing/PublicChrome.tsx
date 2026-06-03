@@ -276,7 +276,7 @@ export function MarketingCTA({
 
 /** Wrapper used by every marketing page — full-width background. */
 export function PublicScreen({ children }: { children: ReactNode }) {
-  return <div style={{ background: 'var(--bg)', minHeight: '100%' }}>{children}</div>;
+  return <div data-resp="landing" style={{ background: 'var(--bg)', minHeight: '100%' }}>{children}</div>;
 }
 
 export type { PublicNavId };

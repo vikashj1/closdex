@@ -80,7 +80,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', padding: '32px 64px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div data-resp="auth" style={{ minHeight: '100vh', padding: '32px 64px', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Logo size={20} />
         <span style={{ color: 'var(--text-mute)', fontSize: 12 }}>
