@@ -142,9 +142,9 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Leaderboard preview card */}
-        <Card padding={0} style={{ overflow: 'hidden', boxShadow: 'var(--shadow-md)', background: 'var(--bg-2)' }}>
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Leaderboard preview card — matches /leaderboard page styling */}
+        <Card padding={0} style={{ overflow: 'hidden', boxShadow: 'var(--shadow-md)', background: 'var(--surface)' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Icon.trophy /><span style={{ fontWeight: 600, fontSize: 13.5 }}>Weekly Leaderboard</span>
               <span style={{ fontSize: 11, color: 'var(--text-mute)', fontFamily: 'JetBrains Mono' }}>IT_SALES · IN</span>
@@ -154,30 +154,49 @@ export default function LandingPage() {
               Live · resets in 2d 14h
             </span>
           </div>
+          {/* Column header — matches /leaderboard column header row */}
+          <div
+            data-leaderboard-row
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '50px 1fr 100px 100px 70px',
+              padding: '12px 18px',
+              fontSize: 11,
+              color: 'var(--text-mute)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              fontWeight: 600,
+              borderBottom: '1px solid var(--border-soft)',
+              background: 'var(--bg-2)',
+            }}
+          >
+            <div>Rank</div><div>Salesperson</div><div>Tier</div><div>Points</div><div>Change</div>
+          </div>
           {LEADERBOARD_PREVIEW.map((row, i) => (
             <div
+              data-leaderboard-row
               key={row.r}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '32px 1fr auto auto auto',
-                gap: 14,
-                padding: '11px 18px',
+                gridTemplateColumns: '50px 1fr 100px 100px 70px',
+                padding: '12px 18px',
                 alignItems: 'center',
                 borderBottom: '1px solid var(--border-soft)',
+                background: row.r <= 3 ? 'color-mix(in oklch, var(--gold) 6%, transparent)' : 'transparent',
                 animation: `fadeInUp 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) ${0.25 + i * 0.08}s both`,
               }}
             >
               <div className="mono" style={{ color: row.r <= 3 ? 'var(--gold)' : 'var(--text-mute)', fontSize: 13, fontWeight: 700 }}>#{row.r}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Avatar name={row.name} size={28} />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{row.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <Avatar name={row.name} size={32} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.name}</div>
                   <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>{row.city}</div>
                 </div>
               </div>
-              <RankBadge rank={row.rank} size={18} />
-              <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{row.pts.toLocaleString()}</div>
-              <div className="mono" style={{ fontSize: 11, color: 'var(--emerald)', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+              <RankBadge rank={row.rank} size={18} showLabel />
+              <div className="mono" style={{ fontSize: 13.5, fontWeight: 700 }}>{row.pts.toLocaleString()}</div>
+              <div className="mono" style={{ fontSize: 12, color: 'var(--emerald)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                 <Icon.trend /> {row.trend}
               </div>
             </div>

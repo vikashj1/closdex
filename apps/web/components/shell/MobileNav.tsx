@@ -87,151 +87,104 @@ export function MobileNav({
       </button>
 
       {open && (
-        <>
-          <div
-            onClick={() => setOpen(false)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.35)',
-              zIndex: 998,
-              animation: 'fadeUp 0.18s ease both',
-            }}
-          />
-          <nav
-            style={{
-              position: 'fixed',
-              top: 0,
-              right: 0,
-              bottom: 0,
-              width: 'min(84vw, 320px)',
-              background: 'var(--bg)',
-              borderLeft: '1px solid var(--border-soft)',
-              zIndex: 999,
-              padding: '20px 18px 24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              overflowY: 'auto',
-              boxShadow: '-12px 0 32px rgba(30,22,10,0.18)',
-              animation: 'fadeInUp 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both',
-            }}
-          >
-            <div
+        <nav
+          className="show-mobile-only"
+          style={{
+            position: 'fixed',
+            top: 60,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'var(--bg)',
+            zIndex: 50,
+            flexDirection: 'column',
+            padding: '24px 20px',
+            gap: 8,
+            borderTop: '1px solid var(--border-soft)',
+            overflowY: 'auto',
+            animation: 'fadeInUp 0.22s ease both',
+          }}
+        >
+          {items.map((it) => (
+            <a
+              key={it.href + it.label}
+              onClick={() => handleNav(it.href)}
               style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                marginBottom: 10,
+                padding: '14px 12px',
+                fontSize: 17,
+                fontWeight: it.active ? 700 : 600,
+                color: it.active ? 'var(--gold)' : 'var(--text)',
+                borderBottom: '1px solid var(--border-soft)',
+                cursor: 'pointer',
               }}
             >
-              <button
-                type="button"
-                aria-label="Close menu"
-                onClick={() => setOpen(false)}
-                style={{
-                  width: 36,
-                  height: 36,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'transparent',
-                  border: '1px solid var(--border)',
-                  borderRadius: 10,
-                  color: 'var(--text)',
-                  cursor: 'pointer',
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-              </button>
+              {it.label}
+            </a>
+          ))}
+
+          {(primaryCtaLabel || secondaryCtaLabel || onLogout) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+              {secondaryCtaLabel && secondaryCtaHref && (
+                <button
+                  type="button"
+                  onClick={() => handleNav(secondaryCtaHref)}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'transparent',
+                    color: 'var(--text)',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {secondaryCtaLabel}
+                </button>
+              )}
+              {primaryCtaLabel && primaryCtaHref && (
+                <button
+                  type="button"
+                  onClick={() => handleNav(primaryCtaHref)}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: 'var(--gold)',
+                    color: 'oklch(0.18 0.02 75)',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {primaryCtaLabel}
+                </button>
+              )}
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onLogout();
+                  }}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'transparent',
+                    color: 'var(--text-dim)',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    marginTop: 8,
+                  }}
+                >
+                  Sign out
+                </button>
+              )}
             </div>
-
-            {items.map((it) => (
-              <a
-                key={it.href + it.label}
-                onClick={() => handleNav(it.href)}
-                style={{
-                  display: 'block',
-                  padding: '12px 14px',
-                  borderRadius: 10,
-                  fontSize: 15,
-                  fontWeight: it.active ? 700 : 500,
-                  color: it.active ? 'var(--gold)' : 'var(--text)',
-                  background: it.active
-                    ? 'color-mix(in oklch, var(--gold) 12%, transparent)'
-                    : 'transparent',
-                  cursor: 'pointer',
-                }}
-              >
-                {it.label}
-              </a>
-            ))}
-
-            {(primaryCtaLabel || secondaryCtaLabel || onLogout) && (
-              <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {secondaryCtaLabel && secondaryCtaHref && (
-                  <button
-                    type="button"
-                    onClick={() => handleNav(secondaryCtaHref)}
-                    style={{
-                      padding: '11px 14px',
-                      borderRadius: 10,
-                      border: '1px solid var(--border)',
-                      background: 'transparent',
-                      color: 'var(--text)',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {secondaryCtaLabel}
-                  </button>
-                )}
-                {primaryCtaLabel && primaryCtaHref && (
-                  <button
-                    type="button"
-                    onClick={() => handleNav(primaryCtaHref)}
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: 10,
-                      border: 'none',
-                      background: 'var(--gold)',
-                      color: 'oklch(0.18 0.02 75)',
-                      fontSize: 14,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {primaryCtaLabel}
-                  </button>
-                )}
-                {onLogout && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      onLogout();
-                    }}
-                    style={{
-                      padding: '11px 14px',
-                      borderRadius: 10,
-                      border: '1px solid var(--border)',
-                      background: 'transparent',
-                      color: 'var(--text-dim)',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      marginTop: 8,
-                    }}
-                  >
-                    Sign out
-                  </button>
-                )}
-              </div>
-            )}
-          </nav>
-        </>
+          )}
+        </nav>
       )}
     </>
   );

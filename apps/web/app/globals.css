@@ -392,14 +392,16 @@ body { min-height: 100vh; }
   body [style*="56px 1fr 130px 120px 110px 100px"] > :nth-child(6) {
     display: none !important;
   }
-  /* Landing page hero leaderboard preview (32px 1fr auto auto auto). Keep
-     rank + name, hide the trailing trend/rank-badge cluster. */
-  [data-resp="landing"] [style*="32px 1fr auto auto auto"] {
-    grid-template-columns: 28px 1fr auto !important;
+  /* Landing page hero leaderboard preview (now 50px 1fr 100px 100px 70px,
+     matches /leaderboard column layout). On phones compress to rank+name on
+     the left, points on the right — drop tier + change cells. */
+  [data-resp="landing"] [data-leaderboard-row] {
+    grid-template-columns: 36px 1fr auto !important;
     column-gap: 10px !important;
+    padding: 11px 14px !important;
   }
-  [data-resp="landing"] [style*="32px 1fr auto auto auto"] > :nth-child(3),
-  [data-resp="landing"] [style*="32px 1fr auto auto auto"] > :nth-child(5) {
+  [data-resp="landing"] [data-leaderboard-row] > :nth-child(3),
+  [data-resp="landing"] [data-leaderboard-row] > :nth-child(5) {
     display: none !important;
   }
 }
