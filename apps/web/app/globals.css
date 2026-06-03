@@ -394,14 +394,19 @@ body { min-height: 100vh; }
   }
   /* Landing page hero leaderboard preview (now 50px 1fr 100px 100px 70px,
      matches /leaderboard column layout). On phones compress to rank+name on
-     the left, points on the right — drop tier + change cells. */
-  [data-resp="landing"] [data-leaderboard-row] {
-    grid-template-columns: 36px 1fr auto !important;
+     the left, points on the right — drop tier + change cells. `body` prefix
+     bumps specificity above the data-resp blanket "grids → 1fr" rule that
+     would otherwise collapse the row to a vertical stack. */
+  body [data-leaderboard-row] {
+    display: grid !important;
+    grid-template-columns: 32px 1fr auto !important;
     column-gap: 10px !important;
+    row-gap: 0 !important;
     padding: 11px 14px !important;
+    align-items: center !important;
   }
-  [data-resp="landing"] [data-leaderboard-row] > :nth-child(3),
-  [data-resp="landing"] [data-leaderboard-row] > :nth-child(5) {
+  body [data-leaderboard-row] > :nth-child(3),
+  body [data-leaderboard-row] > :nth-child(5) {
     display: none !important;
   }
 }

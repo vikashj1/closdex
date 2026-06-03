@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface MobileNavItem {
   label: string;
@@ -31,6 +32,9 @@ export function MobileNav({
   onLogout,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -86,9 +90,9 @@ export function MobileNav({
         )}
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <nav
-          className="show-mobile-only"
+          className="show-mobile-only mobile-nav-drawer"
           style={{
             position: 'fixed',
             top: 60,
@@ -96,7 +100,7 @@ export function MobileNav({
             right: 0,
             bottom: 0,
             background: 'var(--bg)',
-            zIndex: 50,
+            zIndex: 2147483000,
             flexDirection: 'column',
             padding: '24px 20px',
             gap: 8,
@@ -184,7 +188,8 @@ export function MobileNav({
               )}
             </div>
           )}
-        </nav>
+        </nav>,
+        document.body,
       )}
     </>
   );
