@@ -392,22 +392,32 @@ body { min-height: 100vh; }
   body [style*="56px 1fr 130px 120px 110px 100px"] > :nth-child(6) {
     display: none !important;
   }
-  /* Landing page hero leaderboard preview (now 50px 1fr 100px 100px 70px,
-     matches /leaderboard column layout). On phones compress to rank+name on
-     the left, points on the right — drop tier + change cells. `body` prefix
-     bumps specificity above the data-resp blanket "grids → 1fr" rule that
-     would otherwise collapse the row to a vertical stack. */
-  body [data-leaderboard-row] {
+  /* Landing leaderboard rows. Mobile shows rank | avatar+name+city | points
+     in one horizontal row — matches what /leaderboard does on phones.
+     `[data-leaderboard-row][data-leaderboard-row]` is a specificity hack:
+     the duplicate attribute selector pushes the rule to 0,2,1 so it beats
+     the data-resp blanket "grids → 1fr" rule (0,2,0). Tier (col 3) + change
+     (col 5) drop. Inner flex pinned to nowrap so the blanket
+     `flex-wrap: wrap` can't stack avatar above name. */
+  body [data-leaderboard-row][data-leaderboard-row] {
     display: grid !important;
-    grid-template-columns: 32px 1fr auto !important;
+    grid-template-columns: 30px 1fr auto !important;
     column-gap: 10px !important;
     row-gap: 0 !important;
-    padding: 11px 14px !important;
+    padding: 10px 12px !important;
     align-items: center !important;
   }
-  body [data-leaderboard-row] > :nth-child(3),
-  body [data-leaderboard-row] > :nth-child(5) {
+  body [data-leaderboard-row][data-leaderboard-row] > :nth-child(3),
+  body [data-leaderboard-row][data-leaderboard-row] > :nth-child(5) {
     display: none !important;
+  }
+  body [data-leaderboard-row][data-leaderboard-row] > :nth-child(2) {
+    flex-wrap: nowrap !important;
+  }
+  body [data-leaderboard-row][data-leaderboard-row] > :nth-child(4) {
+    font-size: 13px !important;
+    text-align: right !important;
+    justify-self: end !important;
   }
 }
 
