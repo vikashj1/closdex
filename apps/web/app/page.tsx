@@ -12,8 +12,6 @@ import type { RankName } from '@/lib/constants';
 import { ProductShowcase } from '@/components/landing/ProductShowcase';
 import { PersonaShowcase } from '@/components/landing/PersonaShowcase';
 import { AudienceTabs } from '@/components/landing/AudienceTabs';
-import { OutcomesStrip } from '@/components/landing/OutcomesStrip';
-import { SocialProofStrip } from '@/components/landing/SocialProofStrip';
 import { FAQSection } from '@/components/landing/FAQSection';
 import { FinalCTABanner } from '@/components/landing/FinalCTABanner';
 
@@ -135,11 +133,6 @@ export default function LandingPage() {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon.check /> Free forever for salespersons</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon.check /> 5-min onboarding</span>
           </div>
-          <div data-hero-stats style={{ display: 'flex', gap: 28, marginTop: 40, color: 'var(--text-mute)', fontSize: 12.5 }}>
-            <div><span className="display mono" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, marginRight: 6 }}>2,481</span>salespersons</div>
-            <div><span className="display mono" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, marginRight: 6 }}>47</span>hiring partners</div>
-            <div><span className="display mono" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, marginRight: 6 }}>12.5%</span>placement fee</div>
-          </div>
         </div>
 
         {/* Leaderboard preview card — matches /leaderboard page styling */}
@@ -230,8 +223,6 @@ export default function LandingPage() {
       <ProductShowcase go={go} />
       <PersonaShowcase go={go} />
       <AudienceTabs go={go} />
-      <OutcomesStrip />
-      <SocialProofStrip />
       <FAQSection />
       <FinalCTABanner go={go} />
 
