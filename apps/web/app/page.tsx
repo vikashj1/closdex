@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CSSProperties } from 'react';
+import { CSSProperties, useState } from 'react';
 import { Logo } from '@/components/ui/Logo';
 import { Btn } from '@/components/ui/Btn';
 import { Card } from '@/components/ui/Card';
@@ -24,11 +24,13 @@ import { FinalCTABanner } from '@/components/landing/FinalCTABanner';
 export default function LandingPage() {
   const router = useRouter();
   const go = (path: string) => router.push(path);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navTo = (path: string) => { setMenuOpen(false); router.push(path); };
 
   return (
     <div data-resp="landing" style={{ background: 'var(--bg)', minHeight: '100%' }}>
       {/* Header */}
-      <header className="pad-x-fluid" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 64px', borderBottom: '1px solid var(--border-soft)' }}>
+      <header className="pad-x-fluid" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 64px', borderBottom: '1px solid var(--border-soft)', position: 'sticky', top: 0, zIndex: 40, background: 'var(--bg)' }}>
         <Logo size={24} />
         <nav className="hide-mobile" style={{ display: 'flex', gap: 28, fontSize: 13.5, color: 'var(--text-dim)' }}>
           <a onClick={() => go('/challenges')} style={navLink}>Challenges</a>
@@ -37,11 +39,79 @@ export default function LandingPage() {
           <a onClick={() => go('/pricing')} style={navLink}>Pricing</a>
           <a onClick={() => go('/learn')} style={navLink}>Learn</a>
         </nav>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="hide-mobile" style={{ display: 'flex', gap: 10 }}>
           <Btn kind="ghost" size="sm" onClick={() => go('/login')}>Log in</Btn>
           <Btn kind="primary" size="sm" onClick={() => go('/signup')}>Sign up</Btn>
         </div>
+        {/* Mobile hamburger */}
+        <button
+          className="show-mobile-only"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          onClick={() => setMenuOpen((o) => !o)}
+          style={{ background: 'transparent', border: 'none', padding: 6, cursor: 'pointer', color: 'var(--text)' }}
+        >
+          {menuOpen ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="3" y1="7"  x2="21" y2="7" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="17" x2="21" y2="17" />
+            </svg>
+          )}
+        </button>
       </header>
+
+      {/* Mobile slide-down menu drawer */}
+      {menuOpen && (
+        <div
+          className="show-mobile-only"
+          style={{
+            position: 'fixed',
+            top: 64,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'var(--bg)',
+            zIndex: 50,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '24px 20px',
+            gap: 8,
+            borderTop: '1px solid var(--border-soft)',
+            animation: 'fadeInUp 0.22s ease both',
+          }}
+        >
+          {[
+            ['Challenges', '/challenges'],
+            ['Leaderboard', '/leaderboard'],
+            ['For Companies', '/company'],
+            ['Pricing', '/pricing'],
+            ['Learn', '/learn'],
+          ].map(([label, path]) => (
+            <a
+              key={path}
+              onClick={() => navTo(path)}
+              style={{
+                padding: '14px 12px',
+                fontSize: 17,
+                fontWeight: 600,
+                color: 'var(--text)',
+                borderBottom: '1px solid var(--border-soft)',
+                cursor: 'pointer',
+              }}
+            >
+              {label}
+            </a>
+          ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+            <Btn kind="ghost" size="lg" full onClick={() => navTo('/login')}>Log in</Btn>
+            <Btn kind="primary" size="lg" full onClick={() => navTo('/signup')}>Sign up</Btn>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <section className="pad-x-fluid grid-hero pad-y-hero" style={{ padding: '72px 64px 56px', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 48, alignItems: 'center' }}>
@@ -154,15 +224,33 @@ export default function LandingPage() {
         </div>
         <div>
           <div style={footColH}>Salespersons</div>
-          {['Challenges', 'Leaderboard', 'Learn', 'Sign up free', 'How scoring works'].map((l) => <a key={l} style={footLink}>{l}</a>)}
+          {([
+            ['Challenges',       '/challenges'],
+            ['Leaderboard',      '/leaderboard'],
+            ['Learn',            '/learn'],
+            ['Sign up free',     '/signup'],
+            ['How scoring works','/learn'],
+          ] as const).map(([l, p]) => <a key={l} style={footLink} onClick={() => go(p)}>{l}</a>)}
         </div>
         <div>
           <div style={footColH}>Companies</div>
-          {['Talent search', 'Pricing', 'Book a demo', 'Case studies', 'Placement guarantee'].map((l) => <a key={l} style={footLink}>{l}</a>)}
+          {([
+            ['Talent search',         '/company'],
+            ['Pricing',               '/pricing'],
+            ['Book a demo',           '/company'],
+            ['Case studies',          '/company'],
+            ['Placement guarantee',   '/pricing'],
+          ] as const).map(([l, p]) => <a key={l} style={footLink} onClick={() => go(p)}>{l}</a>)}
         </div>
         <div>
           <div style={footColH}>Company</div>
-          {['About', 'Careers', 'Privacy', 'Terms', 'Security · SOC2'].map((l) => <a key={l} style={footLink}>{l}</a>)}
+          {([
+            ['About',        '/learn'],
+            ['Careers',      '/learn'],
+            ['Privacy',      '/learn'],
+            ['Terms',        '/learn'],
+            ['Security · SOC2','/learn'],
+          ] as const).map(([l, p]) => <a key={l} style={footLink} onClick={() => go(p)}>{l}</a>)}
         </div>
       </footer>
       <div style={{ padding: '16px 64px', borderTop: '1px solid var(--border-soft)', color: 'var(--text-mute)', fontSize: 11.5, display: 'flex', justifyContent: 'space-between' }}>

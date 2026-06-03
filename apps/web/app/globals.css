@@ -160,6 +160,14 @@ body { min-height: 100vh; }
 .h-hero    { font-size: clamp(2.2rem, 5.5vw, 4rem) !important;   line-height: 1.02 !important; }
 .h-section { font-size: clamp(1.6rem, 3.6vw, 2.75rem) !important; line-height: 1.1  !important; }
 
+/* Show only on mobile (<768px). Use for hamburger triggers etc. */
+@media (max-width: 767px) {
+  .show-mobile-only { display: inline-flex !important; }
+}
+@media (min-width: 768px) {
+  .show-mobile-only { display: none !important; }
+}
+
 /* Hide on mobile (<768px). Use on decorative columns or wide-only widgets. */
 @media (max-width: 767px) {
   .hide-mobile { display: none !important; }
@@ -260,15 +268,35 @@ body { min-height: 100vh; }
     grid-template-columns: 1fr !important;
     gap: 18px !important;
   }
-  /* Hero CTA button row + similar inline-flex toolbars wrap so the buttons
-     stack on phones instead of squashing into a side-by-side row. Constrain
-     to flex containers that explicitly use gap (toolbars), not Btn internals
-     (icon + label). */
+  /* Hero CTA button row + landing stats now stack vertically (slice 108's
+     flex-wrap wasn't enough — the buttons technically fit so they never
+     wrapped, just squashed). Constrained to landing-page gap values; Btn
+     internal icon+label gaps are too small to match. */
   [data-resp="landing"] section [style*="display: flex"][style*="gap: 12"],
   [data-resp="landing"] section [style*="display: flex"][style*="gap: 10"],
   [data-resp="landing"] section [style*="display: flex"][style*="gap: 28"],
   [data-resp="landing"] section [style*="display: flex"][style*="gap: 32"] {
-    flex-wrap: wrap !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  /* Login + signup pages — 2-col `1fr 1fr` marketing layout collapses to
+     single column and the marketing-aside is hidden so the form fills the
+     viewport. Targets the top-level grid container on those pages. */
+  body div[style*="grid-template-columns: 1fr 1fr"][style*="min-height: 100vh"] {
+    grid-template-columns: 1fr !important;
+  }
+  body div[style*="grid-template-columns: 1fr 1fr"][style*="min-height: 100vh"] > aside,
+  body div[style*="grid-template-columns: 1fr 1fr"][style*="min-height: 100vh"] > div:first-child {
+    display: none !important;
+  }
+  /* Play / chat header — inline-flex toolbar with persona + goal + counters
+     collapses to a stacked layout so labels don't crash into each other. */
+  main[data-resp="app"] header [style*="display: flex"][style*="gap: 18"],
+  main[data-resp="app"] header [style*="display: flex"][style*="gap: 16"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
   }
   /* Section headers with justify-content space-between (title + sub-label)
      drop the sub-label to its own line cleanly. */
@@ -287,6 +315,41 @@ body { min-height: 100vh; }
   /* Big hero headline shrinks. */
   [data-resp="landing"] h1 { font-size: clamp(2rem, 8vw, 4.75rem) !important; line-height: 1.05 !important; }
   [data-resp="landing"] h2 { font-size: clamp(1.6rem, 5.5vw, 2.75rem) !important; line-height: 1.15 !important; }
+
+  /* Hero CTA + stats rows: stack vertically with full-width buttons so they
+     never overflow the viewport. Override slice-108's flex-wrap which still
+     left them side-by-side and squished. */
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 12"],
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 10"],
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 28"],
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 32"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 12"] > button,
+  [data-resp="landing"] section [style*="display: flex"][style*="gap: 10"] > button {
+    width: 100% !important;
+  }
+}
+
+/* show-mobile-only — inverse of hide-mobile. Hides on tablet+ and reveals on
+   phones. Used by the hamburger button + the slide-down nav drawer. */
+.show-mobile-only { display: none; }
+@media (max-width: 767px) {
+  .show-mobile-only { display: flex !important; }
+}
+
+/* ─── Auth pages (login + signup) responsive ──────────────────────────────
+   Both wrap content in a 2-col grid (`1fr 1fr` + `100vh`). On phones we
+   collapse it to a single column so the form is reachable without 100vh of
+   scroll past the marketing copy. */
+@media (max-width: 767px) {
+  body > div [style*="grid-template-columns: 1fr 1fr"][style*="100vh"],
+  body > div > div [style*="grid-template-columns: 1fr 1fr"][style*="100vh"] {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
 }
 
 .stripe-ph {
