@@ -205,9 +205,9 @@ function UIPreviewLeaderboard() {
       </div>
       <div style={{ padding: '8px 14px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
         {rows.map((row) => (
-          <div key={row.r} style={{ display: 'grid', gridTemplateColumns: '22px 1fr auto auto', gap: 8, alignItems: 'center', fontSize: 11 }}>
+          <div data-leaderboard-row key={row.r} style={{ display: 'grid', gridTemplateColumns: '22px 1fr auto auto', gap: 8, alignItems: 'center', fontSize: 11 }}>
             <span className="mono" style={{ color: row.r <= 3 ? 'var(--gold)' : 'var(--text-mute)', fontWeight: 700 }}>#{row.r}</span>
-            <span style={{ fontWeight: 500 }}>{row.name}</span>
+            <span style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.name}</span>
             <RankBadge rank={row.rank} size={12} />
             <span className="mono" style={{ fontWeight: 700 }}>{row.pts.toLocaleString()}</span>
           </div>
