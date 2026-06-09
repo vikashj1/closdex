@@ -68,7 +68,12 @@ export class AttemptsService {
     return this.shape(attempt);
   }
 
-  async sendMessage(user: AuthUser, attemptId: string, content: string) {
+  async sendMessage(
+    user: AuthUser,
+    attemptId: string,
+    content: string,
+    clientMeta?: object,
+  ) {
     const attempt = await this.loadOwnedAttempt(user, attemptId);
     if (attempt.status !== AttemptStatus.IN_PROGRESS) {
       throw new BadRequestException('Attempt is not in progress.');
@@ -107,7 +112,12 @@ export class AttemptsService {
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.message.create({
-        data: { conversationId, sender: MessageSender.SALESPERSON, content },
+        data: {
+          conversationId,
+          sender: MessageSender.SALESPERSON,
+          content,
+          ...(clientMeta ? { clientMeta: clientMeta as any } : {}),
+        },
       });
       await tx.message.create({
         data: { conversationId, sender: MessageSender.LEAD, content: leadReply },

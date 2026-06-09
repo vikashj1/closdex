@@ -363,6 +363,10 @@ model Message {
   conversationId String
   sender         MessageSender
   content        String
+  /// Anti-cheat client telemetry for SALESPERSON messages — paste count, total pasted
+  /// characters, time from first keystroke to send, raw char count. Null for LEAD/SYSTEM
+  /// and for any salesperson message sent before slice 118 shipped.
+  clientMeta     Json?
   createdAt      DateTime      @default(now())
 }
 

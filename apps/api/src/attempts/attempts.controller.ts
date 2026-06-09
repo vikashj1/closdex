@@ -31,7 +31,7 @@ export class AttemptsController {
     @Param('id') id: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.attempts.sendMessage(user, id, dto.content);
+    return this.attempts.sendMessage(user, id, dto.content, dto.clientMeta);
   }
 
   @Post('attempts/:id/end')

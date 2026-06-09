@@ -158,6 +158,15 @@ export interface ChallengeMessage {
   createdAt: string;
 }
 
+/** Anti-cheat client telemetry sent alongside each salesperson message. All
+ *  fields optional — the backend treats `undefined` as "no signal". */
+export interface AttemptClientMeta {
+  pasteCount?: number;
+  pastedChars?: number;
+  totalTypingMs?: number;
+  charCount?: number;
+}
+
 export interface AttemptDetail {
   id: string;
   status: 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
@@ -470,11 +479,11 @@ export const api = {
       request<AttemptDetail>('POST', `/challenges/${challengeId}/attempts`),
     listMine: () => request<AttemptDetail[]>('GET', '/attempts/me'),
     get: (id: string) => request<AttemptDetail>('GET', `/attempts/${id}`),
-    send: (id: string, content: string) =>
+    send: (id: string, content: string, clientMeta?: AttemptClientMeta) =>
       request<{ attempt: AttemptDetail; leadReply: string }>(
         'POST',
         `/attempts/${id}/messages`,
-        { body: { content } },
+        { body: { content, ...(clientMeta ? { clientMeta } : {}) } },
       ),
     end: (id: string) => request<AttemptDetail>('POST', `/attempts/${id}/end`),
   },

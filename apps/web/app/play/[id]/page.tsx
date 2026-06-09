@@ -33,6 +33,10 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const inputBaseRef = useRef('');
+  // Anti-cheat telemetry — reset each time a message ships.
+  const firstKeystrokeRef = useRef<number | null>(null);
+  const pasteCountRef = useRef(0);
+  const pastedCharsRef = useRef(0);
 
   useEffect(() => {
     if (!user) return;
@@ -99,12 +103,29 @@ export default function ConversationPage({ params }: { params: { id: string } })
     }
   }
 
+  function resetTelemetry() {
+    firstKeystrokeRef.current = null;
+    pasteCountRef.current = 0;
+    pastedCharsRef.current = 0;
+  }
+
   async function send() {
     if (!input.trim() || !attempt || sending) return;
     const text = input.trim();
     const prevAttempt = attempt;
+    // Snapshot telemetry BEFORE clearing the input so we capture this message's
+    // typing pattern, not the next one's.
+    const clientMeta = {
+      pasteCount: pasteCountRef.current,
+      pastedChars: pastedCharsRef.current,
+      totalTypingMs: firstKeystrokeRef.current
+        ? Math.max(0, Date.now() - firstKeystrokeRef.current)
+        : 0,
+      charCount: text.length,
+    };
     setInput('');
     inputBaseRef.current = '';
+    resetTelemetry();
     setError(null);
 
     // Optimistic: show the user's message immediately, before the round-trip.
@@ -128,7 +149,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
 
     setSending(true);
     try {
-      const res = await api.attempts.send(attempt.id, text);
+      const res = await api.attempts.send(attempt.id, text, clientMeta);
       setAttempt(res.attempt);
       if (res.attempt.status !== 'IN_PROGRESS') {
         router.push(`/challenges/${res.attempt.challenge.id}/result?attempt=${res.attempt.id}`);
@@ -294,7 +315,17 @@ export default function ConversationPage({ params }: { params: { id: string } })
           >
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                if (firstKeystrokeRef.current === null && e.target.value.length > 0) {
+                  firstKeystrokeRef.current = Date.now();
+                }
+                setInput(e.target.value);
+              }}
+              onPaste={(e) => {
+                const pasted = e.clipboardData?.getData('text') ?? '';
+                pasteCountRef.current += 1;
+                pastedCharsRef.current += pasted.length;
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
