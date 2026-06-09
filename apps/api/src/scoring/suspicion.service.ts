@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AiContentDetectorService } from './ai-content-detector.service';
 
 /** Shape of one salesperson message's client-side telemetry (anti-cheat). */
 export interface MessageClientMeta {
@@ -6,6 +7,14 @@ export interface MessageClientMeta {
   pastedChars?: number;
   totalTypingMs?: number;
   charCount?: number;
+}
+
+/** One salesperson message as it enters the suspicion compute. */
+export interface SuspicionInput {
+  clientMeta: MessageClientMeta | null;
+  /** The raw user-typed text — fed to the AI-content detector. Optional so
+   *  the existing telemetry-only path stays valid. */
+  content?: string;
 }
 
 export interface SuspicionFlags {
@@ -17,6 +26,8 @@ export interface SuspicionFlags {
   superhumanSpeed: boolean;
   /** True if pasteCount across messages exceeds the burst threshold. */
   pasteBurst: boolean;
+  /** Mean AI-content-likeness across salesperson messages, 0-1. */
+  aiContentLikeness: number;
   /** True if no telemetry came in (legacy rows OR a non-browser client). */
   noTelemetry: boolean;
   /** Per-heuristic contribution to the final score, for admin debugging. */
@@ -25,6 +36,7 @@ export interface SuspicionFlags {
     instantTyping: number;
     superhumanSpeed: number;
     pasteBurst: number;
+    aiContent: number;
   };
 }
 
@@ -54,9 +66,11 @@ const PASTE_BURST_COUNT = 3;
 
 @Injectable()
 export class SuspicionService {
+  constructor(private readonly aiDetector: AiContentDetectorService) {}
+
   /** Compute the suspicion score for an attempt from its salesperson messages.
-   *  Pure function — no DB access — so it stays trivial to test. */
-  compute(messages: Array<{ clientMeta: MessageClientMeta | null }>): SuspicionResult {
+   *  Pure-ish — only branches on the injected stateless detector. */
+  compute(messages: SuspicionInput[]): SuspicionResult {
     const salespersonMessages = messages.filter((m) => m.clientMeta != null);
     if (salespersonMessages.length === 0) {
       return {
@@ -67,8 +81,9 @@ export class SuspicionService {
           instantTyping: false,
           superhumanSpeed: false,
           pasteBurst: false,
+          aiContentLikeness: 0,
           noTelemetry: true,
-          contributions: { pasteRatio: 0, instantTyping: 0, superhumanSpeed: 0, pasteBurst: 0 },
+          contributions: { pasteRatio: 0, instantTyping: 0, superhumanSpeed: 0, pasteBurst: 0, aiContent: 0 },
         },
       };
     }
@@ -103,21 +118,36 @@ export class SuspicionService {
     const pasteRatio = totalChars > 0 ? Math.min(1, totalPasted / totalChars) : 0;
     const pasteBurst = totalPasteCount >= PASTE_BURST_COUNT;
 
+    // AI-content detector — runs only on messages that include `content`.
+    // Messages without content (e.g. older callers) just don't contribute.
+    let aiContentLikeness = 0;
+    const messagesWithContent = salespersonMessages.filter(
+      (m): m is SuspicionInput & { content: string } => typeof m.content === 'string' && m.content.length > 0,
+    );
+    if (messagesWithContent.length > 0) {
+      const probabilities = messagesWithContent.map((m) => this.aiDetector.classify(m.content).probability);
+      aiContentLikeness = probabilities.reduce((a, b) => a + b, 0) / probabilities.length;
+    }
+
     // Each heuristic contributes up to N points to the 0-100 total. The three
     // strong signals (paste ratio, instant typing, superhuman speed) each
     // peak at 70 — any one of them alone clears the 60-point quarantine
-    // threshold. Paste-burst is corroborating only: stacks with paste-ratio
-    // to push borderline cases over the line.
+    // threshold. Paste-burst + AI-content are corroborating only.
     const contributions = {
       pasteRatio: Math.round(pasteRatio * 70),
       instantTyping: instantTyping ? 70 : 0,
       superhumanSpeed: superhumanSpeed ? 70 : 0,
       pasteBurst: pasteBurst ? 25 : 0,
+      aiContent: Math.round(aiContentLikeness * 50),
     };
 
     const score = Math.min(
       100,
-      contributions.pasteRatio + contributions.instantTyping + contributions.superhumanSpeed + contributions.pasteBurst,
+      contributions.pasteRatio +
+        contributions.instantTyping +
+        contributions.superhumanSpeed +
+        contributions.pasteBurst +
+        contributions.aiContent,
     );
 
     return {
@@ -128,6 +158,7 @@ export class SuspicionService {
         instantTyping,
         superhumanSpeed,
         pasteBurst,
+        aiContentLikeness,
         noTelemetry: false,
         contributions,
       },

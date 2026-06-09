@@ -1,7 +1,8 @@
 import { SuspicionService, QUARANTINE_THRESHOLD } from './suspicion.service';
+import { AiContentDetectorService } from './ai-content-detector.service';
 
 describe('SuspicionService', () => {
-  const svc = new SuspicionService();
+  const svc = new SuspicionService(new AiContentDetectorService());
 
   it('returns score=0 + noTelemetry when no salesperson messages have clientMeta', () => {
     const result = svc.compute([{ clientMeta: null }, { clientMeta: null }]);
@@ -67,5 +68,24 @@ describe('SuspicionService', () => {
     ]);
     expect(result.flags.instantTyping).toBe(false);
     expect(result.flags.superhumanSpeed).toBe(false);
+  });
+
+  it('AI-content + paste-burst together push a borderline attempt to quarantine', () => {
+    const aiText =
+      'I completely understand your concern. I would be happy to provide additional information. Furthermore, I can assure you that our solution would be ideal. Additionally, please let me know at your earliest convenience.';
+    const result = svc.compute([
+      { clientMeta: { pasteCount: 1, pastedChars: 10, totalTypingMs: 15000, charCount: 200 }, content: aiText },
+      { clientMeta: { pasteCount: 2, pastedChars: 10, totalTypingMs: 15000, charCount: 200 }, content: aiText },
+    ]);
+    expect(result.flags.aiContentLikeness).toBeGreaterThan(0.4);
+    expect(result.flags.contributions.aiContent).toBeGreaterThan(0);
+    expect(result.quarantined).toBe(true);
+  });
+
+  it('clean human content + no paste lands well under quarantine even with content provided', () => {
+    const result = svc.compute([
+      { clientMeta: { pasteCount: 0, pastedChars: 0, totalTypingMs: 10000, charCount: 100 }, content: "Sounds good — I'll set up a quick call tomorrow. What time works for you?" },
+    ]);
+    expect(result.quarantined).toBe(false);
   });
 });

@@ -113,12 +113,13 @@ function makeProfile(overrides: Record<string, unknown> = {}) {
 
 function makeSvc() {
   const { SuspicionService } = require('./suspicion.service');
+  const { AiContentDetectorService } = require('./ai-content-detector.service');
   return new ScoringService(
     mockPrisma as any,
     mockRubric as any,
     mockAiEvaluator as any,
     mockLeaderboards as any,
-    new SuspicionService(),
+    new SuspicionService(new AiContentDetectorService()),
   );
 }
 

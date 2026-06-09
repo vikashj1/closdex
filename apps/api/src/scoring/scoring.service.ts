@@ -115,7 +115,10 @@ export class ScoringService {
       (m) => m.sender === 'SALESPERSON',
     );
     const suspicion = this.suspicion.compute(
-      salespersonMessages.map((m) => ({ clientMeta: (m as any).clientMeta as MessageClientMeta | null })),
+      salespersonMessages.map((m) => ({
+        clientMeta: (m as any).clientMeta as MessageClientMeta | null,
+        content: m.content,
+      })),
     );
 
     await this.persistScore(

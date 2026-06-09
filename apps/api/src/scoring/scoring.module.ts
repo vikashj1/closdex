@@ -7,6 +7,7 @@ import { ScoringService } from './scoring.service';
 import { ScoringQueueService } from './scoring-queue.service';
 import { ScoringWorker } from './scoring.worker';
 import { SuspicionService } from './suspicion.service';
+import { AiContentDetectorService } from './ai-content-detector.service';
 
 @Module({
   imports: [AiModule, LeaderboardsModule],
@@ -17,6 +18,7 @@ import { SuspicionService } from './suspicion.service';
     ScoringQueueService,
     ScoringWorker,
     SuspicionService,
+    AiContentDetectorService,
   ],
   exports: [ScoringService, ScoringQueueService],
 })
