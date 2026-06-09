@@ -6,6 +6,7 @@ import { AiEvaluatorService } from './ai-evaluator.service';
 import { ScoringService } from './scoring.service';
 import { ScoringQueueService } from './scoring-queue.service';
 import { ScoringWorker } from './scoring.worker';
+import { SuspicionService } from './suspicion.service';
 
 @Module({
   imports: [AiModule, LeaderboardsModule],
@@ -15,6 +16,7 @@ import { ScoringWorker } from './scoring.worker';
     ScoringService,
     ScoringQueueService,
     ScoringWorker,
+    SuspicionService,
   ],
   exports: [ScoringService, ScoringQueueService],
 })

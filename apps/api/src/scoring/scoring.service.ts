@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LeaderboardsService } from '../leaderboards/leaderboards.service';
 import { RubricService, QualityDims, ScoreBreakdown, ScoringRules } from './rubric.service';
 import { AiEvaluatorService, AiEvaluation } from './ai-evaluator.service';
+import { MessageClientMeta, SuspicionService } from './suspicion.service';
 
 const DIFFICULTY_ORDER: DifficultyTier[] = [
   DifficultyTier.ROOKIE, DifficultyTier.EASY, DifficultyTier.MEDIUM,
@@ -34,6 +35,7 @@ export class ScoringService {
     private readonly rubric: RubricService,
     private readonly aiEvaluator: AiEvaluatorService,
     private readonly leaderboards: LeaderboardsService,
+    private readonly suspicion: SuspicionService,
   ) {}
 
   /** Idempotent. Skips if attempt is still in progress or already scored. */
@@ -106,7 +108,32 @@ export class ScoringService {
       rules,
     });
 
-    await this.persistScore(attempt.id, attempt.salespersonId, breakdown, evaluation?.notes ?? null, evaluation?.qualityDims ?? null);
+    // Anti-cheat: aggregate suspicion telemetry across SALESPERSON messages.
+    // Quarantined attempts get a finalScore (for admin review) but don't credit
+    // points or touch the leaderboard until an admin clears them.
+    const salespersonMessages = (attempt.conversation?.messages ?? []).filter(
+      (m) => m.sender === 'SALESPERSON',
+    );
+    const suspicion = this.suspicion.compute(
+      salespersonMessages.map((m) => ({ clientMeta: (m as any).clientMeta as MessageClientMeta | null })),
+    );
+
+    await this.persistScore(
+      attempt.id,
+      attempt.salespersonId,
+      breakdown,
+      evaluation?.notes ?? null,
+      evaluation?.qualityDims ?? null,
+      suspicion,
+    );
+
+    if (suspicion.quarantined) {
+      this.logger.warn(
+        `Attempt ${attemptId} quarantined (suspicionScore=${suspicion.score}) — leaderboard + points withheld`,
+      );
+      return;
+    }
+
     await this.recomputeRank(attempt.salespersonId, rankConfigs);
 
     // Update Redis leaderboards last — failures are logged inside, never thrown
@@ -166,6 +193,7 @@ export class ScoringService {
     breakdown: ScoreBreakdown,
     notes: string | null,
     qualityDims: QualityDims | null,
+    suspicion: { score: number; quarantined: boolean; flags: object },
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await tx.challengeAttempt.update({
@@ -173,8 +201,16 @@ export class ScoringService {
         data: {
           finalScore: breakdown.total,
           scoreBreakdown: { ...breakdown, notes, qualityDims } as unknown as Prisma.InputJsonValue,
+          suspicionScore: suspicion.score,
+          quarantined: suspicion.quarantined,
+          suspicionFlags: suspicion.flags as unknown as Prisma.InputJsonValue,
         },
       });
+
+      // Quarantined attempts skip all points + leaderboard side-effects. The
+      // finalScore stays on the row so admins can review what the legitimate
+      // outcome would have been before deciding to un-quarantine.
+      if (suspicion.quarantined) return;
 
       if (breakdown.baseScore !== 0) {
         await tx.pointsTransaction.create({

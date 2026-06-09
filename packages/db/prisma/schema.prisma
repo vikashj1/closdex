@@ -339,6 +339,16 @@ model ChallengeAttempt {
   messagesUsed       Int                 @default(0)
   finalScore         Int?
   scoreBreakdown     Json?               // quality dims, bonuses, penalties
+  /// Anti-cheat suspicion score (0-100) computed at scoring time from each
+  /// SALESPERSON message's clientMeta. Null until the attempt finishes.
+  suspicionScore     Int?
+  /// True when suspicionScore crosses the QUARANTINE_THRESHOLD. Quarantined
+  /// attempts still get a finalScore but are hidden from the leaderboard
+  /// until an admin reviews them.
+  quarantined        Boolean             @default(false)
+  /// Breakdown of which heuristics fired (paste ratio, instant-typing,
+  /// typing-speed, paste-burst). Stored for admin review.
+  suspicionFlags     Json?
   startedAt          DateTime            @default(now())
   completedAt        DateTime?
 
