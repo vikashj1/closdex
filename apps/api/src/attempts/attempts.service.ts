@@ -209,6 +209,11 @@ export class AttemptsService {
       score: bd?.qualityMultiplier != null ? Math.round(bd.qualityMultiplier * 100) : null,
       rubricScores: bd?.qualityDims ?? null,
       feedback: bd?.notes ?? null,
+      // Slice 123: surface quarantine state to the result page so we can show
+      // "score withheld for review" instead of pretending the attempt earned 0.
+      // We deliberately do NOT leak the underlying suspicionScore / flags to
+      // the salesperson — that stays admin-only on /admin/quarantine.
+      quarantined: attempt.quarantined ?? false,
     };
     if (!attempt?.challenge?.persona) return projected;
     const { personalityPrompt, ...persona } = attempt.challenge.persona;

@@ -219,6 +219,9 @@ export interface AttemptDetail {
   pointsAwarded?: number | null;
   rubricScores?: Record<string, number> | null;
   feedback?: string | null;
+  /** True when the attempt was held back by the anti-cheat heuristics.
+   *  Salesperson can still see their breakdown but no points credit. */
+  quarantined?: boolean;
   challenge: ChallengeSummary;
   conversation: { id: string; messages: ChallengeMessage[] };
 }

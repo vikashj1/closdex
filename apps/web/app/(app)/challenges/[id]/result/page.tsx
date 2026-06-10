@@ -60,16 +60,38 @@ function ResultPageInner({ params }: { params: { id: string } }) {
       return;
     }
     let cancelled = false;
-    api.attempts
-      .get(attemptId)
-      .then((a) => { if (!cancelled) { setAttempt(a); setLoading(false); } })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : 'Could not load attempt.');
-          setLoading(false);
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Scoring runs async via BullMQ — the attempt is COMPLETED the moment the
+    // user lands here, but finalScore may still be null for ~2-8s while the
+    // worker hits the LLM. Poll on a 2s cadence (capped at 20 attempts ≈ 40s)
+    // and stop the moment either pointsAwarded comes back populated OR the
+    // attempt looks quarantined (those skip rubric points so pointsAwarded
+    // alone isn't a sufficient terminal signal).
+    let attempts = 0;
+    async function fetchOnce() {
+      try {
+        const a = await api.attempts.get(attemptId as string);
+        if (cancelled) return;
+        setAttempt(a);
+        setLoading(false);
+        const scored = a.pointsAwarded != null || a.feedback != null || a.quarantined === true;
+        if (!scored && attempts < 20) {
+          attempts += 1;
+          pollTimer = setTimeout(fetchOnce, 2000);
         }
-      });
-    return () => { cancelled = true; };
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof ApiError ? err.message : 'Could not load attempt.');
+        setLoading(false);
+      }
+    }
+    fetchOnce();
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) clearTimeout(pollTimer);
+    };
   }, [user, attemptId]);
 
   if (authLoading || !user || loading) {
@@ -90,10 +112,49 @@ function ResultPageInner({ params }: { params: { id: string } }) {
   const achieved = attempt.goalAchieved ?? false;
   const finalPts = attempt.pointsAwarded ?? 0;
   const score = attempt.score ?? 0;
-  const scoring = attempt.status === 'IN_PROGRESS' || (finalPts === 0 && score === 0 && !attempt.completedAt);
+  const quarantined = attempt.quarantined === true;
+  // Scoring is "in flight" when the attempt is completed but the worker hasn't
+  // populated the breakdown yet. Quarantined attempts DO get a breakdown so we
+  // don't treat them as still-scoring.
+  const scoring = !quarantined && (
+    attempt.status === 'IN_PROGRESS' ||
+    (attempt.pointsAwarded == null && attempt.feedback == null)
+  );
 
   return (
     <div style={{ padding: '32px 32px', maxWidth: 1100, margin: '0 auto' }}>
+      {quarantined && (
+        <Card
+          padding={20}
+          style={{
+            marginBottom: 24,
+            borderColor: 'color-mix(in oklch, var(--d-hard) 40%, var(--border))',
+            background: 'color-mix(in oklch, var(--d-hard) 10%, transparent)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ color: 'var(--d-hard)', flexShrink: 0, marginTop: 2 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 9v4" />
+                <path d="M12 17h.01" />
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--d-hard)', marginBottom: 4 }}>
+                Score withheld pending review
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.55 }}>
+                Our anti-cheat heuristics flagged signals consistent with pasted or
+                AI-generated replies on this attempt. An admin will review and either
+                credit the points or remove the attempt. Your breakdown is shown below
+                for transparency — no points will be added to your total until review
+                completes. Think this is wrong? Raise a dispute below.
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
       <div style={{ textAlign: 'center', padding: '16px 0 36px', animation: 'fadeUp 0.4s ease' }}>
         <div
           style={{
@@ -102,23 +163,27 @@ function ResultPageInner({ params }: { params: { id: string } }) {
             gap: 8,
             padding: '6px 14px',
             borderRadius: 999,
-            background: achieved
+            background: quarantined
+              ? 'color-mix(in oklch, var(--d-hard) 18%, transparent)'
+              : achieved
               ? 'color-mix(in oklch, var(--emerald) 18%, transparent)'
               : 'color-mix(in oklch, var(--text-mute) 14%, transparent)',
-            color: achieved ? 'var(--emerald)' : 'var(--text-mute)',
+            color: quarantined ? 'var(--d-hard)' : achieved ? 'var(--emerald)' : 'var(--text-mute)',
             fontSize: 12,
             fontWeight: 700,
             marginBottom: 18,
-            border: `1px solid color-mix(in oklch, ${achieved ? 'var(--emerald)' : 'var(--text-mute)'} 35%, transparent)`,
+            border: `1px solid color-mix(in oklch, ${quarantined ? 'var(--d-hard)' : achieved ? 'var(--emerald)' : 'var(--text-mute)'} 35%, transparent)`,
           }}
         >
-          <Icon.check /> {achieved ? 'GOAL ACHIEVED' : scoring ? 'SCORING…' : 'GOAL NOT MET'}
+          <Icon.check /> {quarantined ? 'UNDER REVIEW' : achieved ? 'GOAL ACHIEVED' : scoring ? 'SCORING…' : 'GOAL NOT MET'}
         </div>
-        <div className="display" style={{ fontSize: 96, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: finalPts < 0 ? 'var(--d-expert)' : 'var(--gold)' }}>
-          {finalPts > 0 ? `+${finalPts}` : finalPts}
+        <div className="display" style={{ fontSize: 96, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: quarantined ? 'var(--text-mute)' : finalPts < 0 ? 'var(--d-expert)' : 'var(--gold)' }}>
+          {quarantined ? '—' : finalPts > 0 ? `+${finalPts}` : finalPts}
         </div>
         <div style={{ fontSize: 14, color: 'var(--text-dim)', marginTop: 8 }}>
-          {scoring
+          {quarantined
+            ? `score withheld · ${attempt.challenge.title}`
+            : scoring
             ? 'Your conversation is being evaluated. Refresh in a moment to see the final score.'
             : `points earned · ${attempt.challenge.title}`}
         </div>
