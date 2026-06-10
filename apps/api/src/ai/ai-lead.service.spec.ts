@@ -102,4 +102,68 @@ describe('AiLeadService', () => {
 
     expect(result).toBe('Interesting.');
   });
+
+  // 8. priorSummary is injected into the system prompt when provided
+  it('injects priorSummary into the system message when present', async () => {
+    mockLlm.complete.mockResolvedValue('ok');
+
+    await service.respond({
+      ...BASE_INPUT,
+      priorSummary: 'Salesperson is pitching an analytics tool. Alice is curious about ROI.',
+    });
+
+    const messages = mockLlm.complete.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const systemMsg = messages.find((m) => m.role === 'system');
+    expect(systemMsg?.content).toContain('EARLIER IN THIS CONVERSATION');
+    expect(systemMsg?.content).toContain('analytics tool');
+  });
+
+  // 9. summarize returns the LLM reply for a fresh first run
+  it('summarize returns the LLM-generated paragraph on a first run', async () => {
+    mockLlm.complete.mockResolvedValue('  Salesperson pitched X, Alice asked about ROI.  ');
+
+    const result = await service.summarize({
+      personaName: 'Alice',
+      existingSummary: null,
+      newMessages: [
+        { sender: MessageSender.SALESPERSON, content: 'Quick pitch on our analytics tool.' },
+        { sender: MessageSender.LEAD, content: 'What ROI are existing customers seeing?' },
+      ],
+    });
+
+    expect(result).toBe('Salesperson pitched X, Alice asked about ROI.');
+    const callArgs = mockLlm.complete.mock.calls[0];
+    expect(callArgs[1]).toEqual({ maxTokens: 350, temperature: 0.3 });
+  });
+
+  // 10. summarize folds new messages into an existing summary
+  it('summarize folds new turns into an existing rolling summary', async () => {
+    mockLlm.complete.mockResolvedValue('Updated summary.');
+
+    await service.summarize({
+      personaName: 'Alice',
+      existingSummary: 'Salesperson opened, Alice gave 5 minutes.',
+      newMessages: [
+        { sender: MessageSender.SALESPERSON, content: 'Our tool cuts log spend 40%.' },
+      ],
+    });
+
+    const messages = mockLlm.complete.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const userMsg = messages.find((m) => m.role === 'user');
+    expect(userMsg?.content).toContain('Existing summary');
+    expect(userMsg?.content).toContain('Salesperson opened');
+    expect(userMsg?.content).toContain('cuts log spend 40%');
+  });
+
+  // 11. summarize is a no-op when there are no new messages
+  it('summarize returns the existing summary unchanged when newMessages is empty', async () => {
+    const result = await service.summarize({
+      personaName: 'Alice',
+      existingSummary: 'Existing context.',
+      newMessages: [],
+    });
+
+    expect(result).toBe('Existing context.');
+    expect(mockLlm.complete).not.toHaveBeenCalled();
+  });
 });

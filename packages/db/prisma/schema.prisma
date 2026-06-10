@@ -364,6 +364,12 @@ model Conversation {
   attempt   ChallengeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   attemptId String           @unique
   messages  Message[]
+  /// Rolling LLM-generated summary of messages older than the recent-window
+  /// (last 5). Updated lazily — see SUMMARY_REFRESH_INTERVAL in attempts.
+  /// Lets us send {persona + summary + last 5 turns} instead of the full
+  /// conversation on every chat-turn call to the lead LLM (~50% input savings).
+  summary           String?  @db.Text
+  summaryUpToCount  Int      @default(0)
   createdAt DateTime         @default(now())
 }
 

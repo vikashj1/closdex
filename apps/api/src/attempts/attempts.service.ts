@@ -79,20 +79,56 @@ export class AttemptsService {
       throw new BadRequestException('Attempt is not in progress.');
     }
 
-    const conversationId = attempt.conversation!.id;
-    const priorHistory = attempt.conversation!.messages;
+    const conversation = attempt.conversation!;
+    const conversationId = conversation.id;
+    const priorHistory = conversation.messages;
 
-    const aiHistory = [
+    // Rolling-summary strategy (slice 124): when the chat grows past
+    // RECENT_WINDOW messages, summarize everything older than the last
+    // RECENT_WINDOW and pass only {persona + summary + last RECENT_WINDOW + new}
+    // to the lead. Cuts input tokens ~50% on a typical 15-turn challenge.
+    const RECENT_WINDOW = 5;
+    const SUMMARY_REFRESH_INTERVAL = 4;
+
+    const fullHistory = [
       ...priorHistory.map((m) => ({ sender: m.sender, content: m.content })),
       { sender: MessageSender.SALESPERSON, content },
     ];
+
+    let priorSummary: string | null = conversation.summary ?? null;
+    let summaryUpToCount: number = conversation.summaryUpToCount ?? 0;
+    const summarizableCount = Math.max(0, fullHistory.length - RECENT_WINDOW);
+    const needsRefresh =
+      summarizableCount > 0 &&
+      summarizableCount - summaryUpToCount >= SUMMARY_REFRESH_INTERVAL;
+
+    if (needsRefresh) {
+      const newToFold = fullHistory.slice(summaryUpToCount, summarizableCount);
+      try {
+        priorSummary = await this.aiLead.summarize({
+          personaName: attempt.challenge.persona.name,
+          existingSummary: priorSummary,
+          newMessages: newToFold,
+        });
+        summaryUpToCount = summarizableCount;
+      } catch (err) {
+        // Summarize failure is non-fatal — we just send a slightly longer
+        // context this turn and try again next turn.
+        this.logger.warn(`Summary refresh failed for attempt ${attempt.id}: ${(err as Error).message}`);
+      }
+    }
+
+    const trimmedHistory = priorSummary && summaryUpToCount > 0
+      ? fullHistory.slice(summaryUpToCount)
+      : fullHistory;
 
     let rawReply: string;
     try {
       rawReply = await this.aiLead.respond({
         personaName: attempt.challenge.persona.name,
         personaPrompt: attempt.challenge.persona.personalityPrompt,
-        history: aiHistory,
+        history: trimmedHistory,
+        priorSummary: priorSummary ?? undefined,
         goalDescription: attempt.challenge.goalDescription,
       });
     } catch (err) {
@@ -122,6 +158,12 @@ export class AttemptsService {
       await tx.message.create({
         data: { conversationId, sender: MessageSender.LEAD, content: leadReply },
       });
+      if (needsRefresh) {
+        await tx.conversation.update({
+          where: { id: conversationId },
+          data: { summary: priorSummary, summaryUpToCount },
+        });
+      }
       return tx.challengeAttempt.update({
         where: { id: attempt.id },
         data: {
