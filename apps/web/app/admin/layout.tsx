@@ -17,6 +17,7 @@ const NAV: NavItem[] = [
   { id: 'challenges',   label: 'Challenges',   path: '/admin/challenges',       prefix: '/admin/challenges' },
   { id: 'personas',     label: 'Personas',     path: '/admin/personas',         prefix: '/admin/personas' },
   { id: 'disputes',     label: 'Disputes',     path: '/admin/disputes',         prefix: '/admin/disputes' },
+  { id: 'quarantine',   label: 'Quarantine',   path: '/admin/quarantine',       prefix: '/admin/quarantine' },
   { id: 'verification', label: 'Verification', path: '/admin/verification',     prefix: '/admin/verification' },
   { id: 'badges',       label: 'Badges',       path: '/admin/badges',           prefix: '/admin/badges' },
   { id: 'learning',     label: 'Learning',     path: '/admin/learning',         prefix: '/admin/learning' },

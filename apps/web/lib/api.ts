@@ -167,6 +167,46 @@ export interface AttemptClientMeta {
   charCount?: number;
 }
 
+export interface SuspicionFlagsShape {
+  pasteRatio: number;
+  instantTyping: boolean;
+  superhumanSpeed: boolean;
+  pasteBurst: boolean;
+  aiContentLikeness: number;
+  noTelemetry: boolean;
+  contributions: {
+    pasteRatio: number;
+    instantTyping: number;
+    superhumanSpeed: number;
+    pasteBurst: number;
+    aiContent: number;
+  };
+}
+
+export interface QuarantineItem {
+  id: string;
+  attemptNumber: number;
+  suspicionScore: number | null;
+  suspicionFlags: SuspicionFlagsShape | null;
+  finalScore: number | null;
+  completedAt: string | null;
+  challenge: { id: string; title: string; difficulty: string; goalType: string };
+  salesperson: { id: string; publicSlug: string; rank: string; name: string; email: string };
+}
+
+export interface QuarantineDetail extends QuarantineItem {
+  status: string;
+  quarantined: boolean;
+  scoreBreakdown: Record<string, unknown> | null;
+  messages: Array<{
+    id: string;
+    sender: 'SALESPERSON' | 'LEAD' | 'SYSTEM';
+    content: string;
+    clientMeta: AttemptClientMeta | null;
+    createdAt: string;
+  }>;
+}
+
 export interface AttemptDetail {
   id: string;
   status: 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
@@ -696,6 +736,21 @@ export const api = {
       get: (id: string) => request<DisputeSummary>('GET', `/admin/disputes/${id}`),
       resolve: (id: string, resolution: string, status: 'RESOLVED' | 'REJECTED') =>
         request<DisputeSummary>('POST', `/admin/disputes/${id}/resolve`, { body: { resolution, status } }),
+    },
+    quarantine: {
+      list: (query: { page?: number; perPage?: number } = {}) =>
+        request<{ items: QuarantineItem[]; total: number; page: number; perPage: number }>(
+          'GET', '/admin/quarantine', { query },
+        ),
+      get: (id: string) => request<QuarantineDetail>('GET', `/admin/quarantine/${id}`),
+      clear: (id: string, reason?: string) =>
+        request<{ id: string; quarantined: false; action: 'cleared' | 'noop'; pointsApplied?: number }>(
+          'POST', `/admin/quarantine/${id}/clear`, { body: { reason } },
+        ),
+      confirm: (id: string, reason?: string) =>
+        request<{ id: string; quarantined: true; action: 'confirmed' }>(
+          'POST', `/admin/quarantine/${id}/confirm`, { body: { reason } },
+        ),
     },
     verification: {
       listPending: () => request<VerificationCompany[]>('GET', '/admin/verification/pending'),

@@ -10,11 +10,27 @@ import { ConfigService } from './config.service';
 import { ConfigController } from './config.controller';
 import { StatsService } from './stats.service';
 import { StatsController } from './stats.controller';
+import { QuarantineService } from './quarantine.service';
+import { QuarantineController } from './quarantine.controller';
 
 @Module({
   imports: [LeaderboardsModule],
-  providers: [AuditService, DisputesService, VerificationService, ConfigService, StatsService],
-  controllers: [DisputesController, VerificationController, ConfigController, AuditController, StatsController],
+  providers: [
+    AuditService,
+    DisputesService,
+    VerificationService,
+    ConfigService,
+    StatsService,
+    QuarantineService,
+  ],
+  controllers: [
+    DisputesController,
+    VerificationController,
+    ConfigController,
+    AuditController,
+    StatsController,
+    QuarantineController,
+  ],
   exports: [AuditService],
 })
 export class AdminModule {}
