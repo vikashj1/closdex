@@ -7,6 +7,7 @@ import { Btn } from '@/components/ui/Btn';
 import { Field } from '@/components/ui/Field';
 import { TextInput } from '@/components/ui/TextInput';
 import { Icon } from '@/components/ui/Icon';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
@@ -14,7 +15,7 @@ type Side = 'salesperson' | 'company';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const [tab, setTab] = useState<Side>('salesperson');
   const [companyName, setCompanyName] = useState('');
   const [name, setName] = useState('');
@@ -48,6 +49,26 @@ export default function SignupPage() {
       router.replace(tab === 'salesperson' ? '/onboarding' : '/company/onboarding');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Sign-up failed. Please try again.');
+      setSubmitting(false);
+    }
+  }
+
+  async function handleGoogle(idToken: string) {
+    setError(null);
+    if (tab === 'company' && !companyName.trim()) {
+      setError('Enter your company name before continuing with Google.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const user = await loginWithGoogle({
+        idToken,
+        role: tab === 'salesperson' ? 'SALESPERSON' : 'COMPANY',
+        companyName: tab === 'company' ? companyName.trim() : undefined,
+      });
+      router.replace(tab === 'salesperson' ? '/onboarding' : '/company/onboarding');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Google sign-up failed. Please try again.');
       setSubmitting(false);
     }
   }
@@ -139,9 +160,8 @@ export default function SignupPage() {
           Create your {tab} account
         </h2>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
-          <Btn type="button" kind="secondary" full icon={<Icon.linkedin />}>Continue with LinkedIn</Btn>
-          <Btn type="button" kind="secondary" full icon={<Icon.google />}>Continue with Google</Btn>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22, alignItems: 'stretch' }}>
+          <GoogleButton onIdToken={handleGoogle} label="signup_with" disabled={submitting} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text-mute)', fontSize: 11, margin: '8px 0 22px' }}>

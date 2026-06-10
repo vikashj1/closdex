@@ -7,16 +7,35 @@ import { Btn } from '@/components/ui/Btn';
 import { Field } from '@/components/ui/Field';
 import { TextInput } from '@/components/ui/TextInput';
 import { Icon } from '@/components/ui/Icon';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 import { ApiError } from '@/lib/api';
 import { landingPathFor, useAuth } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function handleGoogle(idToken: string) {
+    setError(null);
+    setSubmitting(true);
+    try {
+      const user = await loginWithGoogle({ idToken });
+      router.replace(landingPathFor(user.role));
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.status === 400
+            ? 'Pick whether you are a salesperson or company on the signup page first.'
+            : err.message
+          : 'Google sign-in failed. Please try again.',
+      );
+      setSubmitting(false);
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -75,9 +94,8 @@ export default function LoginPage() {
       >
         <h2 className="display" style={{ fontSize: 28, margin: '0 0 24px', fontWeight: 700 }}>Log in</h2>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
-          <Btn type="button" kind="secondary" full icon={<Icon.linkedin />}>Continue with LinkedIn</Btn>
-          <Btn type="button" kind="secondary" full icon={<Icon.google />}>Continue with Google</Btn>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22, alignItems: 'stretch' }}>
+          <GoogleButton onIdToken={handleGoogle} label="signin_with" disabled={submitting} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text-mute)', fontSize: 11, margin: '8px 0 22px' }}>

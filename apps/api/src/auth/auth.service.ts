@@ -2,21 +2,40 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma, UserRole } from '@closdex/db';
 import * as bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  private googleClient: OAuth2Client | null = null;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly config: ConfigService,
   ) {}
+
+  private getGoogleClient(): OAuth2Client {
+    if (!this.googleClient) {
+      const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+      if (!clientId) {
+        throw new BadRequestException('Google sign-in is not configured.');
+      }
+      this.googleClient = new OAuth2Client(clientId);
+    }
+    return this.googleClient;
+  }
 
   /**
    * Registers a salesperson or a company owner. Salespeople get a
@@ -73,6 +92,96 @@ export class AuthService {
     if (!ok) throw new UnauthorizedException('Invalid credentials.');
 
     return this.issueToken(user.id, user.email, user.role);
+  }
+
+  /** Verifies a Google ID token, then either:
+   *   - logs the existing user in (matched by GOOGLE provider account, or by
+   *     email if they originally signed up via password and this is their
+   *     first Google link)
+   *   - or creates a fresh user using the role provided by the caller
+   *
+   *  All token verification happens server-side via google-auth-library —
+   *  the client never sees the Google client secret because ID-token
+   *  verification doesn't need one. */
+  async googleAuth(dto: GoogleAuthDto) {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID')!;
+    const ticket = await this.getGoogleClient().verifyIdToken({
+      idToken: dto.idToken,
+      audience: clientId,
+    }).catch((err) => {
+      this.logger.warn(`Google ID token verification failed: ${err.message}`);
+      throw new UnauthorizedException('Google sign-in token is invalid.');
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload?.sub || !payload.email) {
+      throw new UnauthorizedException('Google sign-in returned no email.');
+    }
+    if (payload.email_verified === false) {
+      throw new UnauthorizedException('Google email is not verified.');
+    }
+
+    const googleSub = payload.sub;
+    const email = payload.email.toLowerCase();
+    const fullName = payload.name?.trim() || email.split('@')[0];
+
+    // 1. Existing OAuth account match → straight login.
+    const oauthMatch = await this.prisma.oAuthAccount.findUnique({
+      where: { provider_providerAccountId: { provider: 'GOOGLE', providerAccountId: googleSub } },
+      include: { user: true },
+    });
+    if (oauthMatch) {
+      return this.issueToken(oauthMatch.user.id, oauthMatch.user.email, oauthMatch.user.role);
+    }
+
+    // 2. Same email registered via password → link Google to that user, log in.
+    const byEmail = await this.prisma.user.findUnique({ where: { email } });
+    if (byEmail) {
+      await this.prisma.oAuthAccount.create({
+        data: { userId: byEmail.id, provider: 'GOOGLE', providerAccountId: googleSub },
+      });
+      return this.issueToken(byEmail.id, byEmail.email, byEmail.role);
+    }
+
+    // 3. Fresh signup — caller must pass a role.
+    const role = dto.role;
+    if (!role) {
+      throw new BadRequestException('role is required for first-time Google sign-in.');
+    }
+    if (role === UserRole.ADMIN) {
+      throw new BadRequestException('Admin accounts are provisioned internally.');
+    }
+    if (role === UserRole.COMPANY && !dto.companyName) {
+      throw new BadRequestException('companyName is required for company Google sign-ups.');
+    }
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          name: fullName,
+          role,
+          // passwordHash stays null — Google-only accounts can't password-login
+          // until they set one through a future "set password" flow.
+          oauthAccounts: { create: { provider: 'GOOGLE', providerAccountId: googleSub } },
+        },
+      });
+
+      if (role === UserRole.SALESPERSON) {
+        await tx.salespersonProfile.create({
+          data: { userId: user.id, publicSlug: await this.uniqueSlug(tx, fullName) },
+        });
+      } else {
+        const company = await tx.company.create({ data: { name: dto.companyName! } });
+        await tx.companyMembership.create({
+          data: { companyId: company.id, userId: user.id, companyRole: 'ADMIN' },
+        });
+      }
+
+      return user;
+    });
+
+    return this.issueToken(created.id, created.email, created.role);
   }
 
   private issueToken(sub: string, email: string, role: UserRole) {

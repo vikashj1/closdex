@@ -480,6 +480,8 @@ export const api = {
     }) => request<AuthResponse>('POST', '/auth/register', { body: dto }),
     login: (dto: { email: string; password: string }) =>
       request<AuthResponse>('POST', '/auth/login', { body: dto }),
+    google: (dto: { idToken: string; role?: 'SALESPERSON' | 'COMPANY'; companyName?: string }) =>
+      request<AuthResponse>('POST', '/auth/google', { body: dto }),
   },
 
   users: {

@@ -54,10 +54,14 @@ function makeJwtMock() {
   return { sign: jest.fn().mockReturnValue('signed-token') } as unknown as JwtService;
 }
 
+function makeConfigMock() {
+  return { get: jest.fn().mockReturnValue(undefined) } as any;
+}
+
 describe('AuthService', () => {
   describe('register', () => {
     it('rejects ADMIN role with BadRequestException', async () => {
-      const svc = new AuthService(makePrismaMock(), makeJwtMock());
+      const svc = new AuthService(makePrismaMock(), makeJwtMock(), makeConfigMock());
       await expect(
         svc.register({
           email: 'admin@x.com',
@@ -69,7 +73,7 @@ describe('AuthService', () => {
     });
 
     it('rejects COMPANY without companyName', async () => {
-      const svc = new AuthService(makePrismaMock(), makeJwtMock());
+      const svc = new AuthService(makePrismaMock(), makeJwtMock(), makeConfigMock());
       await expect(
         svc.register({
           email: 'c@x.com',
@@ -82,7 +86,7 @@ describe('AuthService', () => {
 
     it('rejects duplicate email with ConflictException', async () => {
       const prisma = makePrismaMock({ findUniqueResult: { id: 'existing' } });
-      const svc = new AuthService(prisma, makeJwtMock());
+      const svc = new AuthService(prisma, makeJwtMock(), makeConfigMock());
       await expect(
         svc.register({
           email: 'dup@x.com',
@@ -108,7 +112,7 @@ describe('AuthService', () => {
         },
       });
       const jwt = makeJwtMock();
-      const svc = new AuthService(prisma, jwt);
+      const svc = new AuthService(prisma, jwt, makeConfigMock());
 
       const result = await svc.register({
         email: 'sp@x.com',
@@ -156,7 +160,7 @@ describe('AuthService', () => {
           companyMembership: { create: membershipCreate },
         },
       });
-      const svc = new AuthService(prisma, makeJwtMock());
+      const svc = new AuthService(prisma, makeJwtMock(), makeConfigMock());
 
       await svc.register({
         email: 'biz@x.com',
@@ -188,7 +192,7 @@ describe('AuthService', () => {
           salespersonProfile: { create: profileCreate, findUnique: profileFind },
         },
       });
-      const svc = new AuthService(prisma, makeJwtMock());
+      const svc = new AuthService(prisma, makeJwtMock(), makeConfigMock());
 
       await svc.register({
         email: 'slug@x.com',
@@ -220,7 +224,7 @@ describe('AuthService', () => {
           salespersonProfile: { create: profileCreate, findUnique: profileFind },
         },
       });
-      const svc = new AuthService(prisma, makeJwtMock());
+      const svc = new AuthService(prisma, makeJwtMock(), makeConfigMock());
 
       await svc.register({
         email: 'u@x.com',
@@ -237,7 +241,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('rejects unknown email with UnauthorizedException', async () => {
-      const svc = new AuthService(makePrismaMock(), makeJwtMock());
+      const svc = new AuthService(makePrismaMock(), makeJwtMock(), makeConfigMock());
       await expect(svc.login({ email: 'ghost@x.com', password: 'whatever' } as any))
         .rejects.toBeInstanceOf(UnauthorizedException);
     });
@@ -246,7 +250,7 @@ describe('AuthService', () => {
       const prisma = makePrismaMock({
         findUniqueResult: { id: 'u1', email: 'o@x.com', role: UserRole.SALESPERSON, passwordHash: null },
       });
-      const svc = new AuthService(prisma, makeJwtMock());
+      const svc = new AuthService(prisma, makeJwtMock(), makeConfigMock());
       await expect(svc.login({ email: 'o@x.com', password: 'whatever' } as any))
         .rejects.toBeInstanceOf(UnauthorizedException);
     });
@@ -256,7 +260,7 @@ describe('AuthService', () => {
       const prisma = makePrismaMock({
         findUniqueResult: { id: 'u1', email: 'p@x.com', role: UserRole.SALESPERSON, passwordHash: hash },
       });
-      const svc = new AuthService(prisma, makeJwtMock());
+      const svc = new AuthService(prisma, makeJwtMock(), makeConfigMock());
       await expect(svc.login({ email: 'p@x.com', password: 'wrong-pw' } as any))
         .rejects.toBeInstanceOf(UnauthorizedException);
     });
@@ -267,7 +271,7 @@ describe('AuthService', () => {
         findUniqueResult: { id: 'u9', email: 'ok@x.com', role: UserRole.SALESPERSON, passwordHash: hash },
       });
       const jwt = makeJwtMock();
-      const svc = new AuthService(prisma, jwt);
+      const svc = new AuthService(prisma, jwt, makeConfigMock());
       const result = await svc.login({ email: 'ok@x.com', password: 'right-pw' } as any);
       expect(result).toEqual({
         accessToken: 'signed-token',
@@ -278,6 +282,16 @@ describe('AuthService', () => {
         email: 'ok@x.com',
         role: UserRole.SALESPERSON,
       });
+    });
+  });
+
+  describe('googleAuth', () => {
+    it('throws BadRequest when GOOGLE_CLIENT_ID is not configured', async () => {
+      const prisma = makePrismaMock();
+      const svc = new AuthService(prisma, makeJwtMock(), makeConfigMock());
+      await expect(
+        svc.googleAuth({ idToken: 'x'.repeat(40) } as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 });

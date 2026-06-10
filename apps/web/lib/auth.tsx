@@ -36,6 +36,11 @@ interface AuthContextValue extends AuthState {
     role: 'SALESPERSON' | 'COMPANY';
     companyName?: string;
   }) => Promise<MeResponse>;
+  loginWithGoogle: (dto: {
+    idToken: string;
+    role?: 'SALESPERSON' | 'COMPANY';
+    companyName?: string;
+  }) => Promise<MeResponse>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -84,13 +89,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const loginWithGoogle = useCallback(
+    async (dto: Parameters<AuthContextValue['loginWithGoogle']>[0]) => {
+      const res = await api.auth.google(dto);
+      tokenStore.set(res.accessToken);
+      const user = await api.users.me();
+      setState({ user, loading: false, error: null });
+      return user;
+    },
+    [],
+  );
+
   const logout = useCallback(() => {
     tokenStore.clear();
     setState({ user: null, loading: false, error: null });
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, refresh }}>
+    <AuthContext.Provider value={{ ...state, login, register, loginWithGoogle, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );
