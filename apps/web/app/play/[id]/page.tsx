@@ -316,10 +316,13 @@ export default function ConversationPage({ params }: { params: { id: string } })
             <textarea
               value={input}
               onChange={(e) => {
-                if (firstKeystrokeRef.current === null && e.target.value.length > 0) {
+                // Backend caps content at 500 chars (slice 125) — enforce client
+                // side too so the count + colour states match reality.
+                const next = e.target.value.slice(0, 500);
+                if (firstKeystrokeRef.current === null && next.length > 0) {
                   firstKeystrokeRef.current = Date.now();
                 }
-                setInput(e.target.value);
+                setInput(next);
               }}
               onPaste={(e) => {
                 const pasted = e.clipboardData?.getData('text') ?? '';
@@ -339,6 +342,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
                   : 'Conversation is closed.'
               }
               rows={2}
+              maxLength={500}
               style={{ flex: 1, resize: 'none', fontSize: 14, color: 'var(--text)' }}
             />
             {speechSupported && (
@@ -382,7 +386,19 @@ export default function ConversationPage({ params }: { params: { id: string } })
             </Btn>
           </div>
           <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-mute)', display: 'flex', justifyContent: 'space-between' }}>
-            <span>{input.length} chars</span>
+            <span
+              className="mono"
+              style={{
+                color: input.length >= 500
+                  ? 'var(--d-expert)'
+                  : input.length >= 450
+                  ? 'var(--d-hard)'
+                  : 'var(--text-mute)',
+                fontWeight: input.length >= 450 ? 600 : 500,
+              }}
+            >
+              {input.length} / 500
+            </span>
             <span>↩ to send · ⇧↩ for new line</span>
           </div>
         </div>

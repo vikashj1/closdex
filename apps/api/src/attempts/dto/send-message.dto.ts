@@ -32,7 +32,7 @@ export class ClientMetaDto {
 export class SendMessageDto {
   @IsString()
   @MinLength(1)
-  @MaxLength(2000)
+  @MaxLength(500)
   content!: string;
 
   @IsOptional()
