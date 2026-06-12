@@ -86,7 +86,7 @@ export default function TrackDetailPage() {
     <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 860 }}>
       {/* Back link */}
       <button
-        onClick={() => router.push('/learn')}
+        onClick={() => router.push('/app/learn')}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -171,7 +171,7 @@ export default function TrackDetailPage() {
             return (
               <div
                 key={tutorial.id}
-                onClick={() => router.push(`/learn/${trackId}/${tutorial.id}`)}
+                onClick={() => router.push(`/app/learn/${trackId}/${tutorial.id}`)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

@@ -65,7 +65,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   async function onStart() {
     if (!challenge || (isCompleted && !canRetry)) return;
     if (!user) {
-      router.push(`/login?redirect=${encodeURIComponent(`/challenges/${challenge.id}`)}`);
+      router.push(`/login?redirect=${encodeURIComponent(`/app/challenges/${challenge.id}`)}`);
       return;
     }
     setStarting(true);
@@ -86,7 +86,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
     return (
       <div style={{ padding: 32 }}>
         <div style={{ color: 'var(--text-mute)' }}>{error ?? 'Challenge not found.'}</div>
-        <Btn kind="ghost" onClick={() => router.push('/challenges')} style={{ marginTop: 14 }}>
+        <Btn kind="ghost" onClick={() => router.push('/app/challenges')} style={{ marginTop: 14 }}>
           ← Back to challenges
         </Btn>
       </div>
@@ -98,7 +98,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   return (
     <div style={{ padding: '24px 32px' }}>
       <button
-        onClick={() => router.push('/challenges')}
+        onClick={() => router.push('/app/challenges')}
         style={{
           background: 'transparent',
           border: 'none',
@@ -273,7 +273,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
                   kind="ghost"
                   full
                   size="md"
-                  onClick={() => bestAttempt && router.push(`/challenges/${params.id}/result?attempt=${bestAttempt.id}`)}
+                  onClick={() => bestAttempt && router.push(`/app/challenges/${params.id}/result?attempt=${bestAttempt.id}`)}
                 >
                   View result
                 </Btn>

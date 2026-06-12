@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError, JobSummary, NotificationItem, TalentSummary } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { PublicCompaniesView } from '@/components/marketing/PublicCompaniesView';
 import { rankFromEnum } from '@/lib/constants';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
@@ -79,10 +78,11 @@ export default function CompanyDashboardPage() {
       .finally(() => setDataLoading(false));
   }, [authLoading, user, companyId]);
 
-  // Anonymous visitors get the "For Companies" marketing screen.
-  if (!authLoading && !user) {
-    return <PublicCompaniesView />;
-  }
+  // Anonymous visitors are sent to the new marketing landing for companies.
+  useEffect(() => {
+    if (!authLoading && !user) router.replace('/for-companies');
+  }, [authLoading, user, router]);
+  if (!authLoading && !user) return null;
 
   if (authLoading || dataLoading) {
     return (

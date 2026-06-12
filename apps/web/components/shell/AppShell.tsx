@@ -27,10 +27,10 @@ interface NavGroup {
 
 const BASE_NAV: NavItem[] = [
   { id: 'home',          label: 'Home',          icon: <Icon.home />,      path: '/dashboard' },
-  { id: 'challenges',    label: 'Challenges',    icon: <Icon.bolt />,      path: '/challenges',    prefix: '/challenges' },
+  { id: 'challenges',    label: 'Challenges',    icon: <Icon.bolt />,      path: '/app/challenges',    prefix: '/app/challenges' },
   { id: 'attempts',      label: 'My Attempts',   icon: <Icon.clock />,     path: '/attempts',      prefix: '/attempts' },
-  { id: 'leaderboard',   label: 'Leaderboard',   icon: <Icon.trophy />,    path: '/leaderboard' },
-  { id: 'learn',         label: 'Learn',         icon: <Icon.book />,      path: '/learn',         prefix: '/learn' },
+  { id: 'leaderboard',   label: 'Leaderboard',   icon: <Icon.trophy />,    path: '/app/leaderboard' },
+  { id: 'learn',         label: 'Learn',         icon: <Icon.book />,      path: '/app/learn',         prefix: '/app/learn' },
   { id: 'disputes',      label: 'My Disputes',   icon: <Icon.flag />,      path: '/disputes',      prefix: '/disputes' },
   { id: 'jobs',          label: 'Jobs',          icon: <Icon.briefcase />, path: '/jobs' },
   { id: 'applications',  label: 'Applications',  icon: <Icon.fileText />,  path: '/applications' },
@@ -46,7 +46,7 @@ const AUTH_ONLY_NAV_IDS = new Set(['home', 'attempts', 'disputes', 'applications
 // Routes that render their own full-bleed marketing chrome when the visitor is
 // anonymous. On these, AppShell should step aside entirely so the page can show
 // its own header/footer instead of the salesperson sidebar.
-const MARKETING_ROUTE_PREFIXES = ['/challenges', '/leaderboard', '/learn'];
+const MARKETING_ROUTE_PREFIXES = ['/app/challenges', '/app/leaderboard', '/app/learn'];
 
 /** Sidebar + topbar shell for authenticated salesperson screens. Lives in
  *  app/(app)/layout.tsx so every route under `(app)` inherits it. */
