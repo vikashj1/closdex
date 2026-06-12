@@ -152,7 +152,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
       const res = await api.attempts.send(attempt.id, text, clientMeta);
       setAttempt(res.attempt);
       if (res.attempt.status !== 'IN_PROGRESS') {
-        router.push(`/challenges/${res.attempt.challenge.id}/result?attempt=${res.attempt.id}`);
+        router.push(`/app/challenges/${res.attempt.challenge.id}/result?attempt=${res.attempt.id}`);
       }
     } catch (err) {
       setAttempt(prevAttempt);
@@ -168,7 +168,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
     setEnding(true);
     try {
       await api.attempts.end(attempt.id);
-      router.push(`/challenges/${attempt.challenge.id}/result?attempt=${attempt.id}`);
+      router.push(`/app/challenges/${attempt.challenge.id}/result?attempt=${attempt.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not end the attempt.');
       setEnding(false);
@@ -182,7 +182,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
     return (
       <div style={{ padding: 32 }}>
         <div style={{ color: 'var(--text-mute)' }}>{error ?? 'Attempt not found.'}</div>
-        <Btn kind="ghost" onClick={() => router.push('/challenges')} style={{ marginTop: 14 }}>
+        <Btn kind="ghost" onClick={() => router.push('/app/challenges')} style={{ marginTop: 14 }}>
           ← Back to challenges
         </Btn>
       </div>
@@ -209,7 +209,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
-              onClick={() => router.push(`/challenges/${challenge.id}`)}
+              onClick={() => router.push(`/app/challenges/${challenge.id}`)}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-mute)', cursor: 'pointer' }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

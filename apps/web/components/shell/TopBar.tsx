@@ -12,10 +12,10 @@ import { rankFromEnum } from '@/lib/constants';
 
 const APP_NAV_ITEMS = [
   { label: 'Home', href: '/dashboard' },
-  { label: 'Challenges', href: '/challenges' },
+  { label: 'Challenges', href: '/app/challenges' },
   { label: 'My Attempts', href: '/attempts' },
-  { label: 'Leaderboard', href: '/leaderboard' },
-  { label: 'Learn', href: '/learn' },
+  { label: 'Leaderboard', href: '/app/leaderboard' },
+  { label: 'Learn', href: '/app/learn' },
   { label: 'My Disputes', href: '/disputes' },
   { label: 'Jobs', href: '/jobs' },
   { label: 'Applications', href: '/applications' },
@@ -25,9 +25,9 @@ const APP_NAV_ITEMS = [
 ];
 
 const PUBLIC_APP_NAV_ITEMS = [
-  { label: 'Challenges', href: '/challenges' },
-  { label: 'Leaderboard', href: '/leaderboard' },
-  { label: 'Learn', href: '/learn' },
+  { label: 'Challenges', href: '/app/challenges' },
+  { label: 'Leaderboard', href: '/app/leaderboard' },
+  { label: 'Learn', href: '/app/learn' },
   { label: 'Jobs', href: '/jobs' },
 ];
 

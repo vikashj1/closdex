@@ -101,7 +101,7 @@ function ResultPageInner({ params }: { params: { id: string } }) {
     return (
       <div style={{ padding: 32 }}>
         <div style={{ color: 'var(--text-mute)' }}>{error ?? 'Result not available.'}</div>
-        <Btn kind="ghost" onClick={() => router.push('/challenges')} style={{ marginTop: 14 }}>
+        <Btn kind="ghost" onClick={() => router.push('/app/challenges')} style={{ marginTop: 14 }}>
           ← Back to challenges
         </Btn>
       </div>
@@ -231,7 +231,7 @@ function ResultPageInner({ params }: { params: { id: string } }) {
       </Card>
 
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 28 }}>
-        <Btn kind="primary" size="lg" icon={<Icon.bolt />} onClick={() => router.push('/challenges')}>Next challenge</Btn>
+        <Btn kind="primary" size="lg" icon={<Icon.bolt />} onClick={() => router.push('/app/challenges')}>Next challenge</Btn>
         <Btn kind="secondary" size="lg" onClick={() => router.push('/dashboard')}>Back to dashboard</Btn>
         <Btn kind="ghost" size="lg" onClick={() => router.refresh()}>Refresh score</Btn>
       </div>

@@ -212,7 +212,7 @@ export default function DashboardPage() {
             )}
           </p>
         </div>
-        <Btn kind="primary" icon={<Icon.bolt />} onClick={() => router.push('/challenges')}>
+        <Btn kind="primary" icon={<Icon.bolt />} onClick={() => router.push('/app/challenges')}>
           Take a challenge
         </Btn>
       </div>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
             gap: 10,
             cursor: dailyQuest ? 'pointer' : 'default',
           }}
-          onClick={() => dailyQuest && router.push(`/challenges/${dailyQuest.id}`)}
+          onClick={() => dailyQuest && router.push(`/app/challenges/${dailyQuest.id}`)}
         >
           <div style={QUEST_LBL}>
             <Icon.bolt /> DAILY QUEST
@@ -318,7 +318,7 @@ export default function DashboardPage() {
                   : 'You already cleared one today. Locked in.'}
               </div>
               {streakAtRisk && (
-                <Btn kind="primary" size="sm" onClick={() => router.push('/challenges')}>
+                <Btn kind="primary" size="sm" onClick={() => router.push('/app/challenges')}>
                   Save streak
                 </Btn>
               )}
@@ -420,7 +420,7 @@ export default function DashboardPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
             <h3 className="display" style={{ fontSize: 16, margin: 0, fontWeight: 600 }}>Recommended for you</h3>
             <a
-              onClick={() => router.push('/challenges')}
+              onClick={() => router.push('/app/challenges')}
               style={{ fontSize: 12, color: 'var(--gold)', cursor: 'pointer' }}
             >
               See all →
@@ -437,7 +437,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={c.id}
-                    onClick={() => router.push(`/challenges/${c.id}`)}
+                    onClick={() => router.push(`/app/challenges/${c.id}`)}
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
