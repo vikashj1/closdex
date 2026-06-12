@@ -229,6 +229,39 @@
 .cmkt .nav__right a.login { font-size: 14.5px; font-weight: 600; }
 .cmkt .nav__toggle { display: none; }
 
+/* Mobile drawer — hidden on desktop, slides down on phones when nav__toggle
+   becomes visible. Kept as a separate sibling of <header> so its fixed
+   position doesn't fight the nav layout. */
+.cmkt .nav__drawer {
+  display: none;
+  position: fixed;
+  top: 64px;
+  left: 0; right: 0; bottom: 0;
+  background: var(--paper);
+  border-top: 0.5px solid var(--hairline);
+  z-index: 90;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+.cmkt .nav__drawer.is-open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.cmkt .nav__drawer-links {
+  display: flex; flex-direction: column;
+  padding: 24px var(--pad) 40px;
+  gap: 4px;
+}
+.cmkt .nav__drawer-links a {
+  font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.01em;
+  color: var(--ink);
+  padding: 14px 0;
+  border-bottom: 0.5px solid var(--hairline);
+}
+.cmkt .nav__drawer-links a.is-active { color: var(--violet); }
+.cmkt .nav__drawer-cta { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+.cmkt .nav__drawer-cta .btn { width: 100%; justify-content: center; }
+
 /* ============================================================
    HERO + signature glow
    ============================================================ */
@@ -756,6 +789,7 @@
 @media (max-width: 760px) {
   .cmkt .nav__links, .cmkt .nav__right .login { display: none; }
   .cmkt .nav__toggle { display: inline-flex; }
+  .cmkt .nav__drawer { display: block; }
 
   /* leaderboard collapses: drop change + tier into name stack */
   .cmkt .thead { display: none; }

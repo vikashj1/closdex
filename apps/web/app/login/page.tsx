@@ -71,7 +71,7 @@ export default function LoginPage() {
         <Logo size={22} />
         <div>
           <h1 className="display" style={{ fontSize: 48, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.05, margin: '0 0 18px' }}>
-            Welcome back.<br /><span style={{ color: 'var(--gold)' }}>The leaderboard is waiting.</span>
+            Welcome back.<br /><span style={{ color: '#5B4BF5' }}>The leaderboard is waiting.</span>
           </h1>
           <p style={{ color: 'var(--text-dim)', fontSize: 15.5, lineHeight: 1.55, maxWidth: 420, margin: '0 0 32px' }}>
             Pick up where you left off. Your streak is still alive — for now.
@@ -149,7 +149,7 @@ export default function LoginPage() {
           New here?{' '}
           <a
             onClick={() => router.push('/signup')}
-            style={{ color: 'var(--gold)', fontWeight: 600, cursor: 'pointer' }}
+            style={{ color: '#5B4BF5', fontWeight: 600, cursor: 'pointer' }}
           >
             Create an account
           </a>

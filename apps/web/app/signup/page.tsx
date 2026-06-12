@@ -89,7 +89,7 @@ export default function SignupPage() {
         <Logo size={22} />
         <div>
           <h1 className="display" style={{ fontSize: 48, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.05, margin: '0 0 18px' }}>
-            Join the arena.<br /><span style={{ color: 'var(--gold)' }}>Get measured fairly.</span>
+            Join the arena.<br /><span style={{ color: '#5B4BF5' }}>Get measured fairly.</span>
           </h1>
           <p style={{ color: 'var(--text-dim)', fontSize: 15.5, lineHeight: 1.55, maxWidth: 420, margin: '0 0 32px' }}>
             Sign up free. Take your first calibration challenge in under 5 minutes. Get ranked. Stay ranked.
@@ -144,8 +144,8 @@ export default function SignupPage() {
                 borderRadius: 7,
                 fontSize: 13,
                 fontWeight: 600,
-                background: tab === t ? 'var(--gold)' : 'transparent',
-                color: tab === t ? 'oklch(0.18 0.02 75)' : 'var(--text-dim)',
+                background: tab === t ? '#5B4BF5' : 'transparent',
+                color: tab === t ? '#fff' : 'var(--text-dim)',
                 border: 'none',
                 textTransform: 'capitalize',
                 cursor: 'pointer',
@@ -242,7 +242,7 @@ export default function SignupPage() {
           Already a member?{' '}
           <a
             onClick={() => router.push('/login')}
-            style={{ color: 'var(--gold)', fontWeight: 600, cursor: 'pointer' }}
+            style={{ color: '#5B4BF5', fontWeight: 600, cursor: 'pointer' }}
           >
             Log in
           </a>
