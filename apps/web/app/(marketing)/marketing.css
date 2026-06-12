@@ -1050,4 +1050,26 @@
   .cmkt .crow { grid-template-columns: 1.4fr 90px 90px 90px; min-width: 520px; }
   .cmkt .pstats--right { justify-content: flex-start; }
   .cmkt .pstats--right .pstat { text-align: left; }
+
+  /* Tier ladder: shrink intrinsic widths so the row + its top variant fit
+     inside narrow viewports without forcing horizontal scroll. */
+  .cmkt .climb__ladder { padding-right: 0; min-width: 0; }
+  .cmkt .tier-row { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; padding: 12px 4px; }
+  .cmkt .tier-row--top { padding: 16px 14px; }
+  .cmkt .tier-ico { width: 40px; height: 40px; }
+  .cmkt .tier-ico svg { width: 22px; height: 22px; }
+  .cmkt .tier-ico--bare { width: 26px; height: 26px; margin-left: 7px; }
+  .cmkt .tier-ico--bare svg { width: 20px; height: 20px; }
+  .cmkt .tier-row__tier { font-size: 17px; }
+  .cmkt .tier-row--top .tier-row__tier { font-size: 22px; }
+  .cmkt .tier-row__num { font-size: 14px; }
+  .cmkt .tier-row--top .tier-row__num { font-size: 22px; }
+  .cmkt .tier-row__sub, .cmkt .tier-row__lbl { font-size: 10px; }
+}
+
+@media (max-width: 420px) {
+  /* Last-resort backstop on very narrow phones: kill any horizontal overflow
+     coming from the tier rail without affecting other sections. */
+  .cmkt .climb__ladder, .cmkt .climb__lead { min-width: 0; }
+  .cmkt .climb__grid { overflow-x: hidden; }
 }
