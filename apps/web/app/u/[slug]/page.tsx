@@ -4,12 +4,49 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { api, ApiError, EarnedBadge, TalentDetail } from '@/lib/api';
 import { rankFromEnum } from '@/lib/constants';
-import { Avatar } from '@/components/ui/Avatar';
-import { RankBadge } from '@/components/ui/RankBadge';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { Stat } from '@/components/ui/Stat';
 import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
+
+const RANK_HEX: Record<string, string> = {
+  Bronze: '#F5A524',
+  Silver: '#9A9AA4',
+  Gold: '#F5A524',
+  Platinum: '#5B4BF5',
+  Diamond: '#1F8A5B',
+  Master: '#A93F37',
+};
+
+function rankHex(name: string): string {
+  return RANK_HEX[name] ?? '#F5A524';
+}
+
+function rankGradient(name: string): string {
+  const base = rankHex(name);
+  // Darker shade per tier for the shield gradient end-stop
+  const dark: Record<string, string> = {
+    Bronze: '#C77A0A',
+    Silver: '#6F6F78',
+    Gold: '#C77A0A',
+    Platinum: '#3A2DC4',
+    Diamond: '#0F5E3D',
+    Master: '#742720',
+  };
+  return `linear-gradient(160deg, ${base}, ${dark[name] ?? '#C77A0A'})`;
+}
+
+function avatarInitial(name: string | undefined | null): string {
+  if (!name) return '?';
+  const trimmed = name.trim();
+  if (!trimmed) return '?';
+  return trimmed[0].toUpperCase();
+}
+
+function formatMonthYear(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  } catch {
+    return '';
+  }
+}
 
 export default function PublicProfilePage() {
   const params = useParams();
@@ -19,6 +56,10 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [signInHover, setSignInHover] = useState(false);
+  const [signUpHover, setSignUpHover] = useState(false);
+  const [resumeHover, setResumeHover] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -47,9 +88,10 @@ export default function PublicProfilePage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'var(--bg)',
-          color: 'var(--text-mute)',
+          background: '#FFFFFF',
+          color: '#7A7A86',
           fontSize: 14,
+          fontFamily: 'Inter,-apple-system,sans-serif',
         }}
       >
         Loading profile…
@@ -66,13 +108,15 @@ export default function PublicProfilePage() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'var(--bg)',
+          background: '#FFFFFF',
           gap: 12,
+          fontFamily: 'Inter,-apple-system,sans-serif',
+          color: '#0B0B0F',
         }}
       >
-        <div style={{ fontSize: 40 }}>404</div>
+        <div style={{ fontSize: 40, fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700 }}>404</div>
         <div style={{ fontSize: 16, fontWeight: 600 }}>Profile not found</div>
-        <div style={{ fontSize: 13, color: 'var(--text-mute)' }}>
+        <div style={{ fontSize: 13, color: '#7A7A86' }}>
           This profile may have been removed or the link is incorrect.
         </div>
         <a
@@ -80,7 +124,7 @@ export default function PublicProfilePage() {
           style={{
             marginTop: 8,
             fontSize: 13,
-            color: 'var(--gold)',
+            color: '#F5A524',
             textDecoration: 'none',
             fontWeight: 600,
           }}
@@ -99,9 +143,10 @@ export default function PublicProfilePage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'var(--bg)',
-          color: 'var(--text-dim)',
+          background: '#FFFFFF',
+          color: '#5A5A66',
           fontSize: 14,
+          fontFamily: 'Inter,-apple-system,sans-serif',
         }}
       >
         {error}
@@ -112,24 +157,112 @@ export default function PublicProfilePage() {
   if (!talent) return null;
 
   const rankName = rankFromEnum(talent.rank);
-  const rankVar = `var(--r-${talent.rank.toLowerCase()})`;
   const winPct = talent._stats.winRate;
   const heatSeed = talent.totalPoints % 200;
 
+  const tierHex = rankHex(rankName);
+  const shieldGradient = rankGradient(rankName);
+
   return (
-    <div data-resp="profile" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Hero banner */}
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#FFFFFF',
+        color: '#0B0B0F',
+        fontFamily: 'Inter,-apple-system,sans-serif',
+        WebkitFontSmoothing: 'antialiased',
+      }}
+    >
+      {/* ===== TOP BAR ===== */}
+      <header
+        style={{
+          height: 60,
+          borderBottom: '1px solid #E7E7EC',
+          background: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 32px',
+        }}
+      >
+        {/* Wordmark */}
+        <a
+          href="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 9,
+            textDecoration: 'none',
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2.5 22 20.5H2L12 2.5Z" fill="#0B0B0F" />
+            <path d="M12 12.2 16.8 20.5H7.2L12 12.2Z" fill="#5B4BF5" />
+          </svg>
+          <span
+            style={{
+              fontFamily: "'Space Grotesk',sans-serif",
+              fontWeight: 700,
+              fontSize: 17,
+              letterSpacing: '-0.03em',
+              color: '#0B0B0F',
+            }}
+          >
+            Closdex
+          </span>
+        </a>
+
+        {/* Auth links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <a
+            href="/login"
+            onMouseEnter={() => setSignInHover(true)}
+            onMouseLeave={() => setSignInHover(false)}
+            style={{
+              fontSize: 13.5,
+              fontWeight: 500,
+              color: signInHover ? '#0B0B0F' : '#3A3A44',
+              background: signInHover ? '#FAFAF8' : 'transparent',
+              textDecoration: 'none',
+              padding: '9px 14px',
+              borderRadius: 10,
+            }}
+          >
+            Sign in
+          </a>
+          <a
+            href="/signup"
+            onMouseEnter={() => setSignUpHover(true)}
+            onMouseLeave={() => setSignUpHover(false)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: signUpHover ? '#FAFAF8' : '#fff',
+              color: signUpHover ? '#0B0B0F' : '#5A5A66',
+              border: '1px solid #E7E7EC',
+              borderRadius: 10,
+              padding: '9px 14px',
+              fontSize: 13.5,
+              fontWeight: 500,
+              textDecoration: 'none',
+            }}
+          >
+            Sign up
+          </a>
+        </div>
+      </header>
+
+      {/* ===== HERO BANNER ===== */}
       <div
         style={{
           height: 120,
-          background:
-            'linear-gradient(135deg, color-mix(in oklch, var(--gold) 25%, var(--bg-2)), var(--bg-2))',
-          position: 'relative',
+          background: 'linear-gradient(135deg,#FCE8C2,#FAFAF8)',
         }}
       />
 
-      <div style={{ padding: '0 32px 56px', maxWidth: 900, margin: '0 auto' }}>
-        {/* Avatar + name row */}
+      {/* ===== MAIN CONTENT ===== */}
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 32px 56px' }}>
+        {/* ===== IDENTITY ROW ===== */}
         <div
           style={{
             display: 'flex',
@@ -138,135 +271,445 @@ export default function PublicProfilePage() {
             marginTop: -50,
           }}
         >
+          {/* Avatar + rank shield */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            <Avatar name={talent.user.name} size={100} />
-            <div style={{ position: 'absolute', bottom: -4, right: -4 }}>
-              <RankBadge rank={rankName} size={38} />
+            <div
+              style={{
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'linear-gradient(160deg,#6E5FF7,#3A2DC4)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: "'Space Grotesk',sans-serif",
+                fontWeight: 700,
+                fontSize: 42,
+                border: '4px solid #FFFFFF',
+                boxShadow: '0 1px 2px rgba(11,11,15,0.06)',
+              }}
+            >
+              {avatarInitial(talent.user.name)}
+            </div>
+            {/* Rank shield */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: -4,
+                right: -4,
+                width: 38,
+                height: 42,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: '#FFFFFF',
+                  clipPath:
+                    'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  inset: 3,
+                  background: shieldGradient,
+                  clipPath:
+                    'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                }}
+              />
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ position: 'relative' }}
+              >
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z" />
+              </svg>
             </div>
           </div>
 
+          {/* Name + tier line */}
           <div style={{ flex: 1, paddingBottom: 8, minWidth: 0 }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 flexWrap: 'wrap',
-                gap: 10,
-                marginBottom: 4,
+                gap: 11,
+                marginBottom: 6,
               }}
             >
               <h1
-                className="display"
-                style={{ fontSize: 28, margin: 0, fontWeight: 700, lineHeight: 1.1 }}
+                style={{
+                  fontFamily: "'Space Grotesk',sans-serif",
+                  fontSize: 28,
+                  fontWeight: 700,
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.02em',
+                  margin: 0,
+                  color: '#0B0B0F',
+                }}
               >
                 {talent.user.name}
               </h1>
               {talent.openToWork && (
                 <span
                   style={{
-                    padding: '3px 9px',
-                    borderRadius: 999,
-                    background: 'color-mix(in oklch, var(--emerald) 18%, transparent)',
-                    color: 'var(--emerald)',
-                    border: '1px solid color-mix(in oklch, var(--emerald) 35%, transparent)',
-                    fontSize: 11,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 11px 5px 9px',
+                    borderRadius: 100,
+                    background: 'rgba(31,138,91,0.1)',
+                    border: '1px solid rgba(31,138,91,0.32)',
+                    color: '#1F8A5B',
+                    fontFamily: "'Space Mono',monospace",
+                    fontSize: 10.5,
                     fontWeight: 700,
-                    letterSpacing: '0.04em',
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
                   }}
                 >
-                  ● OPEN TO WORK
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: '#1F8A5B',
+                    }}
+                  />
+                  Open to work
                 </span>
               )}
             </div>
-
-            <div style={{ color: 'var(--text-dim)', fontSize: 13.5 }}>
-              <strong style={{ color: rankVar }}>{rankName} tier</strong>
-              {talent.user.location ? ` · ${talent.user.location}` : ''}
+            <div style={{ fontSize: 13.5, color: '#5A5A66' }}>
+              <strong style={{ color: tierHex, fontWeight: 700 }}>
+                {rankName} tier
+              </strong>
+              {talent.user.location ? (
+                <>
+                  <span style={{ color: '#9A9AA4' }}> · </span>
+                  <span>{talent.user.location}</span>
+                </>
+              ) : null}
             </div>
           </div>
 
+          {/* View resume */}
           {talent.resumeUrl && (
             <div style={{ paddingBottom: 8, flexShrink: 0 }}>
-              <Btn
-                kind="ghost"
-                size="sm"
-                onClick={() => window.open(talent.resumeUrl!, '_blank', 'noopener,noreferrer')}
+              <a
+                href={talent.resumeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onMouseEnter={() => setResumeHover(true)}
+                onMouseLeave={() => setResumeHover(false)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: resumeHover ? '#FAFAF8' : '#fff',
+                  color: resumeHover ? '#0B0B0F' : '#5A5A66',
+                  border: '1px solid #E7E7EC',
+                  borderRadius: 10,
+                  padding: '9px 14px',
+                  fontSize: 13.5,
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                }}
               >
-                View Resume →
-              </Btn>
+                View resume
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </a>
             </div>
           )}
         </div>
 
-        {/* Stats strip */}
-        <Card
-          padding={20}
+        {/* ===== STATS STRIP ===== */}
+        <div
           style={{
             marginTop: 24,
+            border: '1px solid #E7E7EC',
+            borderRadius: 14,
+            padding: 20,
+            background: '#FFFFFF',
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
+            gridTemplateColumns: 'repeat(5,1fr)',
             gap: 16,
           }}
         >
-          <Stat
-            label="Total points"
-            value={talent.totalPoints.toLocaleString()}
-            accent="var(--gold)"
-          />
-          <Stat label="Rank tier" value={rankName} />
-          <Stat
-            label="Completed"
-            value={String(talent._stats.completedAttempts)}
-            sub="challenges"
-          />
-          <Stat
-            label="Win rate"
-            value={`${winPct}%`}
-            sub="goal achieved"
-            accent="var(--emerald)"
-          />
-          <Stat
-            label="Streak"
-            value={talent.currentStreakDays > 0 ? `${talent.currentStreakDays}-day` : '—'}
-            sub={talent.currentStreakDays > 0 ? 'current streak' : undefined}
-          />
-        </Card>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div
+              style={{
+                fontFamily: "'Space Mono',monospace",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#9A9AA4',
+              }}
+            >
+              Total points
+            </div>
+            <div
+              style={{
+                fontFamily: "'Space Grotesk',sans-serif",
+                fontSize: 24,
+                fontWeight: 700,
+                color: '#F5A524',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.1,
+              }}
+            >
+              {talent.totalPoints.toLocaleString()}
+            </div>
+          </div>
 
-        {/* Badges */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 5,
+              borderLeft: '1px solid #EAEAEF',
+              paddingLeft: 16,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "'Space Mono',monospace",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#9A9AA4',
+              }}
+            >
+              Rank tier
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span
+                style={{
+                  width: 12,
+                  height: 14,
+                  background: shieldGradient,
+                  display: 'inline-block',
+                  clipPath:
+                    'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "'Space Grotesk',sans-serif",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: '#0B0B0F',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.1,
+                }}
+              >
+                {rankName}
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 5,
+              borderLeft: '1px solid #EAEAEF',
+              paddingLeft: 16,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "'Space Mono',monospace",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#9A9AA4',
+              }}
+            >
+              Completed
+            </div>
+            <div
+              style={{
+                fontFamily: "'Space Grotesk',sans-serif",
+                fontSize: 24,
+                fontWeight: 700,
+                color: '#0B0B0F',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.1,
+              }}
+            >
+              {talent._stats.completedAttempts}
+            </div>
+            <div style={{ fontSize: 11.5, color: '#7A7A86' }}>challenges</div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 5,
+              borderLeft: '1px solid #EAEAEF',
+              paddingLeft: 16,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "'Space Mono',monospace",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#9A9AA4',
+              }}
+            >
+              Win rate
+            </div>
+            <div
+              style={{
+                fontFamily: "'Space Grotesk',sans-serif",
+                fontSize: 24,
+                fontWeight: 700,
+                color: '#1F8A5B',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.1,
+              }}
+            >
+              {winPct}%
+            </div>
+            <div style={{ fontSize: 11.5, color: '#7A7A86' }}>goal achieved</div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 5,
+              borderLeft: '1px solid #EAEAEF',
+              paddingLeft: 16,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "'Space Mono',monospace",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#9A9AA4',
+              }}
+            >
+              Streak
+            </div>
+            <div
+              style={{
+                fontFamily: "'Space Grotesk',sans-serif",
+                fontSize: 24,
+                fontWeight: 700,
+                color: '#0B0B0F',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.1,
+              }}
+            >
+              {talent.currentStreakDays > 0 ? `${talent.currentStreakDays}-day` : '—'}
+            </div>
+            <div style={{ fontSize: 11.5, color: '#7A7A86' }}>current</div>
+          </div>
+        </div>
+
+        {/* ===== ACHIEVEMENTS ===== */}
         {talent.badges.length > 0 && (
-          <Card padding={22} style={{ marginTop: 18 }}>
-            <h3 className="display" style={{ fontSize: 15, margin: '0 0 16px', fontWeight: 600 }}>
+          <div
+            style={{
+              marginTop: 18,
+              border: '1px solid #E7E7EC',
+              borderRadius: 14,
+              padding: 22,
+              background: '#FFFFFF',
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: "'Space Grotesk',sans-serif",
+                fontWeight: 600,
+                fontSize: 15,
+                letterSpacing: '-0.01em',
+                color: '#0B0B0F',
+                margin: '0 0 16px',
+              }}
+            >
               Achievements
             </h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               {talent.badges.map((b: EarnedBadge) => (
                 <div
                   key={b.id}
-                  title={`${b.name} — ${b.description}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: 9,
                     padding: '8px 14px',
                     borderRadius: 10,
-                    background: 'color-mix(in oklch, var(--gold) 10%, var(--bg-2))',
-                    border: '1px solid color-mix(in oklch, var(--gold) 25%, var(--border-soft))',
+                    background: '#FFFBF2',
+                    border: '1px solid #F4E4C4',
                   }}
                 >
-                  <span style={{ fontSize: 20 }}>{b.icon}</span>
+                  <span style={{ fontSize: 18, lineHeight: 1 }}>{b.icon}</span>
                   <div>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--gold)' }}>{b.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>
-                      {new Date(b.awardedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        fontWeight: 700,
+                        color: '#F5A524',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {b.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: '#7A7A86',
+                        marginTop: 1,
+                      }}
+                    >
+                      {formatMonthYear(b.awardedAt)}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         )}
 
-        {/* Two-column lower section */}
+        {/* ===== TWO-COLUMN LOWER SECTION ===== */}
         <div
           style={{
             display: 'grid',
@@ -275,138 +718,214 @@ export default function PublicProfilePage() {
             marginTop: 18,
           }}
         >
-          {/* Left: activity heatmap */}
-          <Card padding={22}>
+          {/* Left: Challenge activity heatmap */}
+          <div
+            style={{
+              border: '1px solid #E7E7EC',
+              borderRadius: 14,
+              padding: 22,
+              background: '#FFFFFF',
+            }}
+          >
             <h3
-              className="display"
-              style={{ fontSize: 15, margin: '0 0 16px', fontWeight: 600 }}
+              style={{
+                fontFamily: "'Space Grotesk',sans-serif",
+                fontWeight: 600,
+                fontSize: 15,
+                letterSpacing: '-0.01em',
+                color: '#0B0B0F',
+                margin: '0 0 16px',
+              }}
             >
               Challenge activity
             </h3>
             <ActivityHeatmap weeks={26} showLegend={true} seed={heatSeed} />
-          </Card>
+          </div>
 
-          {/* Right: details */}
-          <Card padding={22}>
+          {/* Right: Specializations + meta + verified */}
+          <div
+            style={{
+              border: '1px solid #E7E7EC',
+              borderRadius: 14,
+              padding: 22,
+              background: '#FFFFFF',
+            }}
+          >
             {/* Specializations */}
             <h3
-              className="display"
-              style={{ fontSize: 15, margin: '0 0 12px', fontWeight: 600 }}
+              style={{
+                fontFamily: "'Space Grotesk',sans-serif",
+                fontWeight: 600,
+                fontSize: 15,
+                letterSpacing: '-0.01em',
+                color: '#0B0B0F',
+                margin: '0 0 12px',
+              }}
             >
               Specializations
             </h3>
             <div
-              style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginBottom: 18,
+              }}
             >
               {talent.specializationTags.length > 0 ? (
                 talent.specializationTags.map((tag) => (
                   <span
                     key={tag}
                     style={{
-                      padding: '4px 12px',
-                      borderRadius: 999,
-                      background: 'color-mix(in oklch, var(--gold) 12%, var(--bg-2))',
-                      border: '1px solid color-mix(in oklch, var(--gold) 28%, var(--border-soft))',
-                      color: 'var(--gold)',
+                      padding: '5px 11px',
+                      borderRadius: 100,
+                      background: '#FFFBF2',
+                      border: '1px solid #F4E4C4',
+                      color: '#8A6A1A',
                       fontSize: 12.5,
-                      fontWeight: 600,
+                      fontWeight: 700,
                     }}
                   >
                     {tag}
                   </span>
                 ))
               ) : (
-                <span style={{ fontSize: 13, color: 'var(--text-mute)' }}>
+                <span style={{ fontSize: 12.5, color: '#9A9AA4' }}>
                   No specializations listed.
                 </span>
               )}
             </div>
 
-            {/* Meta rows */}
+            {/* Hairline divider + meta rows */}
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 10,
+                gap: 11,
                 paddingTop: 16,
-                borderTop: '1px solid var(--border-soft)',
+                borderTop: '1px solid #EAEAEF',
                 fontSize: 12.5,
               }}
             >
               {talent.experienceYears != null && talent.experienceYears > 0 && (
-                <MetaRow label="Experience" value={`${talent.experienceYears} years`} />
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={{ color: '#7A7A86' }}>Experience</span>
+                  <span style={{ color: '#0B0B0F', fontWeight: 600 }}>
+                    {talent.experienceYears} years
+                  </span>
+                </div>
               )}
               {talent.currentCompany && (
-                <MetaRow label="Current company" value={talent.currentCompany} />
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}
+                >
+                  <span style={{ color: '#7A7A86', flexShrink: 0 }}>
+                    Current company
+                  </span>
+                  <span
+                    style={{
+                      color: '#0B0B0F',
+                      fontWeight: 600,
+                      textAlign: 'right',
+                    }}
+                  >
+                    {talent.currentCompany}
+                  </span>
+                </div>
               )}
-              <MetaRow
-                label="Status"
-                value={
-                  talent.openToWork ? (
-                    <span style={{ color: 'var(--emerald)', fontWeight: 600 }}>
-                      Open to work
-                    </span>
-                  ) : (
-                    <span style={{ color: 'var(--text-mute)' }}>Not actively looking</span>
-                  )
-                }
-              />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ color: '#7A7A86' }}>Status</span>
+                {talent.openToWork ? (
+                  <span style={{ color: '#1F8A5B', fontWeight: 600 }}>
+                    Open to work
+                  </span>
+                ) : (
+                  <span style={{ color: '#9A9AA4', fontWeight: 600 }}>
+                    Not actively looking
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* Closdex verified badge */}
+            {/* Closdex verified */}
             <div
               style={{
                 marginTop: 18,
-                padding: '10px 12px',
-                borderRadius: 8,
-                background: 'color-mix(in oklch, var(--gold) 8%, var(--bg-2))',
-                border: '1px solid color-mix(in oklch, var(--gold) 22%, var(--border-soft))',
+                padding: '11px 13px',
+                borderRadius: 10,
+                background: '#FFFBF2',
+                border: '1px solid #F4E4C4',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 8,
+                alignItems: 'flex-start',
+                gap: 9,
               }}
             >
-              <span style={{ fontSize: 14 }}>✦</span>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)' }}>
+              <span
+                style={{
+                  fontSize: 14,
+                  color: '#F5A524',
+                  lineHeight: 1,
+                  marginTop: 1,
+                }}
+              >
+                ✦
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: '#8A6A1A',
+                    lineHeight: 1.2,
+                  }}
+                >
                   Closdex verified
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 1 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: '#7A7A86',
+                    marginTop: 3,
+                    lineHeight: 1.4,
+                  }}
+                >
                   Rank &amp; points earned on the Closdex platform
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
 
-      {/* Footer note */}
+      {/* ===== FOOTER ===== */}
       <div
         style={{
           textAlign: 'center',
-          padding: '20px 32px 32px',
+          padding: '22px 32px 36px',
           fontSize: 12,
-          color: 'var(--text-mute)',
-          borderTop: '1px solid var(--border-soft)',
+          color: '#7A7A86',
+          borderTop: '1px solid #E7E7EC',
         }}
       >
         This profile is hosted on Closdex · closdex.in
       </div>
-    </div>
-  );
-}
-
-function MetaRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ color: 'var(--text-mute)' }}>{label}</span>
-      <span style={{ textAlign: 'right' }}>{value}</span>
     </div>
   );
 }

@@ -4,9 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api, ApiError, TutorialDetail, TrackProgress } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { Icon } from '@/components/ui/Icon';
 
 type QuizState = 'idle' | 'taking' | 'result';
 
@@ -34,6 +31,13 @@ export default function TutorialPage() {
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [quizSubmitting, setQuizSubmitting] = useState(false);
+
+  const [backHover, setBackHover] = useState(false);
+  const [completeHover, setCompleteHover] = useState(false);
+  const [takeQuizHover, setTakeQuizHover] = useState(false);
+  const [submitHover, setSubmitHover] = useState(false);
+  const [tryAgainHover, setTryAgainHover] = useState(false);
+  const [backTrackHover, setBackTrackHover] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -117,7 +121,7 @@ export default function TutorialPage() {
 
   if (authLoading || loading) {
     return (
-      <div style={{ padding: 32, color: 'var(--text-mute)', fontSize: 13.5 }}>
+      <div style={{ padding: 32, color: '#7A7A86', fontSize: 13.5 }}>
         Loading tutorial…
       </div>
     );
@@ -126,12 +130,27 @@ export default function TutorialPage() {
   if (!tutorial) {
     return (
       <div style={{ padding: 32 }}>
-        <div style={{ color: 'var(--text-mute)', marginBottom: 14 }}>
+        <div style={{ color: '#7A7A86', marginBottom: 14, fontSize: 13.5 }}>
           {error ?? 'Tutorial not found.'}
         </div>
-        <Btn kind="ghost" onClick={() => router.push(`/learn/${trackId}`)}>
-          ← Back to track
-        </Btn>
+        <button
+          onClick={() => router.push(`/learn/${trackId}`)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'transparent',
+            border: 'none',
+            color: '#7A7A86',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></svg>
+          Back to track
+        </button>
       </div>
     );
   }
@@ -141,85 +160,88 @@ export default function TutorialPage() {
     selectedAnswers.length === tutorial.quiz.questions.length &&
     selectedAnswers.every((a) => a !== -1);
 
+  const typeLabel = tutorial.type === 'VIDEO' ? 'Video' : 'Article';
+
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 860, margin: '0 auto' }}>
+    <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 40px 80px' }}>
       {/* Back link */}
       <button
         onClick={() => router.push(`/learn/${trackId}`)}
+        onMouseEnter={() => setBackHover(true)}
+        onMouseLeave={() => setBackHover(false)}
         style={{
-          background: 'transparent',
-          border: 'none',
-          color: 'var(--text-dim)',
-          fontSize: 12.5,
-          marginBottom: 16,
-          cursor: 'pointer',
           display: 'inline-flex',
           alignItems: 'center',
           gap: 6,
+          color: backHover ? '#0B0B0F' : '#7A7A86',
+          background: 'transparent',
+          border: 'none',
           padding: 0,
+          fontSize: 12.5,
+          fontWeight: 500,
+          marginBottom: 18,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
         }}
       >
-        <span style={{ transform: 'rotate(180deg)', display: 'inline-flex' }}>
-          <Icon.arrow />
-        </span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></svg>
         Back to track
       </button>
 
-      {/* Tutorial header */}
-      <div style={{ marginBottom: 22 }}>
-        <div
+      {/* Breadcrumb strip */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 10,
+          fontFamily: "'Space Mono', monospace",
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: '#7A7A86',
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" /></svg>
+        <span>{tutorial.track.title}</span>
+        <span style={{ color: '#E7E7EC' }}>·</span>
+        <span>{tutorial.track.category}</span>
+      </div>
+
+      {/* Title row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 24 }}>
+        <h1
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 8,
-            fontSize: 11.5,
-            color: 'var(--text-mute)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.07em',
+            margin: 0,
+            flex: 1,
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontWeight: 700,
+            fontSize: 28,
+            letterSpacing: '-0.022em',
+            color: '#0B0B0F',
+            lineHeight: 1.2,
           }}
         >
-          <Icon.book />
-          <span>{tutorial.track.title}</span>
-          <span style={{ color: 'var(--border)' }}>·</span>
-          <span>{tutorial.track.category}</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <h1
-            className="display"
-            style={{
-              fontSize: 28,
-              fontWeight: 700,
-              margin: 0,
-              letterSpacing: '-0.022em',
-              color: 'var(--text)',
-              flex: 1,
-            }}
-          >
-            {tutorial.title}
-          </h1>
-
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              padding: '4px 10px',
-              borderRadius: 20,
-              background:
-                tutorial.type === 'VIDEO'
-                  ? 'color-mix(in oklch, var(--cool) 14%, transparent)'
-                  : 'color-mix(in oklch, var(--gold) 14%, transparent)',
-              color: tutorial.type === 'VIDEO' ? 'var(--cool)' : 'var(--gold)',
-              border: `1px solid ${tutorial.type === 'VIDEO' ? 'color-mix(in oklch, var(--cool) 28%, transparent)' : 'color-mix(in oklch, var(--gold) 28%, transparent)'}`,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              flexShrink: 0,
-            }}
-          >
-            {tutorial.type}
-          </span>
-        </div>
+          {tutorial.title}
+        </h1>
+        <span
+          style={{
+            flexShrink: 0,
+            padding: '5px 11px',
+            borderRadius: 20,
+            background: '#FFFBF2',
+            border: '1px solid #F4E4C4',
+            color: '#8A6A1A',
+            fontFamily: "'Space Mono', monospace",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {typeLabel}
+        </span>
       </div>
 
       {/* Error banner */}
@@ -229,10 +251,10 @@ export default function TutorialPage() {
             marginBottom: 16,
             padding: '8px 12px',
             borderRadius: 8,
-            background: 'color-mix(in oklch, var(--r-master) 10%, transparent)',
-            color: 'var(--r-master)',
+            background: 'rgba(220, 38, 38, 0.08)',
+            color: '#B91C1C',
             fontSize: 12.5,
-            border: '1px solid color-mix(in oklch, var(--r-master) 22%, transparent)',
+            border: '1px solid rgba(220, 38, 38, 0.22)',
           }}
         >
           {error}
@@ -240,7 +262,15 @@ export default function TutorialPage() {
       )}
 
       {/* Content card */}
-      <Card padding={28} style={{ marginBottom: 16 }}>
+      <section
+        style={{
+          border: '1px solid #E7E7EC',
+          borderRadius: 14,
+          padding: 28,
+          background: '#FFFFFF',
+          marginBottom: 18,
+        }}
+      >
         {tutorial.type === 'VIDEO' && tutorial.contentUrl ? (
           <iframe
             src={tutorial.contentUrl}
@@ -257,26 +287,33 @@ export default function TutorialPage() {
         ) : tutorial.type === 'ARTICLE' && tutorial.body ? (
           <div
             style={{
-              lineHeight: 1.7,
-              fontSize: 14,
-              color: 'var(--text-dim)',
+              color: '#3A3A44',
+              fontSize: 14.5,
+              lineHeight: 1.72,
               whiteSpace: 'pre-wrap',
             }}
           >
             {tutorial.body}
           </div>
         ) : (
-          <div style={{ color: 'var(--text-mute)', fontSize: 13.5, textAlign: 'center', padding: '40px 0' }}>
+          <div
+            style={{
+              color: '#7A7A86',
+              fontSize: 13.5,
+              textAlign: 'center',
+              padding: '40px 0',
+            }}
+          >
             Content coming soon.
           </div>
         )}
 
-        {/* Mark complete */}
+        {/* Mark complete row */}
         <div
           style={{
-            marginTop: 24,
+            marginTop: 26,
             paddingTop: 20,
-            borderTop: '1px solid var(--border-soft)',
+            borderTop: '1px solid #EAEAEF',
             display: 'flex',
             alignItems: 'center',
             gap: 12,
@@ -287,73 +324,128 @@ export default function TutorialPage() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 6,
-                fontSize: 12.5,
-                fontWeight: 700,
+                gap: 7,
                 padding: '7px 14px',
-                borderRadius: 20,
-                background: 'color-mix(in oklch, var(--emerald) 14%, transparent)',
-                color: 'var(--emerald)',
-                border: '1px solid color-mix(in oklch, var(--emerald) 28%, transparent)',
+                borderRadius: 100,
+                background: 'rgba(31,138,91,0.1)',
+                border: '1px solid rgba(31,138,91,0.32)',
+                color: '#1F8A5B',
+                fontFamily: "'Space Mono', monospace",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
               }}
             >
-              <Icon.check />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
               Completed
             </span>
           ) : (
-            <Btn
-              kind="primary"
-              icon={<Icon.check />}
-              disabled={completing}
+            <button
               onClick={handleComplete}
+              disabled={completing}
+              onMouseEnter={() => setCompleteHover(true)}
+              onMouseLeave={() => setCompleteHover(false)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 9,
+                background: completeHover ? '#23232B' : '#0B0B0F',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                padding: '12px 22px',
+                fontFamily: 'inherit',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: completing ? 'not-allowed' : 'pointer',
+                opacity: completing ? 0.7 : 1,
+              }}
             >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
               {completing ? 'Saving…' : 'Mark as complete'}
-            </Btn>
+            </button>
           )}
         </div>
-      </Card>
+      </section>
 
-      {/* Quiz section */}
+      {/* Quiz card */}
       {tutorial.quiz && (
-        <Card padding={24}>
+        <section
+          style={{
+            border: '1px solid #E7E7EC',
+            borderRadius: 14,
+            padding: 24,
+            background: '#FFFFFF',
+          }}
+        >
+          {/* Header row */}
           <div
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
+              alignItems: 'flex-start',
+              marginBottom: 22,
             }}
           >
             <div>
-              <h2
-                className="display"
-                style={{ fontSize: 15, fontWeight: 700, margin: '0 0 3px', color: 'var(--text)' }}
+              <div
+                style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  letterSpacing: '-0.01em',
+                  color: '#0B0B0F',
+                  lineHeight: 1.2,
+                }}
               >
                 Quick quiz
-              </h2>
-              <span
+              </div>
+              <div
                 style={{
+                  marginTop: 4,
                   fontSize: 12,
-                  color: 'var(--gold)',
                   fontWeight: 600,
+                  color: '#F5A524',
                 }}
               >
                 Earn +{tutorial.quiz.rewardPoints} pts
-              </span>
-            </div>
-
-            {quizState === 'idle' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>
-                  {tutorial.quiz.questions.length} question{tutorial.quiz.questions.length !== 1 ? 's' : ''}
-                </span>
-                <Btn kind="secondary" onClick={startQuiz}>
-                  Take quiz
-                </Btn>
               </div>
-            )}
+            </div>
+            <span style={{ fontSize: 12, color: '#7A7A86' }}>
+              {tutorial.quiz.questions.length} question{tutorial.quiz.questions.length !== 1 ? 's' : ''}
+            </span>
           </div>
 
+          {/* IDLE: take quiz CTA */}
+          {quizState === 'idle' && (
+            <div>
+              <button
+                onClick={startQuiz}
+                onMouseEnter={() => setTakeQuizHover(true)}
+                onMouseLeave={() => setTakeQuizHover(false)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 9,
+                  background: takeQuizHover ? '#23232B' : '#0B0B0F',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '12px 22px',
+                  fontFamily: 'inherit',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Take quiz
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+              </button>
+            </div>
+          )}
+
+          {/* TAKING: questions + submit */}
           {quizState === 'taking' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
               {tutorial.quiz.questions.map((q, qi) => (
@@ -362,8 +454,9 @@ export default function TutorialPage() {
                     style={{
                       fontSize: 13.5,
                       fontWeight: 600,
-                      color: 'var(--text)',
+                      color: '#0B0B0F',
                       marginBottom: 10,
+                      lineHeight: 1.5,
                     }}
                   >
                     {qi + 1}. {q.q}
@@ -383,13 +476,10 @@ export default function TutorialPage() {
                             textAlign: 'left',
                             padding: '9px 14px',
                             borderRadius: 20,
-                            border: selected
-                              ? '1.5px solid var(--gold)'
-                              : '1.5px solid var(--border-soft)',
-                            background: selected
-                              ? 'color-mix(in oklch, var(--gold) 10%, transparent)'
-                              : 'transparent',
-                            color: selected ? 'var(--gold)' : 'var(--text-dim)',
+                            border: selected ? '1.5px solid #F5A524' : '1.5px solid #E7E7EC',
+                            background: selected ? 'rgba(245,165,36,0.10)' : 'transparent',
+                            color: selected ? '#F5A524' : '#5A5A66',
+                            fontFamily: 'Inter, sans-serif',
                             fontSize: 13,
                             fontWeight: selected ? 600 : 400,
                             cursor: 'pointer',
@@ -404,19 +494,37 @@ export default function TutorialPage() {
                 </div>
               ))}
 
+              {/* Submit */}
               <div style={{ marginTop: 6 }}>
-                <Btn
-                  kind="primary"
-                  icon={<Icon.send />}
-                  disabled={!allAnswered || quizSubmitting}
+                <button
                   onClick={submitQuiz}
+                  disabled={!allAnswered || quizSubmitting}
+                  onMouseEnter={() => setSubmitHover(true)}
+                  onMouseLeave={() => setSubmitHover(false)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 9,
+                    background: submitHover && allAnswered && !quizSubmitting ? '#23232B' : '#0B0B0F',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '12px 22px',
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: !allAnswered || quizSubmitting ? 'not-allowed' : 'pointer',
+                    opacity: !allAnswered || quizSubmitting ? 0.55 : 1,
+                  }}
                 >
                   {quizSubmitting ? 'Submitting…' : 'Submit answers'}
-                </Btn>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7Z" /></svg>
+                </button>
               </div>
             </div>
           )}
 
+          {/* RESULT: passed/failed card + actions */}
           {quizState === 'result' && quizResult && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div
@@ -424,20 +532,22 @@ export default function TutorialPage() {
                   padding: '20px 24px',
                   borderRadius: 12,
                   background: quizResult.passed
-                    ? 'color-mix(in oklch, var(--emerald) 10%, transparent)'
-                    : 'color-mix(in oklch, var(--r-master) 10%, transparent)',
-                  border: `1px solid ${quizResult.passed ? 'color-mix(in oklch, var(--emerald) 25%, transparent)' : 'color-mix(in oklch, var(--r-master) 25%, transparent)'}`,
+                    ? 'rgba(31,138,91,0.10)'
+                    : 'rgba(220,38,38,0.10)',
+                  border: quizResult.passed
+                    ? '1px solid rgba(31,138,91,0.28)'
+                    : '1px solid rgba(220,38,38,0.28)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16,
                 }}
               >
                 <span
-                  className="display"
                   style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
                     fontSize: 22,
                     fontWeight: 800,
-                    color: quizResult.passed ? 'var(--emerald)' : 'var(--r-master)',
+                    color: quizResult.passed ? '#1F8A5B' : '#B91C1C',
                     letterSpacing: '-0.01em',
                   }}
                 >
@@ -445,14 +555,24 @@ export default function TutorialPage() {
                 </span>
 
                 <div>
-                  <div
-                    style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 500 }}
-                  >
-                    <span className="mono" style={{ fontWeight: 700, fontSize: 15 }}>
+                  <div style={{ fontSize: 13, color: '#3A3A44', fontWeight: 500 }}>
+                    <span
+                      style={{
+                        fontFamily: "'Space Mono', monospace",
+                        fontWeight: 700,
+                        fontSize: 15,
+                      }}
+                    >
                       {quizResult.score}
                     </span>
                     {' / '}
-                    <span className="mono" style={{ fontWeight: 700, fontSize: 15 }}>
+                    <span
+                      style={{
+                        fontFamily: "'Space Mono', monospace",
+                        fontWeight: 700,
+                        fontSize: 15,
+                      }}
+                    >
                       {quizResult.total}
                     </span>
                     {' correct'}
@@ -463,7 +583,7 @@ export default function TutorialPage() {
                       style={{
                         fontSize: 12.5,
                         fontWeight: 700,
-                        color: 'var(--gold)',
+                        color: '#F5A524',
                         marginTop: 3,
                       }}
                     >
@@ -475,19 +595,56 @@ export default function TutorialPage() {
 
               <div style={{ display: 'flex', gap: 10 }}>
                 {!quizResult.passed && (
-                  <Btn kind="ghost" onClick={startQuiz}>
+                  <button
+                    onClick={startQuiz}
+                    onMouseEnter={() => setTryAgainHover(true)}
+                    onMouseLeave={() => setTryAgainHover(false)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: tryAgainHover ? '#FAFAF8' : '#FFFFFF',
+                      color: '#0B0B0F',
+                      border: '1px solid #E7E7EC',
+                      borderRadius: 10,
+                      padding: '10px 18px',
+                      fontFamily: 'inherit',
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
                     Try again
-                  </Btn>
+                  </button>
                 )}
                 {quizResult.passed && (
-                  <Btn kind="ghost" onClick={() => router.push(`/learn/${trackId}`)}>
-                    ← Back to track
-                  </Btn>
+                  <button
+                    onClick={() => router.push(`/learn/${trackId}`)}
+                    onMouseEnter={() => setBackTrackHover(true)}
+                    onMouseLeave={() => setBackTrackHover(false)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: backTrackHover ? '#FAFAF8' : '#FFFFFF',
+                      color: '#0B0B0F',
+                      border: '1px solid #E7E7EC',
+                      borderRadius: 10,
+                      padding: '10px 18px',
+                      fontFamily: 'inherit',
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></svg>
+                    Back to track
+                  </button>
                 )}
               </div>
             </div>
           )}
-        </Card>
+        </section>
       )}
     </div>
   );

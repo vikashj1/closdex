@@ -2,12 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Logo } from '@/components/ui/Logo';
-import { Btn } from '@/components/ui/Btn';
-import { Card } from '@/components/ui/Card';
-import { Field } from '@/components/ui/Field';
-import { TextInput } from '@/components/ui/TextInput';
-import { Icon } from '@/components/ui/Icon';
 import { api, ApiError } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 
@@ -75,32 +69,112 @@ export default function OnboardingPage() {
     }
   };
 
+  const [backHover, setBackHover] = useState(false);
+  const [primaryHover, setPrimaryHover] = useState(false);
+
   if (authLoading || !user) {
-    return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
+    return <div style={{ padding: 32, color: '#7A7A86' }}>Loading…</div>;
   }
 
   return (
-    <div data-resp="auth" style={{ minHeight: '100vh', padding: '32px 64px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        width: '100%',
+        background: '#FFFFFF',
+        color: '#0B0B0F',
+        fontFamily: 'Inter,-apple-system,sans-serif',
+        padding: '32px 64px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 24,
+        WebkitFontSmoothing: 'antialiased',
+      }}
+    >
+      {/* ============ TOP HEADER BAR ============ */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Logo size={20} />
-        <span style={{ color: 'var(--text-mute)', fontSize: 12 }}>
+        {/* Closdex wordmark */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2.5 22 20.5H2L12 2.5Z" fill="#0B0B0F" />
+            <path d="M12 12.2 16.8 20.5H7.2L12 12.2Z" fill="#5B4BF5" />
+          </svg>
+          <span
+            style={{
+              fontFamily: "'Space Grotesk',sans-serif",
+              fontWeight: 700,
+              fontSize: 17,
+              letterSpacing: '-0.03em',
+              color: '#0B0B0F',
+            }}
+          >
+            Closdex
+          </span>
+        </div>
+
+        {/* Step indicator */}
+        <span
+          style={{
+            fontFamily: "'Space Mono',monospace",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: '#7A7A86',
+          }}
+        >
           Step {step} of {STEPS.length} — takes 4 minutes
         </span>
       </header>
 
-      {/* Stepper */}
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${STEPS.length}, 1fr)`, gap: 10 }}>
-        {STEPS.map((s, i) => (
-          <div key={s} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ height: 4, borderRadius: 999, background: i < step ? 'var(--gold)' : 'var(--surface-2)' }} />
-            <div style={{ fontSize: 11.5, color: i < step ? 'var(--gold)' : 'var(--text-mute)', fontWeight: 600 }}>
-              <span className="mono">{String(i + 1).padStart(2, '0')} </span>{s}
+      {/* ============ STEPPER ROW ============ */}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${STEPS.length},1fr)`, gap: 10 }}>
+        {STEPS.map((s, i) => {
+          const reached = i < step;
+          return (
+            <div key={s} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <div
+                style={{
+                  height: 4,
+                  borderRadius: 999,
+                  background: reached ? '#F5A524' : '#E7E7EC',
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  color: reached ? '#F5A524' : '#7A7A86',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'Space Mono',monospace",
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>{' '}
+                {s}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <Card padding={36} style={{ maxWidth: 760, alignSelf: 'center', width: '100%' }}>
+      {/* ============ CARD ============ */}
+      <div
+        style={{
+          maxWidth: 760,
+          width: '100%',
+          alignSelf: 'center',
+          background: '#FFFFFF',
+          border: '1px solid #E7E7EC',
+          borderRadius: 14,
+          padding: 36,
+        }}
+      >
         {step === 1 && (
           <StepProfile
             experienceYears={experienceYears}
@@ -109,88 +183,243 @@ export default function OnboardingPage() {
             setCurrentCompany={setCurrentCompany}
           />
         )}
-        {step === 2 && (
-          <StepSpecialization selected={selectedTags} onToggle={toggleTag} />
-        )}
-        {step === 3 && (
-          <StepSelfAssessment scores={selfScores} onChange={setSelfScores} />
-        )}
+        {step === 2 && <StepSpecialization selected={selectedTags} onToggle={toggleTag} />}
+        {step === 3 && <StepSelfAssessment scores={selfScores} onChange={setSelfScores} />}
         {step === 4 && <StepFinish name={user.name} />}
 
         {error && (
-          <div style={{
-            marginTop: 16,
-            padding: '10px 12px',
-            borderRadius: 8,
-            background: 'color-mix(in oklch, var(--r-master) 12%, transparent)',
-            color: 'var(--r-master)',
-            fontSize: 12.5,
-          }}>
+          <div
+            style={{
+              marginTop: 16,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'rgba(220,53,69,0.10)',
+              color: '#DC3545',
+              fontSize: 12.5,
+            }}
+          >
             {error}
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
-          <Btn kind="ghost" onClick={() => (step > 1 ? setStep(step - 1) : router.push('/signup'))}>
+        {/* Card footer */}
+        <div
+          style={{
+            marginTop: 32,
+            paddingTop: 22,
+            borderTop: '1px solid #E7E7EC',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <button
+            onClick={() => (step > 1 ? setStep(step - 1) : router.push('/signup'))}
+            onMouseEnter={() => setBackHover(true)}
+            onMouseLeave={() => setBackHover(false)}
+            style={{
+              background: backHover ? '#FAFAF8' : '#fff',
+              color: backHover ? '#0B0B0F' : '#5A5A66',
+              border: '1px solid #E7E7EC',
+              borderRadius: 10,
+              padding: '11px 16px',
+              fontFamily: 'Inter,sans-serif',
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
             Back
-          </Btn>
+          </button>
+
           {step < STEPS.length ? (
-            <Btn kind="primary" icon={<Icon.arrow />} onClick={() => setStep(step + 1)}>
+            <button
+              onClick={() => setStep(step + 1)}
+              onMouseEnter={() => setPrimaryHover(true)}
+              onMouseLeave={() => setPrimaryHover(false)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: primaryHover ? '#23232B' : '#0B0B0F',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                padding: '11px 18px',
+                fontFamily: 'Inter,sans-serif',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
               Continue
-            </Btn>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </button>
           ) : (
-            <Btn kind="primary" icon={<Icon.bolt />} disabled={submitting} onClick={handleFinish}>
+            <button
+              onClick={handleFinish}
+              disabled={submitting}
+              onMouseEnter={() => setPrimaryHover(true)}
+              onMouseLeave={() => setPrimaryHover(false)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: primaryHover ? '#23232B' : '#0B0B0F',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                padding: '11px 18px',
+                fontFamily: 'Inter,sans-serif',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
               {submitting ? 'Setting up…' : 'Finish & start walkthrough'}
-            </Btn>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            </button>
           )}
         </div>
-      </Card>
+      </div>
+
+      {/* ============ HELPFUL NOTE ============ */}
+      <div style={{ textAlign: 'center', fontSize: 12, color: '#7A7A86' }}>
+        You can change these anytime in Settings.
+      </div>
     </div>
   );
 }
 
 function StepProfile({
-  experienceYears, setExperienceYears, currentCompany, setCurrentCompany,
+  experienceYears,
+  setExperienceYears,
+  currentCompany,
+  setCurrentCompany,
 }: {
-  experienceYears: string; setExperienceYears: (v: string) => void;
-  currentCompany: string; setCurrentCompany: (v: string) => void;
+  experienceYears: string;
+  setExperienceYears: (v: string) => void;
+  currentCompany: string;
+  setCurrentCompany: (v: string) => void;
 }) {
   return (
     <>
-      <h2 className="display" style={{ fontSize: 26, margin: '0 0 8px' }}>Tell us about yourself</h2>
-      <p style={{ color: 'var(--text-dim)', margin: '0 0 24px', fontSize: 14 }}>
+      <h2
+        style={{
+          fontFamily: "'Space Grotesk',sans-serif",
+          fontWeight: 600,
+          fontSize: 26,
+          letterSpacing: '-0.02em',
+          color: '#0B0B0F',
+          margin: '0 0 8px',
+        }}
+      >
+        Tell us about yourself
+      </h2>
+      <p style={{ color: '#5A5A66', fontSize: 14, lineHeight: 1.55, margin: '0 0 26px' }}>
         This will appear on your public profile and is visible to verified hiring companies.
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <Field label="Years of sales experience" required>
-          <TextInput
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 600, color: '#0B0B0F' }}>
+            Years of sales experience <span style={{ color: '#DC3545' }}>*</span>
+          </label>
+          <input
             type="number"
             placeholder="4"
             value={experienceYears}
-            onChange={(v) => setExperienceYears(v)}
+            onChange={(e) => setExperienceYears(e.target.value)}
+            style={{
+              padding: '11px 14px',
+              borderRadius: 10,
+              border: '1px solid #E7E7EC',
+              background: '#FFFFFF',
+              color: '#0B0B0F',
+              fontFamily: 'Inter,sans-serif',
+              fontSize: 14,
+              outline: 'none',
+            }}
           />
-        </Field>
-        <Field label="Current company" hint="Optional — visible to recruiters">
-          <TextInput
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 600, color: '#0B0B0F' }}>
+            Current company
+          </label>
+          <input
+            type="text"
             placeholder="e.g. Freshworks"
             value={currentCompany}
-            onChange={(v) => setCurrentCompany(v)}
+            onChange={(e) => setCurrentCompany(e.target.value)}
+            style={{
+              padding: '11px 14px',
+              borderRadius: 10,
+              border: '1px solid #E7E7EC',
+              background: '#FFFFFF',
+              color: '#0B0B0F',
+              fontFamily: 'Inter,sans-serif',
+              fontSize: 14,
+              outline: 'none',
+            }}
           />
-        </Field>
+          <span style={{ fontSize: 11.5, color: '#7A7A86' }}>
+            Optional — visible to recruiters
+          </span>
+        </div>
       </div>
     </>
   );
 }
 
 function StepSpecialization({
-  selected, onToggle,
-}: { selected: string[]; onToggle: (name: string) => void }) {
+  selected,
+  onToggle,
+}: {
+  selected: string[];
+  onToggle: (name: string) => void;
+}) {
   return (
     <>
-      <h2 className="display" style={{ fontSize: 26, margin: '0 0 8px' }}>Pick your specializations</h2>
-      <p style={{ color: 'var(--text-dim)', margin: '0 0 24px', fontSize: 14 }}>
+      <h2
+        style={{
+          fontFamily: "'Space Grotesk',sans-serif",
+          fontWeight: 600,
+          fontSize: 26,
+          letterSpacing: '-0.02em',
+          color: '#0B0B0F',
+          margin: '0 0 8px',
+        }}
+      >
+        Pick your specializations
+      </h2>
+      <p style={{ color: '#5A5A66', fontSize: 14, lineHeight: 1.55, margin: '0 0 26px' }}>
         Select up to 3. Phase 1 launches with IT Sales — others coming soon.
       </p>
+
+      {/* Pill grid */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
         {SPECIALIZATIONS.map((t) => {
           const active = selected.includes(t.name);
@@ -200,24 +429,57 @@ function StepSpecialization({
               disabled={t.soon}
               onClick={() => !t.soon && onToggle(t.name)}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
                 padding: '10px 16px',
                 borderRadius: 999,
-                background: active ? 'color-mix(in oklch, var(--gold) 18%, transparent)' : 'var(--bg-2)',
-                border: `1px solid ${active ? 'var(--gold)' : 'var(--border)'}`,
-                color: active ? 'var(--gold)' : t.soon ? 'var(--text-mute)' : 'var(--text)',
+                background: active
+                  ? 'rgba(245,165,36,0.18)'
+                  : t.soon
+                    ? '#FAFAF8'
+                    : '#FFFFFF',
+                border: `1px solid ${active ? '#F5A524' : '#E7E7EC'}`,
+                color: active ? '#F5A524' : t.soon ? '#7A7A86' : '#0B0B0F',
+                fontFamily: 'Inter,sans-serif',
                 fontSize: 13,
                 fontWeight: 600,
                 opacity: t.soon ? 0.55 : 1,
                 cursor: t.soon ? 'not-allowed' : 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
               }}
             >
               {t.name}
-              {active && <Icon.check />}
+              {active && (
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              )}
               {t.soon && (
-                <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--surface-2)' }}>SOON</span>
+                <span
+                  style={{
+                    fontFamily: "'Space Mono',monospace",
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: '#9A9AA4',
+                    background: '#FAFAF8',
+                    border: '1px solid #E7E7EC',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                  }}
+                >
+                  SOON
+                </span>
               )}
             </button>
           );
@@ -228,20 +490,52 @@ function StepSpecialization({
 }
 
 function StepSelfAssessment({
-  scores, onChange,
-}: { scores: number[]; onChange: (scores: number[]) => void }) {
+  scores,
+  onChange,
+}: {
+  scores: number[];
+  onChange: (scores: number[]) => void;
+}) {
   return (
     <>
-      <h2 className="display" style={{ fontSize: 26, margin: '0 0 8px' }}>Quick skill self-assessment</h2>
-      <p style={{ color: 'var(--text-dim)', margin: '0 0 24px', fontSize: 14 }}>
-        Calibrates your starting difficulty. Doesn&apos;t affect rank — only your first few recommended challenges.
+      <h2
+        style={{
+          fontFamily: "'Space Grotesk',sans-serif",
+          fontWeight: 600,
+          fontSize: 26,
+          letterSpacing: '-0.02em',
+          color: '#0B0B0F',
+          margin: '0 0 8px',
+        }}
+      >
+        Quick skill self-assessment
+      </h2>
+      <p style={{ color: '#5A5A66', fontSize: 14, lineHeight: 1.55, margin: '0 0 26px' }}>
+        Calibrates your starting difficulty. Doesn{"'"}t affect rank — only your first few
+        recommended challenges.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         {SELF_ASSESS_LABELS.map((label, idx) => (
           <div key={label}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13.5 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 8,
+                fontSize: 13.5,
+                color: '#0B0B0F',
+              }}
+            >
               <span>{label}</span>
-              <span className="mono" style={{ color: 'var(--gold)', fontWeight: 600 }}>{scores[idx]} / 5</span>
+              <span
+                style={{
+                  fontFamily: "'Space Mono',monospace",
+                  color: '#F5A524',
+                  fontWeight: 700,
+                }}
+              >
+                {scores[idx]} / 5
+              </span>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               {[1, 2, 3, 4, 5].map((n) => (
@@ -256,7 +550,7 @@ function StepSelfAssessment({
                     flex: 1,
                     height: 12,
                     borderRadius: 4,
-                    background: n <= scores[idx] ? 'var(--gold)' : 'var(--surface-2)',
+                    background: n <= scores[idx] ? '#F5A524' : '#E7E7EC',
                     cursor: 'pointer',
                     transition: 'background 0.15s',
                   }}
@@ -271,27 +565,55 @@ function StepSelfAssessment({
 }
 
 function StepFinish({ name }: { name: string }) {
+  const firstName = name.split(' ')[0];
   return (
     <>
-      <h2 className="display" style={{ fontSize: 26, margin: '0 0 8px' }}>You&apos;re all set, {name.split(' ')[0]}!</h2>
-      <p style={{ color: 'var(--text-dim)', margin: '0 0 24px', fontSize: 14 }}>
-        Click below to save your profile and jump into your first challenge. You&apos;ll earn{' '}
-        <strong style={{ color: 'var(--gold)' }}>+50 points</strong> just for completing the walkthrough.
+      <h2
+        style={{
+          fontFamily: "'Space Grotesk',sans-serif",
+          fontWeight: 600,
+          fontSize: 26,
+          letterSpacing: '-0.02em',
+          color: '#0B0B0F',
+          margin: '0 0 8px',
+        }}
+      >
+        You{"'"}re all set, {firstName}!
+      </h2>
+      <p style={{ color: '#5A5A66', fontSize: 14, lineHeight: 1.55, margin: '0 0 26px' }}>
+        Click below to save your profile and jump into your first challenge. You{"'"}ll earn{' '}
+        <strong style={{ color: '#F5A524' }}>+50 points</strong> just for completing the
+        walkthrough.
       </p>
       <div
         style={{
           padding: 20,
           borderRadius: 12,
-          background: 'color-mix(in oklch, var(--gold) 8%, transparent)',
-          border: '1px solid color-mix(in oklch, var(--gold) 25%, transparent)',
+          background: 'rgba(245,165,36,0.08)',
+          border: '1px solid rgba(245,165,36,0.25)',
           display: 'flex',
           gap: 12,
           alignItems: 'center',
           fontSize: 13.5,
+          color: '#0B0B0F',
         }}
       >
-        <Icon.bolt />
-        <span>Your rank starts at <strong>Rookie</strong>. Every challenge you clear earns points that push you up the ladder.</span>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#F5A524"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
+        <span>
+          Your rank starts at <strong>Rookie</strong>. Every challenge you clear earns points
+          that push you up the ladder.
+        </span>
       </div>
     </>
   );

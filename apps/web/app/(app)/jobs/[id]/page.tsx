@@ -4,10 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api, ApiError, JobDetail } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { Chip } from '@/components/ui/Chip';
-import { RankBadge } from '@/components/ui/RankBadge';
 import { rankFromEnum, type RankName } from '@/lib/constants';
 
 function fmtLpa(v: number): string {
@@ -17,17 +13,6 @@ function fmtLpa(v: number): string {
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text)' }}>{value}</div>
-    </div>
-  );
 }
 
 export default function JobDetailPage() {
@@ -41,6 +26,9 @@ export default function JobDetailPage() {
   const [applying, setApplying] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<string | null>(null);
+
+  const [backHover, setBackHover] = useState(false);
+  const [applyHover, setApplyHover] = useState(false);
 
   useEffect(() => {
     if (authLoading || !jobId) return;
@@ -77,15 +65,41 @@ export default function JobDetailPage() {
   }
 
   if (authLoading || (!job && !loadError)) {
-    return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
+    return (
+      <main style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 40px 80px', color: '#7A7A86', fontSize: 14 }}>
+          Loading…
+        </div>
+      </main>
+    );
   }
 
   if (loadError) {
     return (
-      <div style={{ padding: 32 }}>
-        <div style={{ color: 'var(--r-master)', marginBottom: 14 }}>{loadError}</div>
-        <Btn kind="ghost" onClick={() => router.push('/jobs')}>← Back to jobs</Btn>
-      </div>
+      <main style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 40px 80px' }}>
+          <div style={{ color: '#D14343', marginBottom: 14, fontSize: 14 }}>{loadError}</div>
+          <button
+            onClick={() => router.push('/jobs')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 7,
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              color: '#7A7A86',
+              fontFamily: 'Inter,sans-serif',
+              fontSize: 13,
+              fontWeight: 500,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            Back to jobs
+          </button>
+        </div>
+      </main>
     );
   }
 
@@ -100,124 +114,230 @@ export default function JobDetailPage() {
     : null;
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 820 }}>
-      {/* Back */}
-      <Btn kind="ghost" size="sm" onClick={() => router.push('/jobs')} style={{ marginBottom: 18 }}>
-        ← Jobs
-      </Btn>
+    <main style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 40px 80px' }}>
 
-      {/* Title card */}
-      <Card padding={28} style={{ marginBottom: 18 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20 }}>
-          <div style={{ flex: 1 }}>
-            <h1 className="display" style={{ fontSize: 26, margin: '0 0 8px', fontWeight: 700, lineHeight: 1.2 }}>
-              {job.title}
-            </h1>
-            <div style={{ fontSize: 15, color: 'var(--text-dim)', fontWeight: 600, marginBottom: 12 }}>
-              {job.company.name}
-              {job.company.industry && (
-                <span style={{ fontSize: 12.5, fontWeight: 400, color: 'var(--text-mute)', marginLeft: 8 }}>
-                  · {job.company.industry}
-                </span>
+        {/* Back link */}
+        <button
+          onClick={() => router.push('/jobs')}
+          onMouseEnter={() => setBackHover(true)}
+          onMouseLeave={() => setBackHover(false)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 7,
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            color: backHover ? '#0B0B0F' : '#7A7A86',
+            fontFamily: 'Inter,sans-serif',
+            fontSize: 13,
+            fontWeight: 500,
+            marginBottom: 18,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          Back to jobs
+        </button>
+
+        {/* Title card */}
+        <section style={{ border: '1px solid #E7E7EC', borderRadius: 14, padding: 28, background: '#FFFFFF', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
+
+            {/* Left */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ margin: '0 0 8px', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 26, letterSpacing: '-0.02em', lineHeight: 1.2, color: '#0B0B0F' }}>
+                {job.title}
+              </h1>
+              <div style={{ fontSize: 15, color: '#5A5A66', fontWeight: 500, marginBottom: 16 }}>
+                {job.company.name}
+                {job.company.industry && (
+                  <span style={{ color: '#9A9AA4', fontWeight: 400 }}> · {job.company.industry}</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                {job.location && (
+                  <span style={{ padding: '5px 11px', borderRadius: 100, background: '#FAFAF8', border: '1px solid #E7E7EC', color: '#3A3A44', fontSize: 12.5, fontWeight: 500 }}>
+                    {job.location}
+                  </span>
+                )}
+                {job.employmentType && (
+                  <span style={{ padding: '5px 11px', borderRadius: 100, background: '#FAFAF8', border: '1px solid #E7E7EC', color: '#3A3A44', fontSize: 12.5, fontWeight: 500 }}>
+                    {job.employmentType.replace('_', ' ')}
+                  </span>
+                )}
+                {salaryStr && (
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 13, fontWeight: 700, color: '#1F8A5B', marginLeft: 4 }}>
+                    {salaryStr}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Apply button / Applied pill */}
+            <div style={{ flexShrink: 0 }}>
+              {applied ? (
+                <div style={{
+                  padding: '11px 22px',
+                  borderRadius: 10,
+                  background: 'rgba(31,138,91,0.10)',
+                  border: '1px solid rgba(31,138,91,0.30)',
+                  color: '#1F8A5B',
+                  fontFamily: 'Inter,sans-serif',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  textAlign: 'center',
+                }}>
+                  Applied ✓
+                </div>
+              ) : (
+                <button
+                  onClick={handleApply}
+                  disabled={applying}
+                  onMouseEnter={() => setApplyHover(true)}
+                  onMouseLeave={() => setApplyHover(false)}
+                  style={{
+                    background: applyHover && !applying ? '#4A3BE0' : '#5B4BF5',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '11px 22px',
+                    fontFamily: 'Inter,sans-serif',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: applying ? 'default' : 'pointer',
+                    opacity: applying ? 0.7 : 1,
+                    minWidth: 110,
+                  }}
+                >
+                  {applying ? 'Applying…' : 'Apply now'}
+                </button>
               )}
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {job.location && <Chip>{job.location}</Chip>}
-              {job.employmentType && <Chip>{job.employmentType.replace('_', ' ')}</Chip>}
-              {salaryStr && (
-                <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--emerald)', alignSelf: 'center' }}>
-                  {salaryStr}
-                </span>
-              )}
-            </div>
+
           </div>
 
-          {/* Apply button */}
-          <div style={{ flexShrink: 0 }}>
-            {applied ? (
-              <div style={{ padding: '10px 20px', borderRadius: 10, background: 'color-mix(in oklch, var(--emerald) 12%, transparent)', border: '1px solid color-mix(in oklch, var(--emerald) 30%, transparent)', color: 'var(--emerald)', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
-                ✓ Applied
+          {applyError && (
+            <div style={{
+              marginTop: 14,
+              padding: '8px 12px',
+              borderRadius: 8,
+              fontSize: 12.5,
+              background: 'rgba(209,67,67,0.08)',
+              color: '#5A5A66',
+              border: '1px solid rgba(209,67,67,0.25)',
+            }}>
+              {applyError}
+            </div>
+          )}
+        </section>
+
+        {/* Job details grid */}
+        <section style={{ border: '1px solid #E7E7EC', borderRadius: 14, padding: '22px 24px', background: '#FFFFFF', marginBottom: 16 }}>
+          <h3 style={{ margin: '0 0 18px', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em', color: '#0B0B0F' }}>
+            Job details
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '18px 24px' }}>
+
+            {job.experienceMinYears != null && (
+              <div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9A9AA4', marginBottom: 6 }}>
+                  Min experience
+                </div>
+                <div style={{ fontSize: 13.5, fontWeight: 500, color: '#0B0B0F' }}>
+                  {job.experienceMinYears}+ years
+                </div>
               </div>
-            ) : (
-              <Btn kind="primary" size="md"
-                style={{ background: 'var(--cool)', color: 'white', minWidth: 110, opacity: applying ? 0.7 : 1 }}
-                disabled={applying}
-                onClick={handleApply}>
-                {applying ? 'Applying…' : 'Apply now'}
-              </Btn>
             )}
-          </div>
-        </div>
 
-        {applyError && (
-          <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 8, fontSize: 12.5, background: 'color-mix(in oklch, red 10%, transparent)', color: 'var(--text-dim)', border: '1px solid color-mix(in oklch, red 25%, transparent)' }}>
-            {applyError}
+            {minRankName && (
+              <div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9A9AA4', marginBottom: 6 }}>
+                  Min rank
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M7 0.5 13 3v5c0 4-3 6.5-6 7.5-3-1-6-3.5-6-7.5V3L7 0.5Z" fill="#C58A3E" stroke="#8A6A1A" strokeWidth="0.8" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{ fontSize: 13.5, fontWeight: 500, color: '#0B0B0F' }}>{minRankName}+</span>
+                </div>
+              </div>
+            )}
+
+            {job.listingTier && job.listingTier !== 'BASIC' && (
+              <div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9A9AA4', marginBottom: 6 }}>
+                  Listing tier
+                </div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#8A6A1A' }}>
+                  {job.listingTier}
+                </div>
+              </div>
+            )}
+
+            {job.applicationDeadline && (
+              <div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9A9AA4', marginBottom: 6 }}>
+                  Apply by
+                </div>
+                <div style={{ fontSize: 13.5, fontWeight: 500, color: '#0B0B0F' }}>
+                  {fmtDate(job.applicationDeadline)}
+                </div>
+              </div>
+            )}
+
           </div>
+        </section>
+
+        {/* About the role */}
+        {job.description && (
+          <section style={{ border: '1px solid #E7E7EC', borderRadius: 14, padding: '22px 24px', background: '#FFFFFF', marginBottom: 16 }}>
+            <h3 style={{ margin: '0 0 14px', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em', color: '#0B0B0F' }}>
+              About the role
+            </h3>
+            <p style={{ margin: 0, fontSize: 13.5, color: '#3A3A44', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+              {job.description}
+            </p>
+          </section>
         )}
-      </Card>
 
-      {/* Details grid */}
-      <Card padding={24} style={{ marginBottom: 18 }}>
-        <h2 className="display" style={{ fontSize: 15, fontWeight: 700, margin: '0 0 18px' }}>Job details</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '18px 24px' }}>
-          {job.experienceMinYears != null && (
-            <Detail label="Min experience" value={`${job.experienceMinYears}+ years`} />
-          )}
-          {minRankName && (
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-                Min rank
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <RankBadge rank={minRankName} size={14} />
-                <span style={{ fontSize: 13.5, fontWeight: 500 }}>{minRankName}+</span>
-              </div>
-            </div>
-          )}
-          {job.listingTier && job.listingTier !== 'BASIC' && (
-            <Detail label="Listing tier" value={job.listingTier} />
-          )}
-          {job.applicationDeadline && (
-            <Detail label="Apply by" value={fmtDate(job.applicationDeadline)} />
-          )}
-        </div>
-      </Card>
+        {/* Skills & specialization */}
+        {((job.requiredSkills && job.requiredSkills.length > 0) || job.specializationTag) && (
+          <section style={{ border: '1px solid #E7E7EC', borderRadius: 14, padding: '22px 24px', background: '#FFFFFF' }}>
 
-      {/* Description */}
-      {job.description && (
-        <Card padding={24} style={{ marginBottom: 18 }}>
-          <h2 className="display" style={{ fontSize: 15, fontWeight: 700, margin: '0 0 14px' }}>About the role</h2>
-          <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-dim)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
-            {job.description}
-          </p>
-        </Card>
-      )}
+            {job.requiredSkills && job.requiredSkills.length > 0 && (
+              <div style={{ marginBottom: 18 }}>
+                <h3 style={{ margin: '0 0 12px', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em', color: '#0B0B0F' }}>
+                  Required skills
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {job.requiredSkills.map(s => (
+                    <span key={s} style={{ padding: '5px 11px', borderRadius: 100, background: '#FAFAF8', border: '1px solid #E7E7EC', color: '#3A3A44', fontSize: 12.5, fontWeight: 500 }}>
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {/* Skills & tags */}
-      {((job.requiredSkills && job.requiredSkills.length > 0) || job.specializationTag) && (
-        <Card padding={24}>
-          {job.requiredSkills && job.requiredSkills.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                Required skills
+            {job.specializationTag && (
+              <div>
+                <h3 style={{ margin: '0 0 12px', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em', color: '#0B0B0F' }}>
+                  Specialization
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <span style={{ padding: '5px 11px', borderRadius: 100, background: 'rgba(91,75,245,0.08)', border: '1px solid rgba(91,75,245,0.25)', color: '#3A2DC4', fontSize: 12.5, fontWeight: 600 }}>
+                    {job.specializationTag}
+                  </span>
+                </div>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {job.requiredSkills.map(s => <Chip key={s}>{s}</Chip>)}
-              </div>
-            </div>
-          )}
-          {job.specializationTag && (
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                Specialization
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                <Chip color="var(--cool)">{job.specializationTag}</Chip>
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
-    </div>
+            )}
+
+          </section>
+        )}
+
+      </div>
+    </main>
   );
 }
