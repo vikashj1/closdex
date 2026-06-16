@@ -1,173 +1,80 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { api, ApiError, NotificationItem } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-}
-
-const TYPE_COLORS: Record<string, string> = {
-  APPLICATION_STATUS: 'var(--cool)',
-  BADGE_AWARDED:      'var(--gold)',
-  RANK_UP:            'var(--emerald)',
-  CHALLENGE_SCORED:   'var(--d-expert)',
-  DISPUTE_RESOLVED:   'var(--text-dim)',
-};
-
-function NotifDot({ type }: { type: string }) {
-  const color = TYPE_COLORS[type] ?? 'var(--text-mute)';
-  return (
-    <div style={{
-      width: 8, height: 8, borderRadius: '50%',
-      background: color, flexShrink: 0, marginTop: 6,
-    }} />
-  );
-}
+// Notifications — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
 export default function NotificationsPage() {
   useRequireAuth('SALESPERSON');
-
-  const [items, setItems] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const [markingAll, setMarkingAll] = useState(false);
-
-  const unreadCount = items.filter(n => !n.read).length;
-
-  function load(unread?: boolean) {
-    setLoading(true); setError(null);
-    api.notifications.listMine(unread)
-      .then(res => { setItems(res.items); setLoading(false); })
-      .catch(err => { setError(err instanceof ApiError ? err.message : 'Could not load notifications.'); setLoading(false); });
-  }
-
-  useEffect(() => { load(showUnreadOnly || undefined); }, [showUnreadOnly]);
-
-  async function markRead(id: string) {
-    try {
-      await api.notifications.markRead(id);
-      setItems(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    } catch {
-      // silent — UI is best-effort
-    }
-  }
-
-  async function markAllRead() {
-    setMarkingAll(true);
-    try {
-      await api.notifications.markAllRead();
-      setItems(prev => prev.map(n => ({ ...n, read: true })));
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to mark all read.');
-    } finally {
-      setMarkingAll(false);
-    }
-  }
-
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 720 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-        <div>
-          <h1 className="display" style={{ fontSize: 28, margin: 0, fontWeight: 700 }}>Notifications</h1>
-          {unreadCount > 0 && (
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-mute)' }}>
-              {unreadCount} unread
-            </p>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            onClick={() => setShowUnreadOnly(p => !p)}
-            style={{
-              background: showUnreadOnly ? 'color-mix(in oklch, var(--cool) 14%, transparent)' : 'var(--bg-2)',
-              border: `1px solid ${showUnreadOnly ? 'var(--cool)' : 'var(--border)'}`,
-              color: showUnreadOnly ? 'var(--cool)' : 'var(--text-dim)',
-              borderRadius: 8,
-              padding: '6px 12px',
-              fontSize: 12.5,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Unread only
-          </button>
-          {unreadCount > 0 && (
-            <Btn kind="ghost" size="sm" onClick={markAllRead} disabled={markingAll}>
-              {markingAll ? 'Marking…' : 'Mark all read'}
-            </Btn>
-          )}
-        </div>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div style={{ padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 13, background: 'color-mix(in oklch, red 10%, transparent)', border: '1px solid color-mix(in oklch, red 25%, transparent)', color: 'var(--text-dim)' }}>
-          {error}
-        </div>
-      )}
-
-      {/* Loading */}
-      {loading && (
-        <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-mute)', fontSize: 14 }}>
-          Loading notifications…
-        </div>
-      )}
-
-      {/* Empty */}
-      {!loading && items.length === 0 && !error && (
-        <div style={{ padding: '64px 32px', textAlign: 'center', color: 'var(--text-mute)', fontSize: 14, background: 'var(--bg-2)', borderRadius: 12, border: '1px dashed var(--border)' }}>
-          {showUnreadOnly ? 'No unread notifications.' : 'No notifications yet.'}
-        </div>
-      )}
-
-      {/* Notification list */}
-      {!loading && items.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {items.map(n => (
-            <Card
-              key={n.id}
-              padding={16}
-              style={{
-                opacity: n.read ? 0.7 : 1,
-                cursor: n.read ? 'default' : 'pointer',
-                background: n.read ? 'var(--bg-2)' : 'var(--surface)',
-                borderLeft: n.read ? 'none' : '3px solid var(--cool)',
-              }}
-              onClick={() => { if (!n.read) markRead(n.id); }}
-            >
-              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <NotifDot type={n.type} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
-                    <span style={{ fontSize: 13.5, fontWeight: n.read ? 500 : 700 }}>{n.title}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-mute)', flexShrink: 0 }}>{timeAgo(n.createdAt)}</span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.5 }}>{n.body}</p>
-                  {!n.read && (
-                    <span style={{ fontSize: 10.5, color: 'var(--cool)', fontWeight: 700, letterSpacing: '0.05em', marginTop: 6, display: 'inline-block' }}>
-                      NEW
-                    </span>
-                  )}
-                </div>
+    <div>
+    
+          <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "34px 40px 72px" }}>
+    
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", flexWrap: "wrap", marginBottom: "30px" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "14px" }}>
+                <h1 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "33px", letterSpacing: "-0.03em", lineHeight: "1.05", color: "#0B0B0F" }}>Notifications</h1>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#3A2DC4" }}>2 unread</span>
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
+              <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: "9px", cursor: "pointer", fontSize: "13.5px", fontWeight: "500", color: "#3A3A44" }}>Unread only<span style={{ position: "relative", width: "38px", height: "22px", borderRadius: "100px", background: "#E7E7EC", display: "inline-block" }}><span style={{ position: "absolute", top: "3px", left: "3px", width: "16px", height: "16px", borderRadius: "50%", background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }}></span></span></label>
+                <button style={{ display: "inline-flex", alignItems: "center", gap: "7px", height: "36px", padding: "0 14px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Mark all read</button>
+              </div>
+            </div>
+    
+            <div>
+    
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "15px", padding: "20px 6px", borderTop: "1px solid #E7E7EC", background: "rgba(91,75,245,0.025)" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#5B4BF5", marginTop: "6px", flexShrink: "0" }}></span>
+                <div style={{ flex: "1", minWidth: "0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "5px" }}><span style={{ fontSize: "14.5px", fontWeight: "600", color: "#0B0B0F" }}>You're hired — Enterprise Account Executive</span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "#3A2DC4", background: "rgba(91,75,245,0.1)", padding: "2px 6px", borderRadius: "5px" }}>New</span></div>
+                  <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86" }}>CVS marked your application as Hired. Congratulations on the offer.</div>
+                </div>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.04em", color: "#9A9AA4", flexShrink: "0", marginTop: "2px" }}>13d ago</span>
+              </div>
+    
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "15px", padding: "20px 6px", borderTop: "1px solid #E7E7EC", background: "rgba(91,75,245,0.025)" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#5B4BF5", marginTop: "6px", flexShrink: "0" }}></span>
+                <div style={{ flex: "1", minWidth: "0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "5px" }}><span style={{ fontSize: "14.5px", fontWeight: "600", color: "#0B0B0F" }}>Offer extended</span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "#3A2DC4", background: "rgba(91,75,245,0.1)", padding: "2px 6px", borderRadius: "5px" }}>New</span></div>
+                  <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86" }}>CVS sent you an offer for Enterprise Account Executive.</div>
+                </div>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.04em", color: "#9A9AA4", flexShrink: "0", marginTop: "2px" }}>14d ago</span>
+              </div>
+    
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "15px", padding: "20px 6px", borderTop: "1px solid #E7E7EC", background: "transparent" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "transparent", marginTop: "6px", flexShrink: "0" }}></span>
+                <div style={{ flex: "1", minWidth: "0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "5px" }}><span style={{ fontSize: "14.5px", fontWeight: "600", color: "#0B0B0F" }}>Interview scheduled</span></div>
+                  <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86" }}>Your interview with the CVS hiring team is confirmed.</div>
+                </div>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.04em", color: "#9A9AA4", flexShrink: "0", marginTop: "2px" }}>16d ago</span>
+              </div>
+    
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "15px", padding: "20px 6px", borderTop: "1px solid #E7E7EC", background: "transparent" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "transparent", marginTop: "6px", flexShrink: "0" }}></span>
+                <div style={{ flex: "1", minWidth: "0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "5px" }}><span style={{ fontSize: "14.5px", fontWeight: "600", color: "#0B0B0F" }}>Application shortlisted</span></div>
+                  <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86" }}>CVS shortlisted you for Enterprise Account Executive.</div>
+                </div>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.04em", color: "#9A9AA4", flexShrink: "0", marginTop: "2px" }}>18d ago</span>
+              </div>
+    
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "15px", padding: "20px 6px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC", background: "transparent" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "transparent", marginTop: "6px", flexShrink: "0" }}></span>
+                <div style={{ flex: "1", minWidth: "0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "5px" }}><span style={{ fontSize: "14.5px", fontWeight: "600", color: "#0B0B0F" }}>Application viewed</span></div>
+                  <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86" }}>A recruiter at CVS viewed your application.</div>
+                </div>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.04em", color: "#9A9AA4", flexShrink: "0", marginTop: "2px" }}>20d ago</span>
+              </div>
+            </div>
+    
+          </div>
+        
     </div>
   );
 }

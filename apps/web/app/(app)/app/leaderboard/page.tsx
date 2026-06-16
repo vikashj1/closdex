@@ -1,265 +1,78 @@
 'use client';
 
-import { CSSProperties, useEffect, useState } from 'react';
-import { api, ApiError, LeaderboardEntry } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
-import { PublicLeaderboardView } from '@/components/marketing/PublicLeaderboardView';
-import { Card } from '@/components/ui/Card';
-import { Avatar } from '@/components/ui/Avatar';
-import { RankBadge } from '@/components/ui/RankBadge';
-import { rankFromEnum } from '@/lib/constants';
+import { useRequireAuth } from '@/lib/auth';
 
-type Period = 'daily' | 'weekly' | 'monthly' | 'all-time';
-const PERIODS: { key: Period; label: string }[] = [
-  { key: 'daily',    label: 'Daily'    },
-  { key: 'weekly',   label: 'Weekly'   },
-  { key: 'monthly',  label: 'Monthly'  },
-  { key: 'all-time', label: 'All-time' },
-];
+// Leaderboard — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
 export default function LeaderboardPage() {
-  const { user, loading: authLoading } = useAuth();
-  const [period, setPeriod] = useState<Period>('weekly');
-  const [category, setCategory] = useState('');
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (authLoading) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    api.leaderboards.list({ period, limit: 50, category: category || undefined })
-      .then(res => { if (!cancelled) { setEntries(res.entries); setLoading(false); } })
-      .catch(err => { if (!cancelled) { setError(err instanceof ApiError ? err.message : 'Failed to load leaderboard.'); setLoading(false); } });
-    return () => { cancelled = true; };
-  }, [authLoading, period, category]);
-
-  if (authLoading) return null;
-  if (!user) return <PublicLeaderboardView />;
-
-  const top3Raw = entries.filter(e => e.position <= 3);
-  const podium: LeaderboardEntry[] = [
-    top3Raw.find(e => e.position === 2),
-    top3Raw.find(e => e.position === 1),
-    top3Raw.find(e => e.position === 3),
-  ].filter((e): e is LeaderboardEntry => !!e);
-  const rest = entries.filter(e => e.position > 3);
-  const mySlug = user?.salesperson?.publicSlug;
-  const myEntry = entries.find(e => e.salesperson.publicSlug === mySlug);
-  const displayScore = (e: LeaderboardEntry) =>
-    period === 'all-time' ? e.salesperson.totalPoints : e.score;
-
+  useRequireAuth('SALESPERSON');
   return (
-    <div style={{ padding: '28px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
-        <div>
-          <h1 className="display" style={{ fontSize: 32, margin: 0, fontWeight: 700 }}>Leaderboard</h1>
-          <p style={{ color: 'var(--text-mute)', fontSize: 13, margin: '4px 0 0' }}>
-            IT Sales · India · weekly resets every Monday 00:00 IST
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <select style={SELECT_STYLE} value={category} onChange={(e) => { setCategory(e.target.value); }}>
-            <option value="">All categories</option>
-            <option value="IT Sales">IT Sales</option>
-            <option value="Cloud">Cloud</option>
-            <option value="SaaS">SaaS</option>
-            <option value="DevTools">DevTools</option>
-            <option value="Cybersec">Cybersec</option>
-            <option value="FinTech">FinTech</option>
-            <option value="Healthcare">Healthcare</option>
-          </select>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: 'inline-flex',
-          background: 'var(--bg-2)',
-          padding: 4,
-          borderRadius: 10,
-          gap: 4,
-          marginBottom: 24,
-          border: '1px solid var(--border)',
-        }}
-      >
-        {PERIODS.map((p) => (
-          <button
-            key={p.key}
-            onClick={() => setPeriod(p.key)}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 7,
-              fontSize: 13,
-              fontWeight: 600,
-              background: period === p.key ? 'var(--gold)' : 'transparent',
-              color: period === p.key ? 'oklch(0.18 0.02 75)' : 'var(--text-dim)',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-mute)', fontSize: 14 }}>
-          Loading leaderboard…
-        </div>
-      )}
-
-      {error && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--d-expert)', fontSize: 14 }}>
-          {error}
-        </div>
-      )}
-
-      {!loading && !error && (
-        <>
-          {podium.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: 16, alignItems: 'end', marginBottom: 24 }}>
-              {podium.map((e) => (
-                <PodiumCard
-                  key={e.salesperson.publicSlug}
-                  entry={e}
-                  score={displayScore(e)}
-                  height={e.position === 1 ? 240 : e.position === 2 ? 200 : 180}
-                  isMe={e.salesperson.publicSlug === mySlug}
-                />
-              ))}
-            </div>
-          )}
-
-          {rest.length > 0 && (
-            <Card padding={0}>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '60px 1fr 100px 130px 80px',
-                  padding: '12px 18px',
-                  fontSize: 11,
-                  color: 'var(--text-mute)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  fontWeight: 600,
-                  borderBottom: '1px solid var(--border-soft)',
-                }}
-              >
-                <div>Rank</div><div>Salesperson</div><div>Tier</div><div>Points</div><div>Change</div>
+    <div>
+    
+          <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "34px 40px 72px" }}>
+    
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "24px", flexWrap: "wrap", marginBottom: "24px" }}>
+              <div>
+                <h1 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "33px", letterSpacing: "-0.03em", lineHeight: "1.05", color: "#0B0B0F" }}>Leaderboard</h1>
+                <p style={{ margin: "10px 0 0", fontFamily: "'Space Mono',monospace", fontSize: "11.5px", letterSpacing: "0.04em", color: "#9A9AA4" }}>IT Sales · India · weekly resets every Monday 00:00 IST</p>
               </div>
-              {rest.map((entry) => {
-                const isMe = entry.salesperson.publicSlug === mySlug;
-                return (
-                  <div
-                    key={entry.salesperson.publicSlug}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '60px 1fr 100px 130px 80px',
-                      padding: '12px 18px',
-                      alignItems: 'center',
-                      borderBottom: '1px solid var(--border-soft)',
-                      background: isMe ? 'color-mix(in oklch, var(--gold) 10%, transparent)' : 'transparent',
-                    }}
-                  >
-                    <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text-mute)' }}>
-                      #{entry.position}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <Avatar name={entry.salesperson.name} size={32} />
-                      <div style={{ fontSize: 13.5, fontWeight: isMe ? 700 : 500, color: isMe ? 'var(--gold)' : 'var(--text)' }}>
-                        {entry.salesperson.name}
-                      </div>
-                    </div>
-                    <RankBadge rank={rankFromEnum(entry.salesperson.rank)} size={18} showLabel />
-                    <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>{displayScore(entry).toLocaleString()}</div>
-                    <div />
-                  </div>
-                );
-              })}
-            </Card>
-          )}
-
-          {myEntry && myEntry.position > 3 && (
-            <div style={{ position: 'sticky', bottom: 16, marginTop: 16 }}>
-              <Card
-                padding={14}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '60px 1fr 100px 130px 80px',
-                  alignItems: 'center',
-                  borderColor: 'var(--gold)',
-                  background: 'color-mix(in oklch, var(--gold) 14%, var(--surface))',
-                }}
-              >
-                <div className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>#{myEntry.position}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Avatar name={myEntry.salesperson.name} size={32} />
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>You · {myEntry.salesperson.name}</div>
-                </div>
-                <RankBadge rank={rankFromEnum(myEntry.salesperson.rank)} size={18} showLabel />
-                <div className="mono" style={{ fontSize: 13.5, fontWeight: 700 }}>{displayScore(myEntry).toLocaleString()}</div>
-                <div />
-              </Card>
+              <button style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "38px", padding: "0 15px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer" }}>All categories<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></button>
             </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-function PodiumCard({ entry, score, height, isMe }: { entry: LeaderboardEntry; score: number; height: number; isMe: boolean }) {
-  const r = entry.position as 1 | 2 | 3;
-  const colors: Record<1 | 2 | 3, string> = {
-    1: 'var(--r-gold)',
-    2: 'var(--r-silver)',
-    3: 'var(--r-bronze)',
-  };
-  const medal: Record<1 | 2 | 3, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {/* Medal sits above the card, same distance for all positions */}
-      <div style={{ fontSize: 36, lineHeight: 1, marginBottom: 10 }}>{medal[r]}</div>
-      <Card
-        padding={20}
-        style={{
-          borderColor: `color-mix(in oklch, ${colors[r]} 40%, var(--border))`,
-          background: `linear-gradient(180deg, color-mix(in oklch, ${colors[r]} ${isMe ? 20 : 12}%, var(--surface)) 0%, var(--surface) 70%)`,
-          textAlign: 'center',
-          height,
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 10,
-          boxSizing: 'border-box',
-        }}
-      >
-        <Avatar name={entry.salesperson.name} size={52} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-          <div className="display" style={{ fontSize: 15, fontWeight: 700, color: isMe ? 'var(--gold)' : 'var(--text)', lineHeight: 1.2 }}>
-            {entry.salesperson.name}
+    
+            <div style={{ marginBottom: "30px" }}><div style={{ display: "inline-flex", border: "1px solid #E7E7EC", borderRadius: "10px", overflow: "hidden" }}><a href="#" style={{ padding: "9px 18px", fontSize: "13px", fontWeight: "500", textDecoration: "none", color: "#3A3A44", background: "#fff" }}>Daily</a><a href="#" style={{ padding: "9px 18px", fontSize: "13px", fontWeight: "600", textDecoration: "none", color: "#fff", background: "#0B0B0F", borderLeft: "1px solid #E7E7EC" }}>Weekly</a><a href="#" style={{ padding: "9px 18px", fontSize: "13px", fontWeight: "500", textDecoration: "none", color: "#3A3A44", background: "#fff", borderLeft: "1px solid #E7E7EC" }}>Monthly</a><a href="#" style={{ padding: "9px 18px", fontSize: "13px", fontWeight: "500", textDecoration: "none", color: "#3A3A44", background: "#fff", borderLeft: "1px solid #E7E7EC" }}>All-time</a></div></div>
+    
+            <section style={{ position: "relative", borderRadius: "18px", overflow: "hidden", background: "radial-gradient(120% 140% at 50% 0%, #3A2D7A 0%, #221A45 42%, #14101F 74%, #0B0B0F 100%)", padding: "40px 36px 0", marginBottom: "46px" }}>
+              <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "420px", height: "300px", borderRadius: "50%", background: "radial-gradient(circle, rgba(245,165,36,0.16) 0%, rgba(245,165,36,0) 65%)", pointerEvents: "none" }}></div>
+              <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "30px" }}>
+                
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "160px" }}>
+                  <div style={{ height: "30px" }}></div>
+                  <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#211A3D", boxShadow: "0 0 0 2px rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "18px", color: "#fff", marginBottom: "14px" }}>S</div>
+                  <div style={{ fontSize: "14.5px", fontWeight: "600", color: "#fff", marginBottom: "8px", textAlign: "center", display: "flex", alignItems: "center", gap: "7px" }}>Shashank Singh</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "3px 10px", borderRadius: "100px", background: "rgba(255,255,255,0.08)" }}><span style={{ width: "9px", height: "11px", background: "#C0C0C8", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.72)" }}>Rookie</span></div>
+                  <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "23px", letterSpacing: "-0.02em", color: "#FFFFFF", marginTop: "12px" }}>222</div>
+                  <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginTop: "2px" }}>points</div>
+                  <div style={{ marginTop: "18px", width: "122px", height: "78px", background: "rgba(255,255,255,0.06)", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "14px" }}><span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", color: "rgba(255,255,255,0.55)" }}>02</span></div>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "160px" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5A524" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "8px" }}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z" /><path d="M5 21h14" /></svg>
+                  <div style={{ width: "66px", height: "66px", borderRadius: "50%", background: "#211A3D", boxShadow: "0 0 0 3px #F5A524, 0 0 0 7px rgba(245,165,36,0.22)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "24px", color: "#fff", marginBottom: "14px" }}>t</div>
+                  <div style={{ fontSize: "14.5px", fontWeight: "600", color: "#fff", marginBottom: "8px", textAlign: "center", display: "flex", alignItems: "center", gap: "7px" }}>test user<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "#3A2DC4", background: "#fff", padding: "2px 6px", borderRadius: "5px" }}>You</span></div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "3px 10px", borderRadius: "100px", background: "rgba(245,165,36,0.16)" }}><span style={{ width: "9px", height: "11px", background: "#F5A524", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "#F5A524" }}>Bronze</span></div>
+                  <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", letterSpacing: "-0.02em", color: "#F5A524", marginTop: "12px" }}>1,397</div>
+                  <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginTop: "2px" }}>points</div>
+                  <div style={{ marginTop: "18px", width: "122px", height: "108px", background: "linear-gradient(180deg,#F7B948,#D98A1C)", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "14px" }}><span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", color: "#2A1D06" }}>01</span></div>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "160px" }}>
+                  <div style={{ height: "30px" }}></div>
+                  <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#211A3D", boxShadow: "0 0 0 2px rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "18px", color: "#fff", marginBottom: "14px" }}>V</div>
+                  <div style={{ fontSize: "14.5px", fontWeight: "600", color: "#fff", marginBottom: "8px", textAlign: "center", display: "flex", alignItems: "center", gap: "7px" }}>Vikash</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "3px 10px", borderRadius: "100px", background: "rgba(255,255,255,0.08)" }}><span style={{ width: "9px", height: "11px", background: "#C0C0C8", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.72)" }}>Rookie</span></div>
+                  <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "23px", letterSpacing: "-0.02em", color: "#FFFFFF", marginTop: "12px" }}>0</div>
+                  <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginTop: "2px" }}>points</div>
+                  <div style={{ marginTop: "18px", width: "122px", height: "60px", background: "rgba(255,255,255,0.06)", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "14px" }}><span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", color: "rgba(255,255,255,0.55)" }}>03</span></div>
+                </div>
+              </div>
+            </section>
+    
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", letterSpacing: "0.14em", textTransform: "uppercase", color: "#7A7A86", marginBottom: "14px" }}>Full ranking</div>
+            <div>
+              <div style={{ display: "grid", gridTemplateColumns: "64px 1fr 150px 110px", gap: "18px", alignItems: "center", padding: "0 14px 12px" }}><div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4" }}>Rank</div><div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4" }}>Player</div><div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4" }}>Tier</div><div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4", textAlign: "right" }}>Points</div></div>
+              <div style={{ display: "grid", gridTemplateColumns: "64px 1fr 150px 110px", gap: "18px", alignItems: "center", padding: "14px", borderTop: "1px solid #E7E7EC", background: "rgba(91,75,245,0.06)", boxShadow: "inset 2px 0 0 #5B4BF5", borderRadius: "8px" }}><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#3A2DC4" }}>01</span><div style={{ display: "flex", alignItems: "center", gap: "11px", minWidth: "0" }}><span style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#0B0B0F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "12px", flexShrink: "0" }}>t</span><span style={{ fontSize: "14px", fontWeight: "600", color: "#0B0B0F" }}>test user <span style={{ color: "#7A7A86", fontWeight: "400" }}>· You</span></span></div><span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#8A6A1A" }}><span style={{ width: "10px", height: "12px", background: "#F5A524", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span>Bronze</span><span style={{ textAlign: "right", fontFamily: "'Space Mono',monospace", fontSize: "14px", fontWeight: "700", color: "#F5A524" }}>1,397</span></div>
+    <div style={{ display: "grid", gridTemplateColumns: "64px 1fr 150px 110px", gap: "18px", alignItems: "center", padding: "14px", borderTop: "1px solid #E7E7EC" }}><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#3A2DC4" }}>02</span><div style={{ display: "flex", alignItems: "center", gap: "11px", minWidth: "0" }}><span style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "12px", flexShrink: "0" }}>S</span><span style={{ fontSize: "14px", fontWeight: "500", color: "#0B0B0F" }}>Shashank Singh</span></div><span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#7A7A86" }}><span style={{ width: "10px", height: "12px", background: "#C0C0C8", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span>Rookie</span><span style={{ textAlign: "right", fontFamily: "'Space Mono',monospace", fontSize: "14px", fontWeight: "700", color: "#F5A524" }}>222</span></div>
+    <div style={{ display: "grid", gridTemplateColumns: "64px 1fr 150px 110px", gap: "18px", alignItems: "center", padding: "14px", borderTop: "1px solid #E7E7EC" }}><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#3A2DC4" }}>03</span><div style={{ display: "flex", alignItems: "center", gap: "11px", minWidth: "0" }}><span style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "12px", flexShrink: "0" }}>V</span><span style={{ fontSize: "14px", fontWeight: "500", color: "#0B0B0F" }}>Vikash</span></div><span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#7A7A86" }}><span style={{ width: "10px", height: "12px", background: "#C0C0C8", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span>Rookie</span><span style={{ textAlign: "right", fontFamily: "'Space Mono',monospace", fontSize: "14px", fontWeight: "700", color: "#C2C2CC" }}>0</span></div>
+    <div style={{ display: "grid", gridTemplateColumns: "64px 1fr 150px 110px", gap: "18px", alignItems: "center", padding: "14px", borderTop: "1px solid #E7E7EC" }}><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#9A9AA4" }}>04</span><div style={{ display: "flex", alignItems: "center", gap: "11px", minWidth: "0" }}><span style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "12px", flexShrink: "0" }}>P</span><span style={{ fontSize: "14px", fontWeight: "500", color: "#0B0B0F" }}>Priya Nair</span></div><span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#7A7A86" }}><span style={{ width: "10px", height: "12px", background: "#C0C0C8", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span>Rookie</span><span style={{ textAlign: "right", fontFamily: "'Space Mono',monospace", fontSize: "14px", fontWeight: "700", color: "#C2C2CC" }}>0</span></div>
+    <div style={{ display: "grid", gridTemplateColumns: "64px 1fr 150px 110px", gap: "18px", alignItems: "center", padding: "14px", borderTop: "1px solid #E7E7EC" }}><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#9A9AA4" }}>05</span><div style={{ display: "flex", alignItems: "center", gap: "11px", minWidth: "0" }}><span style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "12px", flexShrink: "0" }}>A</span><span style={{ fontSize: "14px", fontWeight: "500", color: "#0B0B0F" }}>Arjun Mehta</span></div><span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#7A7A86" }}><span style={{ width: "10px", height: "12px", background: "#C0C0C8", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span>Rookie</span><span style={{ textAlign: "right", fontFamily: "'Space Mono',monospace", fontSize: "14px", fontWeight: "700", color: "#C2C2CC" }}>0</span></div>
+    <div style={{ display: "grid", gridTemplateColumns: "64px 1fr 150px 110px", gap: "18px", alignItems: "center", padding: "14px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC" }}><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#9A9AA4" }}>06</span><div style={{ display: "flex", alignItems: "center", gap: "11px", minWidth: "0" }}><span style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "12px", flexShrink: "0" }}>S</span><span style={{ fontSize: "14px", fontWeight: "500", color: "#0B0B0F" }}>Sana Kapoor</span></div><span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#7A7A86" }}><span style={{ width: "10px", height: "12px", background: "#C0C0C8", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span>Rookie</span><span style={{ textAlign: "right", fontFamily: "'Space Mono',monospace", fontSize: "14px", fontWeight: "700", color: "#C2C2CC" }}>0</span></div>
+            </div>
+    
           </div>
-          <RankBadge rank={rankFromEnum(entry.salesperson.rank)} size={18} showLabel />
-        </div>
-        <div className="display mono" style={{ fontSize: 20, fontWeight: 700, color: colors[r], lineHeight: 1 }}>
-          {score.toLocaleString()}
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', marginLeft: 4 }}>pts</span>
-        </div>
-      </Card>
+        
     </div>
   );
 }
-
-const SELECT_STYLE: CSSProperties = {
-  padding: '8px 12px',
-  borderRadius: 8,
-  background: 'var(--bg-2)',
-  border: '1px solid var(--border)',
-  color: 'var(--text)',
-  fontSize: 12.5,
-};
