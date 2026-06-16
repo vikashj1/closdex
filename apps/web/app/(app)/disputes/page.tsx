@@ -1,177 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { api, DisputeSummary } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 
-const STATUS_META: Record<string, { label: string; color: string }> = {
-  OPEN:         { label: 'Open',         color: 'var(--gold)' },
-  UNDER_REVIEW: { label: 'Under review', color: 'var(--cool)' },
-  RESOLVED:     { label: 'Resolved',     color: 'var(--emerald)' },
-  REJECTED:     { label: 'Rejected',     color: 'var(--d-expert)' },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const meta = STATUS_META[status] ?? { label: status, color: 'var(--text-mute)' };
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '3px 10px',
-        borderRadius: 999,
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: '0.04em',
-        background: `color-mix(in oklch, ${meta.color} 18%, transparent)`,
-        color: meta.color,
-        border: `1px solid color-mix(in oklch, ${meta.color} 35%, transparent)`,
-      }}
-    >
-      {meta.label}
-    </span>
-  );
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
-}
+// My Disputes — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
 export default function DisputesPage() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
-  const [disputes, setDisputes] = useState<DisputeSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    api.disputes.listMine()
-      .then(setDisputes)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [user]);
-
-  if (authLoading || !user) return null;
-
+  useRequireAuth('SALESPERSON');
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 860 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 className="display" style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>My Disputes</h1>
-        <p style={{ color: 'var(--text-mute)', fontSize: 13, margin: '4px 0 0' }}>
-          Disputes you've raised about AI scoring on completed challenges
-        </p>
-      </div>
-
-      {loading ? (
-        <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-mute)' }}>Loading…</div>
-      ) : disputes.length === 0 ? (
-        <Card padding={48} style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🏳</div>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>No disputes yet</div>
-          <div style={{ fontSize: 13, color: 'var(--text-mute)', marginBottom: 20 }}>
-            If you disagree with an AI score, you can raise a dispute from the result page.
-          </div>
-          <Btn kind="secondary" size="sm" onClick={() => router.push('/attempts')}>
-            View my attempts
-          </Btn>
-        </Card>
-      ) : (
-        <Card padding={0}>
-          {/* Table header */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 120px 100px 90px',
-              padding: '10px 20px',
-              fontSize: 11,
-              fontWeight: 600,
-              color: 'var(--text-mute)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              borderBottom: '1px solid var(--border-soft)',
-            }}
-          >
-            <div>Challenge</div>
-            <div>Status</div>
-            <div>Raised</div>
-            <div>Action</div>
-          </div>
-
-          {disputes.map((d, i) => {
-            const isLast = i === disputes.length - 1;
-            return (
-              <div
-                key={d.id}
-                style={{
-                  borderBottom: isLast ? 'none' : '1px solid var(--border-soft)',
-                }}
-              >
-                {/* Row */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 120px 100px 90px',
-                    padding: '14px 20px',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>{d.attempt.challenge.title}</div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--text-mute)',
-                        marginTop: 3,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: 420,
-                      }}
-                    >
-                      {d.reason}
-                    </div>
-                  </div>
-                  <div><StatusBadge status={d.status} /></div>
-                  <div style={{ fontSize: 12, color: 'var(--text-mute)' }}>{fmtDate(d.createdAt)}</div>
-                  <div>
-                    <Btn
-                      kind="ghost"
-                      size="sm"
-                      onClick={() =>
-                        router.push(`/challenges/${d.attempt.challenge.id}/result?attempt=${d.attempt.id}`)
-                      }
-                    >
-                      View
-                    </Btn>
-                  </div>
-                </div>
-
-                {/* Resolution note if resolved/rejected */}
-                {(d.status === 'RESOLVED' || d.status === 'REJECTED') && d.resolution && (
-                  <div
-                    style={{
-                      margin: '0 20px 14px',
-                      padding: '10px 14px',
-                      borderRadius: 8,
-                      background: `color-mix(in oklch, ${STATUS_META[d.status].color} 8%, transparent)`,
-                      border: `1px solid color-mix(in oklch, ${STATUS_META[d.status].color} 22%, transparent)`,
-                      fontSize: 12.5,
-                      color: 'var(--text-dim)',
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, color: STATUS_META[d.status].color }}>
-                      {d.status === 'RESOLVED' ? 'Resolution' : 'Rejection reason'}:{' '}
-                    </span>
-                    {d.resolution}
-                  </div>
-                )}
+    <div>
+    
+          <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "34px 40px 72px" }}>
+            <div style={{ marginBottom: "8px" }}>
+              <h1 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "33px", letterSpacing: "-0.03em", lineHeight: "1.05", color: "#0B0B0F" }}>My Disputes</h1>
+              <p style={{ margin: "10px 0 0", fontSize: "15px", color: "#7A7A86" }}>Disputes you've raised about AI scoring on completed challenges.</p>
+            </div>
+    
+            <div style={{ marginTop: "40px", borderTop: "1px solid #E7E7EC", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "96px 24px 100px" }}>
+              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "#F3F3F6", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "26px" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9A9AA4" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c2 0 4 1.5 6 1.5a6 6 0 0 0 2.4-.5 1 1 0 0 1 1.4.9V14a1 1 0 0 1-.6.9A6 6 0 0 1 14 15.5c-2 0-4-1.5-6-1.5a6 6 0 0 0-4 1.3" /></svg>
               </div>
-            );
-          })}
-        </Card>
-      )}
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", letterSpacing: "0.16em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "16px" }}>Dispute history</div>
+              <h2 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "26px", letterSpacing: "-0.02em", color: "#0B0B0F" }}>No disputes yet</h2>
+              <p style={{ margin: "14px 0 0", fontSize: "14.5px", lineHeight: "1.6", color: "#7A7A86", maxWidth: "430px" }}>If you disagree with an AI score, you can raise a dispute from the result page of any completed challenge.</p>
+              <a href="Closdex My Attempts.dc.html" style={{ marginTop: "28px", display: "inline-flex", alignItems: "center", gap: "8px", background: "#0B0B0F", color: "#fff", borderRadius: "10px", padding: "11px 18px", fontSize: "14px", fontWeight: "600", textDecoration: "none" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><path d="M12 7v5l3 2" /></svg>View my attempts</a>
+            </div>
+          </div>
+        
     </div>
   );
 }

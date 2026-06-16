@@ -1,305 +1,77 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { TextInput } from '@/components/ui/TextInput';
-import { Field } from '@/components/ui/Field';
-import { useAuth, useRequireAuth } from '@/lib/auth';
-import { api, ApiError } from '@/lib/api';
+import { useRequireAuth } from '@/lib/auth';
 
-const TABS = ['Profile', 'Security'] as const;
-type Tab = (typeof TABS)[number];
-
-const VISIBILITY_OPTIONS = [
-  { value: 'PUBLIC', label: 'Public — anyone can view your profile' },
-  { value: 'CONNECTIONS_ONLY', label: 'Connections only' },
-  { value: 'PRIVATE', label: 'Private — only you and companies you applied to' },
-] as const;
+// Settings — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
 export default function SettingsPage() {
-  const { refresh } = useAuth();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
-
-  const [tab, setTab] = useState<Tab>('Profile');
-
-  // Profile fields
-  const [name, setName] = useState('');
-  const [location, setLocation] = useState('');
-  const [resumeUrl, setResumeUrl] = useState('');
-  const [openToWork, setOpenToWork] = useState(false);
-  const [visibility, setVisibility] = useState<'PUBLIC' | 'CONNECTIONS_ONLY' | 'PRIVATE'>('PUBLIC');
-  const [salaryExpectation, setSalaryExpectation] = useState('');
-  const [preferredLocations, setPreferredLocations] = useState('');
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileMsg, setProfileMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  // Password fields
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [pwSaving, setPwSaving] = useState(false);
-  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    setName(user.name ?? '');
-    setLocation(user.location ?? '');
-    const sp = user.salesperson;
-    if (sp) {
-      setResumeUrl(sp.resumeUrl ?? '');
-      setOpenToWork(sp.openToWork ?? false);
-      setVisibility((sp.visibility as any) ?? 'PUBLIC');
-      setSalaryExpectation(sp.salaryExpectation?.toString() ?? '');
-      setPreferredLocations((sp.preferredLocations ?? []).join(', '));
-    }
-  }, [user]);
-
-  async function saveProfile() {
-    setProfileSaving(true);
-    setProfileMsg(null);
-    try {
-      await api.users.updateMe({ name, location: location || undefined });
-      await api.users.updateSalesperson({
-        resumeUrl: resumeUrl || undefined,
-        openToWork,
-        visibility,
-        salaryExpectation: salaryExpectation ? parseInt(salaryExpectation, 10) : undefined,
-        preferredLocations: preferredLocations
-          ? preferredLocations.split(',').map((s) => s.trim()).filter(Boolean)
-          : [],
-      });
-      void refresh();
-      setProfileMsg({ ok: true, text: 'Profile updated.' });
-    } catch (e) {
-      setProfileMsg({ ok: false, text: e instanceof ApiError ? e.message : 'Failed to save.' });
-    } finally {
-      setProfileSaving(false);
-    }
-  }
-
-  async function changePassword() {
-    if (newPassword !== confirmPassword) {
-      setPwMsg({ ok: false, text: 'New passwords do not match.' });
-      return;
-    }
-    if (newPassword.length < 8) {
-      setPwMsg({ ok: false, text: 'New password must be at least 8 characters.' });
-      return;
-    }
-    setPwSaving(true);
-    setPwMsg(null);
-    try {
-      await api.users.changePassword({ currentPassword, newPassword });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setPwMsg({ ok: true, text: 'Password changed successfully.' });
-    } catch (e) {
-      setPwMsg({ ok: false, text: e instanceof ApiError ? e.message : 'Failed to change password.' });
-    } finally {
-      setPwSaving(false);
-    }
-  }
-
-  if (authLoading) return null;
-
+  useRequireAuth('SALESPERSON');
   return (
-    <div style={{ maxWidth: 680, margin: '40px auto', padding: '0 24px 80px' }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 24px' }}>Settings</h1>
-
-      {/* Tab bar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 4,
-          marginBottom: 28,
-          borderBottom: '1px solid var(--border-soft)',
-          paddingBottom: 0,
-        }}
-      >
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              padding: '8px 16px',
-              background: 'none',
-              border: 'none',
-              borderBottom: tab === t ? '2px solid var(--gold)' : '2px solid transparent',
-              color: tab === t ? 'var(--gold)' : 'var(--text-dim)',
-              fontWeight: tab === t ? 600 : 400,
-              fontSize: 14,
-              cursor: 'pointer',
-              marginBottom: -1,
-            }}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'Profile' && (
-        <Card padding={28}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <Field label="Display name">
-              <TextInput value={name} onChange={(v) => setName(v)} placeholder="Your full name" />
-            </Field>
-
-            <Field label="Location">
-              <TextInput value={location} onChange={(v) => setLocation(v)} placeholder="Mumbai, India" />
-            </Field>
-
-            <Field label="Resume URL">
-              <TextInput
-                value={resumeUrl}
-                onChange={(v) => setResumeUrl(v)}
-                placeholder="https://drive.google.com/..."
-              />
-            </Field>
-
-            <Field label="Profile visibility">
-              <select
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value as any)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: 8,
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  color: 'var(--text)',
-                  fontSize: 14,
-                }}
-              >
-                {VISIBILITY_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Preferred locations (comma-separated)">
-              <TextInput
-                value={preferredLocations}
-                onChange={(v) => setPreferredLocations(v)}
-                placeholder="Mumbai, Bangalore, Remote"
-              />
-            </Field>
-
-            <Field label="Expected CTC (₹ LPA)">
-              <TextInput
-                value={salaryExpectation}
-                onChange={(v) => setSalaryExpectation(v)}
-                placeholder="12"
-                type="number"
-              />
-            </Field>
-
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                cursor: 'pointer',
-                fontSize: 14,
-                color: 'var(--text)',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={openToWork}
-                onChange={(e) => setOpenToWork(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: 'var(--emerald)' }}
-              />
-              Open to new opportunities
-            </label>
-
-            {profileMsg && (
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 8,
-                  background: profileMsg.ok
-                    ? 'color-mix(in oklch, var(--emerald) 15%, var(--surface))'
-                    : 'color-mix(in oklch, #ef4444 15%, var(--surface))',
-                  color: profileMsg.ok ? 'var(--emerald)' : '#ef4444',
-                  fontSize: 13,
-                }}
-              >
-                {profileMsg.text}
+    <div>
+    
+          <div style={{ maxWidth: "760px", margin: "0 auto", padding: "34px 40px 72px" }}>
+    
+            <h1 style={{ margin: "0 0 22px", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "33px", letterSpacing: "-0.03em", color: "#0B0B0F" }}>Settings</h1>
+    
+            <nav style={{ display: "flex", alignItems: "center", gap: "26px", borderBottom: "1px solid #E7E7EC", marginBottom: "36px" }}>
+              <a href="#" style={{ padding: "12px 2px", textDecoration: "none", fontSize: "14px", fontWeight: "600", color: "#0B0B0F", boxShadow: "inset 0 -2px 0 #0B0B0F" }}>Profile</a>
+              <a href="#" style={{ padding: "12px 2px", textDecoration: "none", fontSize: "14px", fontWeight: "600", color: "#7A7A86" }}>Security</a>
+            </nav>
+    
+            <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "26px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+                  <label style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>Display name</label>
+                  
+                  <input defaultValue="test user" placeholder="" style={{ height: "44px", padding: "0 14px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "14px", color: "#0B0B0F", outline: "none", width: "100%" }} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+                  <label style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>Location</label>
+                  
+                  <input defaultValue="Bengaluru, India" placeholder="" style={{ height: "44px", padding: "0 14px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "14px", color: "#0B0B0F", outline: "none", width: "100%" }} />
+                </div>
               </div>
-            )}
-
-            <Btn onClick={saveProfile} loading={profileSaving} style={{ alignSelf: 'flex-start' }}>
-              Save changes
-            </Btn>
-          </div>
-        </Card>
-      )}
-
-      {tab === 'Security' && (
-        <Card padding={28}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <p style={{ fontSize: 13.5, color: 'var(--text-dim)', margin: 0 }}>
-              Use a strong password of at least 8 characters.
-            </p>
-
-            <Field label="Current password">
-              <TextInput
-                value={currentPassword}
-                onChange={(v) => setCurrentPassword(v)}
-                type="password"
-                placeholder="••••••••"
-              />
-            </Field>
-
-            <Field label="New password">
-              <TextInput
-                value={newPassword}
-                onChange={(v) => setNewPassword(v)}
-                type="password"
-                placeholder="••••••••"
-              />
-            </Field>
-
-            <Field label="Confirm new password">
-              <TextInput
-                value={confirmPassword}
-                onChange={(v) => setConfirmPassword(v)}
-                type="password"
-                placeholder="••••••••"
-              />
-            </Field>
-
-            {pwMsg && (
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 8,
-                  background: pwMsg.ok
-                    ? 'color-mix(in oklch, var(--emerald) 15%, var(--surface))'
-                    : 'color-mix(in oklch, #ef4444 15%, var(--surface))',
-                  color: pwMsg.ok ? 'var(--emerald)' : '#ef4444',
-                  fontSize: 13,
-                }}
-              >
-                {pwMsg.text}
+              <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+                  <label style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>Resume URL</label>
+                  
+                  <input defaultValue="https://drive.google.com/file/d/…" placeholder="Link to your resume or portfolio" style={{ height: "44px", padding: "0 14px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "14px", color: "#0B0B0F", outline: "none", width: "100%" }} />
+                </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "26px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+                  <label style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>Profile visibility</label>
+                  <span style={{ fontSize: "12px", color: "#9A9AA4", marginTop: "-5px" }}>Who can see your public profile</span>
+                  <div style={{ position: "relative" }}>
+                  <select defaultValue="Public" style={{ appearance: "none", WebkitAppearance: "none", height: "44px", padding: "0 38px 0 14px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "14px", color: "#0B0B0F", outline: "none", width: "100%", cursor: "pointer" }}><option>Public</option><option>Unlisted</option><option>Private</option></select>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7A7A86" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}><path d="m6 9 6 6 6-6" /></svg>
+                </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+                  <label style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>Expected CTC (₹ LPA)</label>
+                  
+                  <input defaultValue="18" placeholder="" style={{ height: "44px", padding: "0 14px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "14px", color: "#0B0B0F", outline: "none", width: "100%" }} />
+                </div>
               </div>
-            )}
-
-            <Btn
-              onClick={changePassword}
-              loading={pwSaving}
-              disabled={!currentPassword || !newPassword || !confirmPassword}
-              style={{ alignSelf: 'flex-start' }}
-            >
-              Change password
-            </Btn>
+              <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+                  <label style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>Preferred locations</label>
+                  
+                  <input defaultValue="Bengaluru, Remote, Mumbai" placeholder="Comma-separated" style={{ height: "44px", padding: "0 14px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "14px", color: "#0B0B0F", outline: "none", width: "100%" }} />
+                </div>
+    
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "12px", cursor: "pointer", padding: "4px 0" }}>
+                <span style={{ width: "20px", height: "20px", borderRadius: "6px", background: "#5B4BF5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0", marginTop: "1px" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
+                <span><span style={{ display: "block", fontSize: "14px", fontWeight: "600", color: "#0B0B0F" }}>Open to new opportunities</span><span style={{ display: "block", fontSize: "12.5px", color: "#9A9AA4", marginTop: "3px" }}>Show recruiters you're available and surface matching jobs.</span></span>
+              </label>
+    
+              <div style={{ display: "flex", paddingTop: "8px", borderTop: "1px solid #E7E7EC", marginTop: "6px" }}>
+                <button style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "44px", padding: "0 22px", border: "none", borderRadius: "10px", background: "#0B0B0F", color: "#fff", fontFamily: "Inter,sans-serif", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginTop: "22px" }}>Save changes</button>
+              </div>
+            </div>
+    
           </div>
-        </Card>
-      )}
+        
     </div>
   );
 }

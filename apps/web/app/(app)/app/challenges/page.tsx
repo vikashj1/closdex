@@ -1,472 +1,220 @@
 'use client';
 
-import { CSSProperties, Suspense, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { Chip } from '@/components/ui/Chip';
-import { DifficultyTag } from '@/components/ui/DifficultyTag';
-import { Icon } from '@/components/ui/Icon';
-import { ApiError, ChallengeSummary, api, AttemptDetail } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
-import { PublicChallengesView } from '@/components/marketing/PublicChallengesView';
-import { DIFFICULTY, type DifficultyLevel, difficultyFromEnum } from '@/lib/constants';
+import { useRequireAuth } from '@/lib/auth';
 
-type DiffFilter = 'All' | DifficultyLevel;
-
-const DIFFICULTIES: DiffFilter[] = ['All', 'Rookie', 'Easy', 'Medium', 'Hard', 'Expert'];
-
-const GOALS: { label: string; value: string }[] = [
-  { label: 'Qualify',          value: 'QUALIFY_LEAD'          },
-  { label: 'Book call',        value: 'BOOK_DISCOVERY_CALL'    },
-  { label: 'Proposal',         value: 'SEND_PROPOSAL'          },
-  { label: 'Decision-maker',   value: 'REACH_DECISION_MAKER'   },
-  { label: 'Close',            value: 'CLOSE_DEAL'             },
-  { label: 'Win-back',         value: 'WIN_BACK'               },
-];
-
-const UI_TO_ENUM: Record<DifficultyLevel, string> = {
-  Rookie: 'ROOKIE',
-  Easy: 'EASY',
-  Medium: 'MEDIUM',
-  Hard: 'HARD',
-  Expert: 'EXPERT',
-};
+// Challenges — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
 export default function ChallengesPage() {
+  useRequireAuth('SALESPERSON');
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>}>
-      <ChallengesPageInner />
-    </Suspense>
-  );
-}
-
-function ChallengesPageInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
-  const [diff, setDiff] = useState<DiffFilter>('All');
-  const [goalFilter, setGoalFilter] = useState('');
-  const [items, setItems] = useState<ChallengeSummary[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [inProgressMap, setInProgressMap] = useState<Map<string, string>>(new Map()); // challengeId → attemptId
-  const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') ?? '');
-  const [pageLoaded, setPageLoaded] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
-  // Load attempt state once on mount (independent of diff filter)
-  useEffect(() => {
-    if (!user) return;
-    api.attempts.listMine().then((attempts: AttemptDetail[]) => {
-      const done = new Set(
-        attempts.filter((a) => a.status === 'COMPLETED').map((a) => a.challenge.id),
-      );
-      setCompletedIds(done);
-      const ipMap = new Map<string, string>();
-      attempts
-        .filter((a) => a.status === 'IN_PROGRESS')
-        .forEach((a) => ipMap.set(a.challenge.id, a.id));
-      setInProgressMap(ipMap);
-    }).catch(() => {}); // non-critical
-  }, [user]);
-
-  useEffect(() => {
-    if (authLoading) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setPageLoaded(1);
-    api.challenges
-      .list({
-        difficulty: diff === 'All' ? undefined : UI_TO_ENUM[diff],
-        goalType: goalFilter || undefined,
-        perPage: 30,
-        page: 1,
-      })
-      .then((res) => {
-        if (cancelled) return;
-        setItems(res.items);
-        setTotal(res.total);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : 'Could not load challenges.');
-        setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [authLoading, diff, goalFilter]);
-
-  async function loadMore() {
-    if (loadingMore) return;
-    setLoadingMore(true);
-    const nextPage = pageLoaded + 1;
-    try {
-      const res = await api.challenges.list({
-        difficulty: diff === 'All' ? undefined : UI_TO_ENUM[diff],
-        goalType: goalFilter || undefined,
-        perPage: 30,
-        page: nextPage,
-      });
-      setItems((prev) => [...prev, ...res.items]);
-      setPageLoaded(nextPage);
-    } catch {
-      // non-critical — user can retry
-    } finally {
-      setLoadingMore(false);
-    }
-  }
-
-  const displayed = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.brief.toLowerCase().includes(q) ||
-        c.category.toLowerCase().includes(q),
-    );
-  }, [items, searchQuery]);
-
-  if (authLoading) {
-    return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
-  }
-
-  // Anonymous visitors get the marketing/info screen instead of the live library.
-  if (!user) {
-    return <PublicChallengesView />;
-  }
-
-  return (
-    <div
-      data-filter-open={filtersOpen ? 'true' : 'false'}
-      style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 0, minHeight: 'calc(100vh - 60px)' }}
-    >
-      {/* Filter sidebar */}
-      <aside
-        style={{
-          borderRight: '1px solid var(--border-soft)',
-          padding: '24px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 22,
-          background: 'var(--bg)',
-        }}
-      >
-        <div>
-          <div style={FILTER_LBL}><Icon.filter /> Difficulty</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
-            {DIFFICULTIES.map((d) => (
-              <button
-                key={d}
-                onClick={() => setDiff(d)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '7px 10px',
-                  borderRadius: 7,
-                  border: 'none',
-                  background: diff === d ? 'var(--surface-2)' : 'transparent',
-                  color: 'var(--text)',
-                  fontSize: 12.5,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {d !== 'All' && (
-                    <span style={{ width: 6, height: 6, borderRadius: 999, background: DIFFICULTY[d as DifficultyLevel].color }} />
-                  )}
-                  {d}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={FILTER_LBL}>Goal type</div>
-            {goalFilter && (
-              <button
-                onClick={() => setGoalFilter('')}
-                style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--text-mute)', cursor: 'pointer', padding: 0 }}
-              >
-                clear
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-            {GOALS.map((g) => (
-              <button
-                key={g.value}
-                onClick={() => setGoalFilter(goalFilter === g.value ? '' : g.value)}
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: 999,
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: goalFilter === g.value
-                    ? '1px solid var(--gold)'
-                    : '1px solid var(--border)',
-                  background: goalFilter === g.value
-                    ? 'color-mix(in oklch, var(--gold) 18%, transparent)'
-                    : 'transparent',
-                  color: goalFilter === g.value ? 'var(--gold)' : 'var(--text-dim)',
-                }}
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      {/* Grid */}
-      <div style={{ padding: '24px 32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div>
-            <h1 className="display" style={{ fontSize: 28, margin: 0, fontWeight: 700 }}>Challenge library</h1>
-            <p style={{ color: 'var(--text-mute)', fontSize: 13, margin: '4px 0 0' }}>
-              {loading ? 'Loading…' : `Showing ${displayed.length}${searchQuery ? '' : ` of ${total}`} challenges`}
-              {diff !== 'All' && ` · ${diff}`}
-              {goalFilter && ` · ${GOALS.find(g => g.value === goalFilter)?.label}`}
-              {searchQuery && ` · "${searchQuery}"`}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <button
-              className="show-mobile-only"
-              onClick={() => setFiltersOpen((o) => !o)}
-              aria-label={filtersOpen ? 'Hide filters' : 'Show filters'}
-              style={{
-                alignItems: 'center',
-                gap: 6,
-                padding: '7px 12px',
-                borderRadius: 8,
-                background: filtersOpen ? 'var(--gold)' : 'var(--bg-2)',
-                border: '1px solid var(--border)',
-                color: filtersOpen ? 'oklch(0.18 0.02 75)' : 'var(--text)',
-                fontSize: 12.5,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              <Icon.filter /> Filters
-            </button>
-            <span className="hide-mobile" style={{ fontSize: 12, color: 'var(--text-mute)' }}>Sort by</span>
-            <button className="hide-mobile" style={SORT_BTN}>Trending <Icon.chevDown /></button>
-          </div>
-        </div>
-        {/* Search bar */}
-        <div style={{ position: 'relative', marginBottom: 20 }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-mute)', pointerEvents: 'none' }}>
-            <Icon.search />
-          </span>
-          <input
-            type="text"
-            placeholder="Search by title, keyword, or category…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '9px 36px',
-              borderRadius: 9,
-              background: 'var(--bg-2)',
-              border: '1px solid var(--border)',
-              fontSize: 13,
-              color: 'var(--text)',
-              boxSizing: 'border-box',
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              style={{
-                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', padding: 2,
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
-          )}
-        </div>
-
-        {error && (
-          <div
-            style={{
-              marginBottom: 18,
-              padding: '10px 12px',
-              borderRadius: 8,
-              background: 'color-mix(in oklch, var(--d-expert) 12%, transparent)',
-              border: '1px solid color-mix(in oklch, var(--d-expert) 35%, transparent)',
-              color: 'var(--d-expert)',
-              fontSize: 12.5,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>Loading challenges…</div>
-        ) : displayed.length === 0 ? (
-          <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>
-            {searchQuery ? `No challenges match "${searchQuery}".` : 'No challenges match these filters.'}
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            {displayed.map((c) => {
-              const level = difficultyFromEnum(c.difficulty);
-              const done = completedIds.has(c.id);
-              const inProgressId = inProgressMap.get(c.id);
-              return (
-                <Card
-                  key={c.id}
-                  hover
-                  onClick={() => router.push(`/challenges/${c.id}`)}
-                  padding={0}
-                  style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', opacity: done && !inProgressId ? 0.82 : 1 }}
-                >
-                  <div style={{ height: 4, background: inProgressId ? 'var(--cool)' : done ? 'var(--emerald)' : DIFFICULTY[level].color }} />
-                  <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <DifficultyTag level={level} size="sm" />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {inProgressId && (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                            fontSize: 10.5, fontWeight: 700, color: 'var(--cool)',
-                            background: 'color-mix(in oklch, var(--cool) 14%, transparent)',
-                            border: '1px solid color-mix(in oklch, var(--cool) 35%, transparent)',
-                            padding: '3px 8px', borderRadius: 999,
-                          }}>
-                            <span style={{ width: 5, height: 5, borderRadius: 999, background: 'var(--cool)' }} />
-                            Active
-                          </span>
-                        )}
-                        {done && !inProgressId && (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                            fontSize: 10.5, fontWeight: 700, color: 'var(--emerald)',
-                            background: 'color-mix(in oklch, var(--emerald) 14%, transparent)',
-                            border: '1px solid color-mix(in oklch, var(--emerald) 35%, transparent)',
-                            padding: '3px 8px', borderRadius: 999,
-                          }}>
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                            Completed
-                          </span>
-                        )}
-                        <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700, letterSpacing: '0.06em' }}>
-                          {c.category.toUpperCase()}
-                        </span>
-                      </div>
+    <div>
+    
+          <div style={{ display: "flex", alignItems: "stretch", minHeight: "100%" }}>
+    
+            
+            <aside style={{ width: "236px", flexShrink: "0", borderRight: "1px solid #E7E7EC", padding: "36px 26px 40px 40px" }}>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.14em", textTransform: "uppercase", color: "#7A7A86", marginBottom: "14px" }}>Difficulty</div>
+              <nav style={{ display: "flex", flexDirection: "column", gap: "1px", marginBottom: "34px" }}>
+    <a href="#" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", textDecoration: "none", fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F", background: "#FAFAF8" }}>
+          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C2C2CC", display: "inline-block" }}></span>All
+        </a>
+    <a href="#" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", textDecoration: "none", fontSize: "13.5px", fontWeight: "500", color: "#3A3A44", background: "transparent" }}>
+          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4F9D6C", display: "inline-block" }}></span>Rookie
+        </a>
+    <a href="#" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", textDecoration: "none", fontSize: "13.5px", fontWeight: "500", color: "#3A3A44", background: "transparent" }}>
+          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#6D9A4E", display: "inline-block" }}></span>Easy
+        </a>
+    <a href="#" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", textDecoration: "none", fontSize: "13.5px", fontWeight: "500", color: "#3A3A44", background: "transparent" }}>
+          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#CC7E55", display: "inline-block" }}></span>Medium
+        </a>
+    <a href="#" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", textDecoration: "none", fontSize: "13.5px", fontWeight: "500", color: "#3A3A44", background: "transparent" }}>
+          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C2604A", display: "inline-block" }}></span>Hard
+        </a>
+    <a href="#" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 10px", borderRadius: "8px", textDecoration: "none", fontSize: "13.5px", fontWeight: "500", color: "#3A3A44", background: "transparent" }}>
+          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#A93F37", display: "inline-block" }}></span>Expert
+        </a>
+              </nav>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.14em", textTransform: "uppercase", color: "#7A7A86", marginBottom: "14px" }}>Goal type</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+    <a href="#" style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", border: "1px solid #E7E7EC", borderRadius: "100px", textDecoration: "none", fontSize: "12.5px", fontWeight: "500", color: "#3A3A44" }}>Qualify</a>
+    <a href="#" style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", border: "1px solid #E7E7EC", borderRadius: "100px", textDecoration: "none", fontSize: "12.5px", fontWeight: "500", color: "#3A3A44" }}>Book call</a>
+    <a href="#" style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", border: "1px solid #E7E7EC", borderRadius: "100px", textDecoration: "none", fontSize: "12.5px", fontWeight: "500", color: "#3A3A44" }}>Proposal</a>
+    <a href="#" style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", border: "1px solid #E7E7EC", borderRadius: "100px", textDecoration: "none", fontSize: "12.5px", fontWeight: "500", color: "#3A3A44" }}>Decision-maker</a>
+    <a href="#" style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", border: "1px solid #E7E7EC", borderRadius: "100px", textDecoration: "none", fontSize: "12.5px", fontWeight: "500", color: "#3A3A44" }}>Close</a>
+    <a href="#" style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", border: "1px solid #E7E7EC", borderRadius: "100px", textDecoration: "none", fontSize: "12.5px", fontWeight: "500", color: "#3A3A44" }}>Win-back</a>
+              </div>
+            </aside>
+    
+            
+            <div style={{ flex: "1", minWidth: "0", padding: "36px 40px 72px" }}>
+    
+              
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "24px", flexWrap: "wrap", marginBottom: "8px" }}>
+                <div>
+                  <h1 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", letterSpacing: "-0.03em", lineHeight: "1.05", color: "#0B0B0F" }}>Challenge library</h1>
+                  <p style={{ margin: "9px 0 0", fontFamily: "'Space Mono',monospace", fontSize: "11.5px", letterSpacing: "0.06em", textTransform: "uppercase", color: "#9A9AA4" }}>Showing 4 of 4 challenges</p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ position: "relative", width: "230px" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9A9AA4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+                    <input placeholder="Search keywords…" style={{ width: "100%", height: "36px", padding: "0 12px 0 35px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#FAFAF8", fontFamily: "Inter,sans-serif", fontSize: "13px", color: "#0B0B0F", outline: "none" }} />
+                  </div>
+                  <button style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "36px", padding: "0 14px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer" }}>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "#9A9AA4" }}>Sort</span>
+                    Trending
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+    
+              
+              <div style={{ marginTop: "26px" }}>
+    
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "32px", alignItems: "center", padding: "24px 4px", borderTop: "1px solid #E7E7EC" }}>
+                  <div style={{ minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "10px" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#3A3A44" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C2604A", display: "inline-block" }}></span>Hard</span>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", letterSpacing: "0.08em", textTransform: "uppercase", color: "#9A9AA4" }}>IT Sales</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 9px 3px 7px", borderRadius: "100px", background: "rgba(91,75,245,0.08)", color: "#3A2DC4", fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Completed</span>
                     </div>
-                    <div>
-                      <h3 className="display" style={{ fontSize: 17, margin: '0 0 6px', fontWeight: 600, letterSpacing: '-0.01em' }}>{c.title}</h3>
-                      <p style={{ fontSize: 12.5, color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>{c.brief}</p>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 8, borderTop: '1px solid var(--border-soft)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-mute)' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon.target /> Goal</span>
-                        <span style={{ color: 'var(--text-dim)' }}>{c.goalType.replace(/_/g, ' ').toLowerCase()}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-mute)' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon.clock /> Persona</span>
-                        <span style={{ color: 'var(--text-dim)' }}>{c.persona?.name ?? '—'}</span>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                    <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "19px", letterSpacing: "-0.02em", color: "#0B0B0F", marginBottom: "7px" }}>The Skeptical CTO</div>
+                    <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86", maxWidth: "560px", marginBottom: "15px" }}>A technical buyer who has seen every pitch. Earn credibility before you ask for anything.</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "26px" }}>
                       <div>
-                        <div className="display mono" style={{ fontWeight: 700, color: inProgressId ? 'var(--cool)' : done ? 'var(--emerald)' : 'var(--gold)', fontSize: 22 }}>+{c.basePoints}</div>
-                        <div style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>base points</div>
+                        <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "4px" }}>Goal</div>
+                        <div style={{ fontSize: "13px", fontWeight: "500", color: "#0B0B0F" }}>Send proposal</div>
                       </div>
-                      {inProgressId ? (
-                        <span
-                          role="button"
-                          onClick={(e) => { e.stopPropagation(); router.push(`/play/${inProgressId}`); }}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 6,
-                            padding: '7px 14px', borderRadius: 10,
-                            background: 'color-mix(in oklch, var(--cool) 18%, transparent)',
-                            border: '1px solid color-mix(in oklch, var(--cool) 40%, transparent)',
-                            color: 'var(--cool)', fontSize: 12.5, fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="5 3 19 12 5 21 5 3" />
-                          </svg>
-                          Resume
-                        </span>
-                      ) : done ? (
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          padding: '7px 14px', borderRadius: 10,
-                          background: 'color-mix(in oklch, var(--emerald) 14%, transparent)',
-                          border: '1px solid color-mix(in oklch, var(--emerald) 35%, transparent)',
-                          color: 'var(--emerald)', fontSize: 12.5, fontWeight: 600,
-                        }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          Done
-                        </span>
-                      ) : (
-                        <Btn kind="secondary" size="sm" icon={<Icon.arrow />}>Start</Btn>
-                      )}
+                      <div style={{ width: "1px", height: "26px", background: "#E7E7EC" }}></div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                        <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "11px" }}>R</span>
+                        <div>
+                          <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "3px" }}>Persona</div>
+                          <div style={{ fontSize: "13px", fontWeight: "500", color: "#0B0B0F" }}>Rajesh Iyer</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </Card>
-              );
-            })}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "14px" }}>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "24px", letterSpacing: "-0.02em", color: "#F5A524" }}>+420</span>
+                      <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "1px" }}>Base points</div>
+                    </div>
+                    <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#3A3A44", border: "1px solid #E7E7EC", borderRadius: "10px", padding: "9px 16px", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B4BF5" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Done</button>
+                  </div>
+                </div>
+    
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "32px", alignItems: "center", padding: "24px 4px", borderTop: "1px solid #E7E7EC" }}>
+                  <div style={{ minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "10px" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#3A3A44" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C2604A", display: "inline-block" }}></span>Hard</span>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", letterSpacing: "0.08em", textTransform: "uppercase", color: "#9A9AA4" }}>SaaS</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 9px 3px 7px", borderRadius: "100px", background: "rgba(91,75,245,0.08)", color: "#3A2DC4", fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Completed</span>
+                    </div>
+                    <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "19px", letterSpacing: "-0.02em", color: "#0B0B0F", marginBottom: "7px" }}>The Gatekeeper</div>
+                    <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86", maxWidth: "560px", marginBottom: "15px" }}>An executive assistant stands between you and the economic buyer. Get past, gracefully.</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "26px" }}>
+                      <div>
+                        <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "4px" }}>Goal</div>
+                        <div style={{ fontSize: "13px", fontWeight: "500", color: "#0B0B0F" }}>Reach decision-maker</div>
+                      </div>
+                      <div style={{ width: "1px", height: "26px", background: "#E7E7EC" }}></div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                        <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "11px" }}>A</span>
+                        <div>
+                          <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "3px" }}>Persona</div>
+                          <div style={{ fontSize: "13px", fontWeight: "500", color: "#0B0B0F" }}>Anjali Desai</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "14px" }}>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "24px", letterSpacing: "-0.02em", color: "#F5A524" }}>+380</span>
+                      <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "1px" }}>Base points</div>
+                    </div>
+                    <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#fff", color: "#3A3A44", border: "1px solid #E7E7EC", borderRadius: "10px", padding: "9px 16px", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B4BF5" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Done</button>
+                  </div>
+                </div>
+    
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "32px", alignItems: "center", padding: "24px 4px", borderTop: "1px solid #E7E7EC" }}>
+                  <div style={{ minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "10px" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#3A3A44" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#CC7E55", display: "inline-block" }}></span>Medium</span>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", letterSpacing: "0.08em", textTransform: "uppercase", color: "#9A9AA4" }}>SaaS</span>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#9A9AA4" }}>Not started</span>
+                    </div>
+                    <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "19px", letterSpacing: "-0.02em", color: "#0B0B0F", marginBottom: "7px" }}>The Pricing Pushback</div>
+                    <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86", maxWidth: "560px", marginBottom: "15px" }}>The deal is warm until the number lands. Defend value without caving on discount.</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "26px" }}>
+                      <div>
+                        <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "4px" }}>Goal</div>
+                        <div style={{ fontSize: "13px", fontWeight: "500", color: "#0B0B0F" }}>Defend value</div>
+                      </div>
+                      <div style={{ width: "1px", height: "26px", background: "#E7E7EC" }}></div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                        <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "11px" }}>V</span>
+                        <div>
+                          <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "3px" }}>Persona</div>
+                          <div style={{ fontSize: "13px", fontWeight: "500", color: "#0B0B0F" }}>Vikram Singh</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "14px" }}>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "24px", letterSpacing: "-0.02em", color: "#F5A524" }}>+300</span>
+                      <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "1px" }}>Base points</div>
+                    </div>
+                    <button style={{ display: "inline-flex", alignItems: "center", gap: "7px", background: "#0B0B0F", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+            Start<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></button>
+                  </div>
+                </div>
+    
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "32px", alignItems: "center", padding: "24px 4px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC" }}>
+                  <div style={{ minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "10px" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#3A3A44" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#A93F37", display: "inline-block" }}></span>Expert</span>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", letterSpacing: "0.08em", textTransform: "uppercase", color: "#9A9AA4" }}>IT Sales</span>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", color: "#9A9AA4" }}>Not started</span>
+                    </div>
+                    <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "19px", letterSpacing: "-0.02em", color: "#0B0B0F", marginBottom: "7px" }}>The Committee</div>
+                    <div style={{ fontSize: "13.5px", lineHeight: "1.5", color: "#7A7A86", maxWidth: "560px", marginBottom: "15px" }}>Five stakeholders, five agendas. Align the room and earn the next meeting.</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "26px" }}>
+                      <div>
+                        <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "4px" }}>Goal</div>
+                        <div style={{ fontSize: "13px", fontWeight: "500", color: "#0B0B0F" }}>Book discovery call</div>
+                      </div>
+                      <div style={{ width: "1px", height: "26px", background: "#E7E7EC" }}></div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                        <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#EFEFF3", color: "#3A3A44", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "11px" }}>M</span>
+                        <div>
+                          <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "3px" }}>Persona</div>
+                          <div style={{ fontSize: "13px", fontWeight: "500", color: "#0B0B0F" }}>Meera Krishnan</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "14px" }}>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "24px", letterSpacing: "-0.02em", color: "#F5A524" }}>+800</span>
+                      <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "1px" }}>Base points</div>
+                    </div>
+                    <button style={{ display: "inline-flex", alignItems: "center", gap: "7px", background: "#0B0B0F", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+            Start<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></button>
+                  </div>
+                </div>
+              </div>
+    
+            </div>
           </div>
-        )}
-
-        {/* Load more */}
-        {!loading && !searchQuery && items.length < total && (
-          <div style={{ textAlign: 'center', marginTop: 28 }}>
-            <Btn
-              kind="secondary"
-              size="md"
-              onClick={loadMore}
-            >
-              {loadingMore ? 'Loading…' : `Load more (${total - items.length} remaining)`}
-            </Btn>
-          </div>
-        )}
-      </div>
+        
     </div>
   );
 }
-
-const FILTER_LBL: CSSProperties = {
-  fontSize: 11,
-  color: 'var(--text-mute)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  fontWeight: 600,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-};
-
-const SORT_BTN: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '7px 12px',
-  borderRadius: 8,
-  background: 'var(--bg-2)',
-  border: '1px solid var(--border)',
-  color: 'var(--text)',
-  fontSize: 12.5,
-  fontWeight: 600,
-};

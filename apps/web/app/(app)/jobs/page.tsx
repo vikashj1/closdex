@@ -1,414 +1,109 @@
 'use client';
 
-import { CSSProperties, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { Icon } from '@/components/ui/Icon';
-import { ApiError, JobSummary, api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
+import { useRequireAuth } from '@/lib/auth';
 
-interface ApplicationRow { id: string; status: string; job: JobSummary; createdAt: string }
-
-type Tab = 'all' | 'saved';
-
-const SPEC_TAGS = ['IT Sales', 'Cloud', 'DevTools', 'Cybersec', 'SaaS', 'FinTech', 'Healthcare'];
+// Jobs — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
 export default function JobsPage() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-  const [jobs, setJobs] = useState<JobSummary[]>([]);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [savedJobs, setSavedJobs] = useState<Array<JobSummary & { savedAt: string }>>([]);
-  const [apps, setApps] = useState<ApplicationRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [applying, setApplying] = useState<string | null>(null);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>('all');
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [locationSearch, setLocationSearch] = useState('');
-  const [tagFilter, setTagFilter] = useState('');
-
-  async function load(tag?: string) {
-    setLoading(true);
-    setError(null);
-    const calls: Promise<unknown>[] = [
-      api.jobs.list({ perPage: 30, specializationTag: tag || undefined }),
-    ];
-    if (user) {
-      calls.push(api.applications.mine(), api.jobs.savedJobIds());
-    }
-    const results = await Promise.allSettled(calls);
-    const jRes = results[0];
-    if (jRes.status === 'fulfilled') {
-      setJobs((jRes.value as { items: JobSummary[] }).items);
-    } else {
-      setError(jRes.reason instanceof ApiError ? jRes.reason.message : 'Could not load jobs.');
-    }
-    if (user) {
-      const aRes = results[1];
-      const idsRes = results[2];
-      if (aRes && aRes.status === 'fulfilled') setApps(aRes.value as ApplicationRow[]);
-      if (idsRes && idsRes.status === 'fulfilled') setSavedIds(new Set(idsRes.value as string[]));
-    }
-    setLoading(false);
-  }
-
-  async function loadSaved() {
-    const res = await api.jobs.listSaved().catch(() => []);
-    setSavedJobs(res);
-  }
-
-  useEffect(() => {
-    if (authLoading) return;
-    void load(tagFilter);
-  }, [authLoading, user, tagFilter]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!user || tab !== 'saved') return;
-    void loadSaved();
-  }, [user, tab]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function apply(jobId: string) {
-    if (!user) {
-      router.push(`/login?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`);
-      return;
-    }
-    setApplying(jobId);
-    try {
-      await api.jobs.apply(jobId);
-      await load();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Apply failed.');
-    } finally {
-      setApplying(null);
-    }
-  }
-
-  async function toggleSave(jobId: string) {
-    if (!user) {
-      router.push(`/login?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`);
-      return;
-    }
-    setSavingId(jobId);
-    try {
-      if (savedIds.has(jobId)) {
-        await api.jobs.unsave(jobId);
-        setSavedIds((prev) => { const n = new Set(prev); n.delete(jobId); return n; });
-        setSavedJobs((prev) => prev.filter((j) => j.id !== jobId));
-      } else {
-        await api.jobs.save(jobId);
-        setSavedIds((prev) => new Set([...prev, jobId]));
-      }
-    } catch {
-      // silently ignore
-    } finally {
-      setSavingId(null);
-    }
-  }
-
-  if (authLoading) {
-    return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
-  }
-
-  const appByJob = new Map(apps.map((a) => [a.job.id, a]));
-  const pipeline = [
-    { l: 'Applied',     v: apps.filter((a) => a.status === 'APPLIED').length,     c: 'var(--cool)' },
-    { l: 'Viewed',      v: apps.filter((a) => a.status === 'VIEWED').length,      c: 'var(--text-dim)' },
-    { l: 'Shortlisted', v: apps.filter((a) => a.status === 'SHORTLISTED').length, c: 'var(--gold)' },
-    { l: 'Interview',   v: apps.filter((a) => a.status === 'INTERVIEW').length,   c: 'var(--text-mute)' },
-    { l: 'Offer',       v: apps.filter((a) => a.status === 'OFFER').length,       c: 'var(--emerald)' },
-  ];
-
-  const baseJobs = tab === 'saved' ? savedJobs : jobs;
-  const displayJobs = useMemo(() => {
-    const q = locationSearch.trim().toLowerCase();
-    if (!q) return baseJobs;
-    return baseJobs.filter((j) => j.location?.toLowerCase().includes(q));
-  }, [baseJobs, locationSearch]);
-
+  useRequireAuth('SALESPERSON');
   return (
-    <div style={{ padding: '28px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
-        <div>
-          <h1 className="display" style={{ fontSize: 32, margin: 0, fontWeight: 700 }}>Jobs for you</h1>
-          <p style={{ color: 'var(--text-mute)', fontSize: 13, margin: '4px 0 0' }}>
-            {loading ? 'Loading…' : `${displayJobs.length} listing${displayJobs.length !== 1 ? 's' : ''}`}
-            {tagFilter && ` · ${tagFilter}`}
-            {locationSearch && ` · "${locationSearch}"`}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <Btn
-            kind={filterOpen ? 'primary' : 'ghost'}
-            size="sm"
-            icon={<Icon.filter />}
-            onClick={() => setFilterOpen((v) => !v)}
-          >
-            {tagFilter || locationSearch ? 'Filters (on)' : 'Filters'}
-          </Btn>
-          <Btn kind="ghost" size="sm" onClick={() => router.push('/applications')}>Applications ({apps.length})</Btn>
-        </div>
-      </div>
-
-      {/* Filter bar */}
-      {filterOpen && (
-        <div
-          style={{
-            marginBottom: 18,
-            padding: '14px 16px',
-            borderRadius: 10,
-            background: 'var(--bg-2)',
-            border: '1px solid var(--border-soft)',
-            display: 'flex',
-            gap: 20,
-            flexWrap: 'wrap',
-            alignItems: 'flex-end',
-          }}
-        >
-          {/* Location text filter */}
-          <div style={{ flex: '1 1 200px', minWidth: 160 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
-              Location
+    <div>
+    
+          <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "34px 40px 72px" }}>
+    
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "24px", flexWrap: "wrap", marginBottom: "30px" }}>
+              <div>
+                <h1 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "33px", letterSpacing: "-0.03em", lineHeight: "1.05", color: "#0B0B0F" }}>Jobs for you</h1>
+                <p style={{ margin: "10px 0 0", fontFamily: "'Space Mono',monospace", fontSize: "11.5px", letterSpacing: "0.06em", textTransform: "uppercase", color: "#9A9AA4" }}>5 listings</p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <button style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "38px", padding: "0 15px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="14" y1="4" y2="4" /><line x1="10" x2="3" y1="4" y2="4" /><line x1="21" x2="12" y1="12" y2="12" /><line x1="8" x2="3" y1="12" y2="12" /><line x1="21" x2="16" y1="20" y2="20" /><line x1="12" x2="3" y1="20" y2="20" /><line x1="14" x2="14" y1="2" y2="6" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="16" x2="16" y1="18" y2="22" /></svg>Filters</button>
+                <a href="Closdex Applications.dc.html" style={{ display: "inline-flex", alignItems: "center", gap: "9px", height: "38px", padding: "0 16px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#0B0B0F", textDecoration: "none" }}>Applications<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", color: "#fff", background: "#5B4BF5", borderRadius: "7px", padding: "1px 7px" }}>1</span></a>
+              </div>
             </div>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                placeholder="e.g. Bangalore, Remote…"
-                value={locationSearch}
-                onChange={(e) => setLocationSearch(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '7px 28px 7px 10px',
-                  borderRadius: 7,
-                  background: 'var(--bg)',
-                  border: '1px solid var(--border)',
-                  fontSize: 12.5,
-                  color: 'var(--text)',
-                  boxSizing: 'border-box',
-                }}
-              />
-              {locationSearch && (
-                <button
-                  onClick={() => setLocationSearch('')}
-                  style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', padding: 0 }}
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Specialization tag chips */}
-          <div style={{ flex: '2 1 300px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
-              Specialization
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {SPEC_TAGS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTagFilter(tagFilter === t ? '' : t)}
-                  style={{
-                    padding: '5px 11px',
-                    borderRadius: 999,
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: tagFilter === t ? '1px solid var(--cool)' : '1px solid var(--border)',
-                    background: tagFilter === t ? 'color-mix(in oklch, var(--cool) 18%, transparent)' : 'transparent',
-                    color: tagFilter === t ? 'var(--cool)' : 'var(--text-dim)',
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {(tagFilter || locationSearch) && (
-            <button
-              onClick={() => { setTagFilter(''); setLocationSearch(''); }}
-              style={{ background: 'none', border: 'none', fontSize: 12, color: 'var(--text-mute)', cursor: 'pointer', whiteSpace: 'nowrap', padding: '0 4px' }}
-            >
-              Clear all
-            </button>
-          )}
-        </div>
-      )}
-
-      {error && (
-        <div
-          style={{
-            marginBottom: 18,
-            padding: '10px 12px',
-            borderRadius: 8,
-            background: 'color-mix(in oklch, var(--d-expert) 12%, transparent)',
-            border: '1px solid color-mix(in oklch, var(--d-expert) 35%, transparent)',
-            color: 'var(--d-expert)',
-            fontSize: 12.5,
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      <Card padding={18} style={{ marginBottom: 22 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
-          Your application pipeline
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-          {pipeline.map((s) => (
-            <div key={s.l} style={{ padding: 12, borderRadius: 8, background: 'var(--bg-2)', borderLeft: `3px solid ${s.c}` }}>
-              <div className="display mono" style={{ fontSize: 22, fontWeight: 700, color: s.c }}>{s.v}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-dim)' }}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 18, borderBottom: '1px solid var(--border-soft)' }}>
-        {([['all', 'All Jobs'], ['saved', `Saved (${savedIds.size})`]] as const).map(([t, label]) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              padding: '8px 18px',
-              border: 'none',
-              borderBottom: tab === t ? '2px solid var(--gold)' : '2px solid transparent',
-              background: 'transparent',
-              color: tab === t ? 'var(--gold)' : 'var(--text-dim)',
-              fontSize: 13,
-              fontWeight: tab === t ? 700 : 500,
-              cursor: 'pointer',
-              marginBottom: -1,
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {loading && tab === 'all' ? (
-        <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>Loading jobs…</div>
-      ) : displayJobs.length === 0 ? (
-        <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>
-          {tab === 'saved' ? 'No saved jobs yet. Bookmark listings to find them here.' : 'No active job listings.'}
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {displayJobs.map((j) => {
-            const existing = appByJob.get(j.id);
-            const isSaved = savedIds.has(j.id);
-            const initials = j.company.name
-              .split(/\s+/)
-              .map((w) => w[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase();
-            return (
-              <Card key={j.id} padding={20} hover>
-                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 18, alignItems: 'center' }}>
-                  <div
-                    style={{
-                      width: 52, height: 52, borderRadius: 12, background: 'var(--bg-2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 18, color: 'var(--text)',
-                      border: '1px solid var(--border-soft)',
-                    }}
-                  >
-                    {initials}
+    
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", letterSpacing: "0.14em", textTransform: "uppercase", color: "#7A7A86", marginBottom: "14px" }}>Application pipeline</div>
+            <section style={{ display: "flex", alignItems: "center", padding: "24px 8px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC", marginBottom: "40px" }}>
+                <div style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "7px", padding: "0 6px" }}><span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", letterSpacing: "-0.02em", color: "#0B0B0F" }}>1</span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#7A7A86" }}>Applied</span></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D8D8E0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: "0" }}><path d="m9 18 6-6-6-6" /></svg>
+                <div style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "7px", padding: "0 6px" }}><span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", letterSpacing: "-0.02em", color: "#0B0B0F" }}>1</span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#7A7A86" }}>Viewed</span></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D8D8E0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: "0" }}><path d="m9 18 6-6-6-6" /></svg>
+                <div style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "7px", padding: "0 6px" }}><span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", letterSpacing: "-0.02em", color: "#0B0B0F" }}>1</span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#7A7A86" }}>Shortlisted</span></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D8D8E0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: "0" }}><path d="m9 18 6-6-6-6" /></svg>
+                <div style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "7px", padding: "0 6px" }}><span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", letterSpacing: "-0.02em", color: "#0B0B0F" }}>1</span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#7A7A86" }}>Interview</span></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D8D8E0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: "0" }}><path d="m9 18 6-6-6-6" /></svg>
+                <div style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "7px", padding: "0 6px" }}><span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", letterSpacing: "-0.02em", color: "#F5A524" }}>1</span><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#7A7A86" }}>Offer</span></div>
+            </section>
+    
+            <nav style={{ display: "flex", alignItems: "center", gap: "26px", marginBottom: "8px" }}>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 2px", textDecoration: "none", fontSize: "14px", fontWeight: "600", color: "#0B0B0F", boxShadow: "inset 0 -2px 0 #0B0B0F" }}>All Jobs<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", color: "#0B0B0F" }}>5</span></a>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 2px", textDecoration: "none", fontSize: "14px", fontWeight: "600", color: "#7A7A86" }}>Saved<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", color: "#B6B6C0" }}>1</span></a>
+            </nav>
+    
+            <div style={{ marginTop: "14px" }}>
+    
+                <div style={{ display: "flex", alignItems: "center", gap: "18px", padding: "20px 4px", borderTop: "1px solid #E7E7EC" }}>
+                  <span style={{ width: "42px", height: "42px", borderRadius: "11px", background: "#0B0B0F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "14px", flexShrink: "0" }}>CV</span>
+                  <div style={{ flex: "1", minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}><span style={{ fontSize: "15px", fontWeight: "600", color: "#0B0B0F" }}>Enterprise Account Executive</span><span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "2px 9px 2px 7px", borderRadius: "100px", background: "rgba(31,138,91,0.1)", color: "#1F8A5B", fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase" }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Hired</span></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "9px", fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.03em", color: "#7A7A86" }}><span style={{ fontWeight: "700", color: "#3A3A44" }}>CVS</span><span style={{ color: "#D8D8E0" }}>·</span><span>Remote</span><span style={{ color: "#D8D8E0" }}>·</span><span>IT Sales</span></div>
                   </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <h3 className="display" style={{ fontSize: 17, margin: 0, fontWeight: 600 }}>{j.title}</h3>
-                      {existing && (
-                        <span
-                          style={{
-                            ...BADGE,
-                            color: 'var(--cool)',
-                            background: 'color-mix(in oklch, var(--cool) 14%, transparent)',
-                            border: '1px solid color-mix(in oklch, var(--cool) 35%, transparent)',
-                          }}
-                        >
-                          {existing.status}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: 14, fontSize: 12.5, color: 'var(--text-dim)', flexWrap: 'wrap', marginBottom: 8 }}>
-                      <span><strong style={{ color: 'var(--text)' }}>{j.company.name}</strong></span>
-                      {j.location && <span>• {j.location}</span>}
-                      {j.specializationTag && <span>• {j.specializationTag}</span>}
-                    </div>
-                    {(j.salaryMin || j.salaryMax) && (
-                      <span
-                        style={{
-                          ...BADGE,
-                          color: 'var(--emerald)',
-                          background: 'color-mix(in oklch, var(--emerald) 12%, transparent)',
-                          border: '1px solid color-mix(in oklch, var(--emerald) 30%, transparent)',
-                        }}
-                      >
-                        ₹{((j.salaryMin ?? 0) / 100000).toLocaleString()} – ₹{((j.salaryMax ?? 0) / 100000).toLocaleString()} LPA
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button
-                        onClick={() => toggleSave(j.id)}
-                        disabled={savingId === j.id}
-                        title={isSaved ? 'Unsave' : 'Save job'}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          width: 32, height: 32, borderRadius: 8,
-                          border: `1px solid ${isSaved ? 'color-mix(in oklch, var(--gold) 50%, transparent)' : 'var(--border)'}`,
-                          background: isSaved ? 'color-mix(in oklch, var(--gold) 14%, transparent)' : 'transparent',
-                          color: isSaved ? 'var(--gold)' : 'var(--text-mute)',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                        </svg>
-                      </button>
-                      <Btn kind="ghost" size="sm" onClick={() => router.push(`/jobs/${j.id}`)}>
-                        Details
-                      </Btn>
-                    </div>
-                    {existing ? (
-                      <Btn kind="secondary" size="sm" onClick={() => router.push('/applications')}>View status</Btn>
-                    ) : (
-                      <Btn
-                        kind="primary"
-                        size="sm"
-                        icon={<Icon.arrow />}
-                        onClick={() => apply(j.id)}
-                        disabled={applying === j.id}
-                      >
-                        {applying === j.id ? 'Applying…' : 'Apply 1-click'}
-                      </Btn>
-                    )}
-                  </div>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#0B0B0F", flexShrink: "0" }}>₹18–28 LPA</span>
+                  <button style={{ width: "38px", height: "38px", borderRadius: "10px", border: "1px solid #E7E7EC", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: "0" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A7A86" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg></button>
+                  <button style={{ height: "38px", padding: "0 16px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer", flexShrink: "0" }}>Details</button>
+                  <button style={{ height: "38px", padding: "0 18px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A2DC4", cursor: "pointer", flexShrink: "0" }}>View status</button>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+    
+                <div style={{ display: "flex", alignItems: "center", gap: "18px", padding: "20px 4px", borderTop: "1px solid #E7E7EC" }}>
+                  <span style={{ width: "42px", height: "42px", borderRadius: "11px", background: "#0B0B0F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "14px", flexShrink: "0" }}>CV</span>
+                  <div style={{ flex: "1", minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}><span style={{ fontSize: "15px", fontWeight: "600", color: "#0B0B0F" }}>SaaS Sales Manager</span></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "9px", fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.03em", color: "#7A7A86" }}><span style={{ fontWeight: "700", color: "#3A3A44" }}>CVS</span><span style={{ color: "#D8D8E0" }}>·</span><span>Mumbai</span><span style={{ color: "#D8D8E0" }}>·</span><span>IT Sales</span></div>
+                  </div>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#0B0B0F", flexShrink: "0" }}>₹22–34 LPA</span>
+                  <button style={{ width: "38px", height: "38px", borderRadius: "10px", border: "1px solid #E7E7EC", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: "0" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A7A86" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg></button>
+                  <button style={{ height: "38px", padding: "0 16px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer", flexShrink: "0" }}>Details</button>
+                  <button style={{ height: "38px", padding: "0 18px", border: "none", borderRadius: "10px", background: "#0B0B0F", color: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", cursor: "pointer", flexShrink: "0", display: "inline-flex", alignItems: "center", gap: "7px" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m13 2-3 7h4l-3 7" /><path d="M3 12h2" /><path d="M19 12h2" /></svg>Apply</button>
+                </div>
+    
+                <div style={{ display: "flex", alignItems: "center", gap: "18px", padding: "20px 4px", borderTop: "1px solid #E7E7EC" }}>
+                  <span style={{ width: "42px", height: "42px", borderRadius: "11px", background: "#0B0B0F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "14px", flexShrink: "0" }}>CV</span>
+                  <div style={{ flex: "1", minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}><span style={{ fontSize: "15px", fontWeight: "600", color: "#0B0B0F" }}>SDR Team Lead</span></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "9px", fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.03em", color: "#7A7A86" }}><span style={{ fontWeight: "700", color: "#3A3A44" }}>CVS</span><span style={{ color: "#D8D8E0" }}>·</span><span>Bengaluru</span><span style={{ color: "#D8D8E0" }}>·</span><span>IT Sales</span></div>
+                  </div>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#0B0B0F", flexShrink: "0" }}>₹12–18 LPA</span>
+                  <button style={{ width: "38px", height: "38px", borderRadius: "10px", border: "1px solid #E7E7EC", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: "0" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A7A86" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg></button>
+                  <button style={{ height: "38px", padding: "0 16px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer", flexShrink: "0" }}>Details</button>
+                  <button style={{ height: "38px", padding: "0 18px", border: "none", borderRadius: "10px", background: "#0B0B0F", color: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", cursor: "pointer", flexShrink: "0", display: "inline-flex", alignItems: "center", gap: "7px" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m13 2-3 7h4l-3 7" /><path d="M3 12h2" /><path d="M19 12h2" /></svg>Apply</button>
+                </div>
+    
+                <div style={{ display: "flex", alignItems: "center", gap: "18px", padding: "20px 4px", borderTop: "1px solid #E7E7EC" }}>
+                  <span style={{ width: "42px", height: "42px", borderRadius: "11px", background: "#0B0B0F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "14px", flexShrink: "0" }}>CV</span>
+                  <div style={{ flex: "1", minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}><span style={{ fontSize: "15px", fontWeight: "600", color: "#0B0B0F" }}>Field Sales Executive</span></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "9px", fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.03em", color: "#7A7A86" }}><span style={{ fontWeight: "700", color: "#3A3A44" }}>CVS</span><span style={{ color: "#D8D8E0" }}>·</span><span>Pune</span><span style={{ color: "#D8D8E0" }}>·</span><span>IT Sales</span></div>
+                  </div>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#0B0B0F", flexShrink: "0" }}>₹9–14 LPA</span>
+                  <button style={{ width: "38px", height: "38px", borderRadius: "10px", border: "1px solid #E7E7EC", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: "0" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A7A86" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg></button>
+                  <button style={{ height: "38px", padding: "0 16px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer", flexShrink: "0" }}>Details</button>
+                  <button style={{ height: "38px", padding: "0 18px", border: "none", borderRadius: "10px", background: "#0B0B0F", color: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", cursor: "pointer", flexShrink: "0", display: "inline-flex", alignItems: "center", gap: "7px" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m13 2-3 7h4l-3 7" /><path d="M3 12h2" /><path d="M19 12h2" /></svg>Apply</button>
+                </div>
+    
+                <div style={{ display: "flex", alignItems: "center", gap: "18px", padding: "20px 4px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC" }}>
+                  <span style={{ width: "42px", height: "42px", borderRadius: "11px", background: "#0B0B0F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "14px", flexShrink: "0" }}>CV</span>
+                  <div style={{ flex: "1", minWidth: "0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}><span style={{ fontSize: "15px", fontWeight: "600", color: "#0B0B0F" }}>Inside Sales Specialist</span></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "9px", fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.03em", color: "#7A7A86" }}><span style={{ fontWeight: "700", color: "#3A3A44" }}>CVS</span><span style={{ color: "#D8D8E0" }}>·</span><span>Hyderabad</span><span style={{ color: "#D8D8E0" }}>·</span><span>IT Sales</span></div>
+                  </div>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#0B0B0F", flexShrink: "0" }}>₹8–12 LPA</span>
+                  <button style={{ width: "38px", height: "38px", borderRadius: "10px", border: "1px solid #5B4BF5", background: "rgba(91,75,245,0.07)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: "0" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="#5B4BF5" stroke="#5B4BF5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg></button>
+                  <button style={{ height: "38px", padding: "0 16px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", color: "#3A3A44", cursor: "pointer", flexShrink: "0" }}>Details</button>
+                  <button style={{ height: "38px", padding: "0 18px", border: "none", borderRadius: "10px", background: "#0B0B0F", color: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13px", fontWeight: "600", cursor: "pointer", flexShrink: "0", display: "inline-flex", alignItems: "center", gap: "7px" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m13 2-3 7h4l-3 7" /><path d="M3 12h2" /><path d="M19 12h2" /></svg>Apply</button>
+                </div>
+            </div>
+    
+          </div>
+        
     </div>
   );
 }
-
-const BADGE: CSSProperties = {
-  padding: '4px 10px',
-  borderRadius: 999,
-  fontSize: 11.5,
-  fontWeight: 600,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 4,
-};

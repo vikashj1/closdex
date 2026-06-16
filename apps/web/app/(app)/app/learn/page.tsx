@@ -1,219 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { Chip } from '@/components/ui/Chip';
-import { Icon } from '@/components/ui/Icon';
-import { ApiError, LearningTrackSummary, TrackProgress, api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
-import { PublicLearnView } from '@/components/marketing/PublicLearnView';
+import { useRequireAuth } from '@/lib/auth';
+
+// Learn — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
 export default function LearnPage() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-
-  const [tracks, setTracks] = useState<LearningTrackSummary[]>([]);
-  const [progressMap, setProgressMap] = useState<Map<string, TrackProgress>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (authLoading) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    const calls: Promise<unknown>[] = [api.learning.listTracks()];
-    if (user) calls.push(api.learning.myProgress());
-
-    Promise.all(calls)
-      .then((results) => {
-        if (cancelled) return;
-        setTracks(results[0] as LearningTrackSummary[]);
-        if (user) {
-          const progressData = results[1] as TrackProgress[];
-          const map = new Map<string, TrackProgress>();
-          for (const p of progressData) {
-            map.set(p.trackId, p);
-          }
-          setProgressMap(map);
-        }
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : 'Could not load learning tracks.');
-        setLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, [authLoading, user]);
-
-  if (authLoading) {
-    return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
-  }
-  if (!user) return <PublicLearnView />;
-
+  useRequireAuth('SALESPERSON');
   return (
-    <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Header */}
-      <div>
-        <h1 className="display" style={{ fontSize: 32, margin: 0, fontWeight: 700, letterSpacing: '-0.025em' }}>
-          Learning Hub
-        </h1>
-        <p style={{ color: 'var(--text-dim)', margin: '6px 0 0', fontSize: 14 }}>
-          Improve your sales craft. Earn points for every quiz you pass.
-        </p>
-      </div>
-
-      {error && (
-        <div
-          style={{
-            padding: '10px 14px',
-            borderRadius: 8,
-            background: 'color-mix(in oklch, var(--d-expert) 12%, transparent)',
-            border: '1px solid color-mix(in oklch, var(--d-expert) 35%, transparent)',
-            color: 'var(--d-expert)',
-            fontSize: 12.5,
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>Loading tracks…</div>
-      ) : tracks.length === 0 ? (
-        <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>
-          No learning tracks yet — check back soon.
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
-          {tracks.map((track) => {
-            const progress = progressMap.get(track.id);
-            const totalTutorials = track.tutorials.length;
-            const completedCount = progress?.completedTutorialIds.length ?? 0;
-            const pct = totalTutorials > 0 ? Math.round((completedCount / totalTutorials) * 100) : 0;
-            const isComplete = totalTutorials > 0 && completedCount >= totalTutorials;
-            const hasProgress = completedCount > 0;
-
-            return (
-              <Card key={track.id} padding={20} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* Title row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                  <h2
-                    className="display"
-                    style={{ fontSize: 18, margin: 0, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1.3 }}
-                  >
-                    {track.title}
-                  </h2>
-                  <span
-                    style={{
-                      flexShrink: 0,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '3px 9px',
-                      borderRadius: 999,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      background: 'color-mix(in oklch, var(--cool) 14%, transparent)',
-                      color: 'var(--cool)',
-                      border: '1px solid color-mix(in oklch, var(--cool) 28%, transparent)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {track.category}
-                  </span>
-                </div>
-
-                {/* Description */}
-                <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: 0, lineHeight: 1.55 }}>
-                  {track.description}
-                </p>
-
-                {/* Progress bar */}
-                {totalTutorials > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={{ height: 6, borderRadius: 999, background: 'var(--bg-2)', overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          width: `${pct}%`,
-                          height: '100%',
-                          borderRadius: 999,
-                          background: 'var(--gold)',
-                          transition: 'width 0.3s ease',
-                        }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="mono" style={{ fontSize: 11.5, color: 'var(--text-mute)' }}>
-                        {completedCount} / {totalTutorials} tutorials
-                      </span>
-                      <span className="mono" style={{ fontSize: 11.5, color: 'var(--gold)', fontWeight: 600 }}>
-                        {pct}% complete
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* CTA row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 4 }}>
-                  {isComplete && (
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        padding: '3px 10px',
-                        borderRadius: 999,
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        background: 'color-mix(in oklch, var(--emerald) 14%, transparent)',
-                        color: 'var(--emerald)',
-                        border: '1px solid color-mix(in oklch, var(--emerald) 30%, transparent)',
-                      }}
-                    >
-                      <Icon.check /> Complete
-                    </span>
-                  )}
-
-                  {totalTutorials === 0 ? (
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        padding: '4px 10px',
-                        borderRadius: 999,
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        background: 'var(--bg-2)',
-                        color: 'var(--text-mute)',
-                        border: '1px solid var(--border-soft)',
-                        marginLeft: 'auto',
-                      }}
-                    >
-                      Coming soon
-                    </span>
-                  ) : (
-                    <div style={{ marginLeft: 'auto' }}>
-                      <Btn
-                        kind={hasProgress ? 'primary' : 'ghost'}
-                        size="sm"
-                        icon={<Icon.arrow />}
-                        onClick={() => router.push(`/learn/${track.id}`)}
-                      >
-                        {hasProgress ? 'Continue' : 'Start'}
-                      </Btn>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+    <div>
+    
+          <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "34px 40px 72px" }}>
+            <div style={{ marginBottom: "8px" }}>
+              <h1 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "33px", letterSpacing: "-0.03em", lineHeight: "1.05", color: "#0B0B0F" }}>Learning Hub</h1>
+              <p style={{ margin: "10px 0 0", fontSize: "15px", color: "#7A7A86" }}>Improve your sales craft. Earn points for every quiz you pass.</p>
+            </div>
+    
+            <div style={{ marginTop: "40px", borderTop: "1px solid #E7E7EC", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "96px 24px 100px" }}>
+              <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "rgba(91,75,245,0.07)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "26px" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5B4BF5" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" /></svg>
+              </div>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", letterSpacing: "0.16em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "16px" }}>Learning tracks</div>
+              <h2 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "26px", letterSpacing: "-0.02em", color: "#0B0B0F" }}>No learning tracks yet</h2>
+              <p style={{ margin: "14px 0 0", fontSize: "14.5px", lineHeight: "1.6", color: "#7A7A86", maxWidth: "420px" }}>New tracks drop every week — discovery, objection handling, and closing modules are on the way. Check back soon.</p>
+              <a href="Closdex Challenges.dc.html" style={{ marginTop: "28px", display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "14px", fontWeight: "600", color: "#3A2DC4", textDecoration: "none" }}>Earn points with a challenge instead<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
+            </div>
+          </div>
+        
     </div>
   );
 }

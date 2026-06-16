@@ -1,203 +1,48 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Btn } from '@/components/ui/Btn';
-import { api, JobSummary } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 
-interface ApplicationRow { id: string; status: string; job: JobSummary; createdAt: string }
-
-type StatusFilter = '' | 'APPLIED' | 'VIEWED' | 'SHORTLISTED' | 'INTERVIEW' | 'OFFERED' | 'HIRED' | 'REJECTED';
-
-const STATUS_COLORS: Record<string, string> = {
-  APPLIED:    'var(--text-dim)',
-  VIEWED:     'var(--text-dim)',
-  SHORTLISTED:'var(--cool)',
-  INTERVIEW:  'var(--gold)',
-  OFFERED:    'var(--emerald)',
-  HIRED:      'var(--emerald)',
-  REJECTED:   'var(--text-mute)',
-};
-
-const FILTER_TABS: { label: string; value: StatusFilter }[] = [
-  { label: 'All', value: '' },
-  { label: 'Applied', value: 'APPLIED' },
-  { label: 'Shortlisted', value: 'SHORTLISTED' },
-  { label: 'Interview', value: 'INTERVIEW' },
-  { label: 'Offered', value: 'OFFERED' },
-  { label: 'Hired', value: 'HIRED' },
-  { label: 'Rejected', value: 'REJECTED' },
-];
-
-function StatusBadge({ status }: { status: string }) {
-  const color = STATUS_COLORS[status] ?? 'var(--text-dim)';
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '3px 10px',
-        borderRadius: 999,
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: '0.04em',
-        background: `color-mix(in oklch, ${color} 18%, transparent)`,
-        color,
-        border: `1px solid color-mix(in oklch, ${color} 35%, transparent)`,
-      }}
-    >
-      {status}
-    </span>
-  );
-}
+// Applications — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
 export default function ApplicationsPage() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
-  const [items, setItems] = useState<ApplicationRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
-
-  useEffect(() => {
-    if (!user) return;
-    api.applications.mine()
-      .then(setItems)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [user]);
-
-  const displayed = useMemo(() => {
-    if (!statusFilter) return items;
-    return items.filter((a) => a.status === statusFilter);
-  }, [items, statusFilter]);
-
-  if (authLoading || !user) {
-    return <div style={{ padding: 32, color: 'var(--text-mute)' }}>Loading…</div>;
-  }
-
+  useRequireAuth('SALESPERSON');
   return (
-    <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: '-0.02em' }}>
-          My Applications
-        </h1>
-        <span
-          style={{
-            background: 'var(--bg-2)',
-            border: '1px solid var(--border-soft)',
-            borderRadius: 999,
-            fontSize: 12,
-            fontWeight: 600,
-            padding: '2px 10px',
-            color: 'var(--text-dim)',
-          }}
-        >
-          {items.length}
-        </span>
-        <div style={{ marginLeft: 'auto' }}>
-          <Btn kind="primary" size="sm" onClick={() => router.push('/jobs')}>Browse jobs →</Btn>
-        </div>
-      </div>
-
-      {/* Status filter chips */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {FILTER_TABS.map((t) => {
-          const active = statusFilter === t.value;
-          const count = t.value ? items.filter((a) => a.status === t.value).length : items.length;
-          return (
-            <button
-              key={t.value}
-              onClick={() => setStatusFilter(t.value)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 999,
-                border: `1px solid ${active ? 'var(--cool)' : 'var(--border-soft)'}`,
-                background: active
-                  ? 'color-mix(in oklch, var(--cool) 15%, transparent)'
-                  : 'var(--surface)',
-                color: active ? 'var(--cool)' : 'var(--text-dim)',
-                fontSize: 12.5,
-                fontWeight: active ? 700 : 500,
-                cursor: 'pointer',
-              }}
-            >
-              {t.label} {count > 0 && <span style={{ opacity: 0.7 }}>({count})</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* List */}
-      {loading ? (
-        <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)' }}>Loading…</div>
-      ) : displayed.length === 0 ? (
-        <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-mute)', fontSize: 13 }}>
-          {statusFilter
-            ? `No applications with status "${statusFilter}".`
-            : (
-              <>
-                No applications yet.{' '}
-                <a
-                  style={{ color: 'var(--cool)', cursor: 'pointer' }}
-                  onClick={() => router.push('/jobs')}
-                >
-                  Browse open jobs →
-                </a>
-              </>
-            )}
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {displayed.map((a) => {
-            const j = a.job;
-            const initials = j.company.name
-              .split(/\s+/)
-              .map((w) => w[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase();
-            const appliedDate = new Date(a.createdAt).toLocaleDateString('en-IN', {
-              day: 'numeric', month: 'short', year: 'numeric',
-            });
-            return (
-              <Card key={a.id} padding={18}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 16, alignItems: 'center' }}>
-                  <div
-                    style={{
-                      width: 48, height: 48, borderRadius: 10,
-                      background: 'var(--bg-2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 16, color: 'var(--text)',
-                      border: '1px solid var(--border-soft)',
-                    }}
-                  >
-                    {initials}
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700 }}>{j.title}</span>
-                      <StatusBadge status={a.status} />
-                    </div>
-                    <div style={{ fontSize: 12.5, color: 'var(--text-dim)' }}>
-                      <strong style={{ color: 'var(--text)' }}>{j.company.name}</strong>
-                      {j.location && <span> · {j.location}</span>}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-mute)', marginTop: 3 }}>
-                      Applied {appliedDate}
-                    </div>
-                  </div>
-                  <Btn kind="ghost" size="sm" onClick={() => router.push(`/jobs/${j.id}`)}>
-                    View job →
-                  </Btn>
+    <div>
+    
+          <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "34px 40px 72px" }}>
+    
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "24px", flexWrap: "wrap", marginBottom: "28px" }}>
+              <h1 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "33px", letterSpacing: "-0.03em", lineHeight: "1.05", color: "#0B0B0F" }}>My Applications <span style={{ color: "#B6B6C0" }}>(1)</span></h1>
+              <a href="Closdex Jobs.dc.html" style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "14px", fontWeight: "600", color: "#3A2DC4", textDecoration: "none" }}>Browse jobs<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
+            </div>
+    
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "30px" }}>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 14px", borderRadius: "100px", border: "1px solid #0B0B0F", background: "#0B0B0F", textDecoration: "none", fontSize: "13px", fontWeight: "600", color: "#fff" }}>All<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", color: "rgba(255,255,255,0.7)" }}>1</span></a>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 14px", borderRadius: "100px", border: "1px solid #E7E7EC", background: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: "500", color: "#3A3A44" }}>Applied<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", color: "#B6B6C0" }}>0</span></a>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 14px", borderRadius: "100px", border: "1px solid #E7E7EC", background: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: "500", color: "#3A3A44" }}>Shortlisted<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", color: "#B6B6C0" }}>0</span></a>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 14px", borderRadius: "100px", border: "1px solid #E7E7EC", background: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: "500", color: "#3A3A44" }}>Interview<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", color: "#B6B6C0" }}>0</span></a>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 14px", borderRadius: "100px", border: "1px solid #E7E7EC", background: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: "500", color: "#3A3A44" }}>Offered<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", color: "#B6B6C0" }}>0</span></a>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 14px", borderRadius: "100px", border: "1px solid #E7E7EC", background: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: "500", color: "#3A3A44" }}>Hired<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", color: "#B6B6C0" }}>1</span></a>
+              <a href="#" style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 14px", borderRadius: "100px", border: "1px solid #E7E7EC", background: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: "500", color: "#3A3A44" }}>Rejected<span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", color: "#B6B6C0" }}>0</span></a>
+            </div>
+    
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "18px", padding: "20px 4px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC" }}>
+                <span style={{ width: "42px", height: "42px", borderRadius: "11px", background: "#0B0B0F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "14px", flexShrink: "0" }}>CV</span>
+                <div style={{ flex: "1", minWidth: "0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}><span style={{ fontSize: "15px", fontWeight: "600", color: "#0B0B0F" }}>Enterprise Account Executive</span><span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "2px 9px 2px 7px", borderRadius: "100px", background: "rgba(31,138,91,0.1)", color: "#1F8A5B", fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase" }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Hired</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "9px", fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.03em", color: "#7A7A86" }}><span style={{ fontWeight: "700", color: "#3A3A44" }}>CVS</span><span style={{ color: "#D8D8E0" }}>·</span><span>Remote</span></div>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                <div style={{ textAlign: "right", flexShrink: "0" }}><div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9.5px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A9AA4", marginBottom: "4px" }}>Applied</div><div style={{ fontFamily: "'Space Mono',monospace", fontSize: "12.5px", color: "#3A3A44" }}>Jun 2, 2026</div></div>
+                <a href="Closdex Jobs.dc.html" style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13.5px", fontWeight: "600", color: "#3A2DC4", textDecoration: "none", flexShrink: "0" }}>View job<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
+              </div>
+            </div>
+    
+          </div>
+        
     </div>
   );
 }

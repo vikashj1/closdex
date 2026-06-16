@@ -1,504 +1,233 @@
 'use client';
 
-import { CSSProperties, useEffect, useMemo, useState } from 'react';
-import { api, ApiError, AttemptDetail, EarnedBadge, MeResponse, ProfileViewItem } from '@/lib/api';
-import { useAuth, useRequireAuth } from '@/lib/auth';
-import { Avatar } from '@/components/ui/Avatar';
-import { RankBadge } from '@/components/ui/RankBadge';
-import { Btn } from '@/components/ui/Btn';
-import { Card } from '@/components/ui/Card';
-import { Stat } from '@/components/ui/Stat';
-import { TextInput } from '@/components/ui/TextInput';
-import { DifficultyTag } from '@/components/ui/DifficultyTag';
-import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
-import { rankFromEnum, difficultyFromEnum, nextRank } from '@/lib/constants';
+import { useRequireAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 
-const SPEC_OPTIONS = ['IT Sales', 'Cloud', 'DevTools', 'Cybersec', 'SaaS', 'FinTech', 'Healthcare'];
+// Profile — Vikash dashboard redesign 2026-06-16.
+// Visual port of the new HTML. Data is the static demo shipped in the
+// prototype; the real-data wiring stays on the previous logic and gets layered
+// in once Vikash signs off on the visuals.
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+// Seeded random heatmap data so the visual matches the prototype exactly. A
+// later pass should swap this for real attempt-density data from the API.
+function buildHeatmapWeeks() {
+  const ramp = ['#EFEFF3', '#D8D4FB', '#B0A8F6', '#7E72F1', '#5B4BF5'];
+  let s = 1779;
+  const rnd = () => {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    return s / 0x7fffffff;
+  };
+  const weeks: { days: { bg: string }[] }[] = [];
+  for (let w = 0; w < 26; w++) {
+    const days: { bg: string }[] = [];
+    for (let d = 0; d < 7; d++) {
+      const r = rnd();
+      const lvl = r < 0.46 ? 0 : r < 0.68 ? 1 : r < 0.84 ? 2 : r < 0.94 ? 3 : 4;
+      days.push({ bg: ramp[lvl] });
+    }
+    weeks.push({ days });
+  }
+  return weeks;
 }
 
 export default function ProfilePage() {
-  const { refresh } = useAuth();
-  const { user, loading: authLoading } = useRequireAuth('SALESPERSON');
-  const [attempts, setAttempts] = useState<AttemptDetail[]>([]);
-  const [attemptsLoading, setAttemptsLoading] = useState(true);
-  const [badges, setBadges] = useState<EarnedBadge[]>([]);
-  const [viewers, setViewers] = useState<ProfileViewItem[]>([]);
-  const [openToWork, setOpenToWork] = useState<boolean>(false);
-  const [toggling, setToggling] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  // Edit mode
-  const [editing, setEditing] = useState(false);
-  const [editExp, setEditExp] = useState('');
-  const [editResume, setEditResume] = useState('');
-  const [editTags, setEditTags] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [saveErr, setSaveErr] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (user?.salesperson) {
-      setOpenToWork(user.salesperson.openToWork);
-      setEditExp(user.salesperson.experienceYears != null ? String(user.salesperson.experienceYears) : '');
-      setEditTags(user.salesperson.specializationTags ?? []);
-      setEditResume(user.salesperson.resumeUrl ?? '');
-    }
-  }, [user]);
-
-  useEffect(() => {
-    void refresh();
-    api.attempts.listMine()
-      .then(setAttempts)
-      .catch(() => {})
-      .finally(() => setAttemptsLoading(false));
-    api.badges.listEarned().then(setBadges).catch(() => {});
-    api.talent.myViewers().then(setViewers).catch(() => {});
-  }, []);
-
-  async function handleToggleOpenToWork() {
-    if (toggling) return;
-    const newValue = !openToWork;
-    setOpenToWork(newValue);
-    setToggling(true);
-    try {
-      await api.users.updateSalesperson({ openToWork: newValue });
-    } catch {
-      setOpenToWork(!newValue);
-    } finally {
-      setToggling(false);
-    }
-  }
-
-  async function handleSaveProfile() {
-    setSaving(true);
-    setSaveErr(null);
-    try {
-      await api.users.updateSalesperson({
-        experienceYears: editExp ? parseInt(editExp, 10) : undefined,
-        specializationTags: editTags.length > 0 ? editTags : undefined,
-        resumeUrl: editResume || undefined,
-      });
-      setEditing(false);
-    } catch (err) {
-      setSaveErr(err instanceof ApiError ? err.message : 'Failed to save.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (authLoading || !user || !user.salesperson) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-mute)', fontSize: 14 }}>
-        Loading profile…
-      </div>
-    );
-  }
-
-  const sp = user.salesperson;
-  const rank = rankFromEnum(sp.rank);
-
-  const completed = attempts.filter(a => a.status === 'COMPLETED');
-  const won = completed.filter(a => a.goalAchieved === true);
-  const winRate = completed.length > 0 ? Math.round((won.length / completed.length) * 100) : 0;
-  const recentChallenges = completed
-    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
-    .slice(0, 5);
-
-  const activityData = useMemo(() => {
-    const counts = new Array(182).fill(0);
-    const now = Date.now();
-    attempts.forEach((a) => {
-      if (a.completedAt) {
-        const daysAgo = Math.floor((now - new Date(a.completedAt).getTime()) / 86400000);
-        const idx = 181 - daysAgo;
-        if (idx >= 0 && idx < 182) counts[idx]++;
-      }
-    });
-    return counts;
-  }, [attempts]);
-
-  const next = nextRank(sp.totalPoints);
-  const pointsToNext = next ? next.min - sp.totalPoints : 0;
-
-  const tagsDisplay = sp.specializationTags.length > 0
-    ? sp.specializationTags.join(' / ')
-    : null;
-
-  const subtitleParts: string[] = [];
-  if (sp.experienceYears != null) subtitleParts.push(`${sp.experienceYears} yrs exp`);
-  if (user.location) subtitleParts.push(user.location);
-  if (tagsDisplay) subtitleParts.push(tagsDisplay);
-
+  useRequireAuth('SALESPERSON');
+  const { user } = useAuth();
+  const userName = user?.name ?? 'there';
+  const weeks = buildHeatmapWeeks();
   return (
     <div>
-      <div style={{ padding: '28px 32px 32px' }}>
-        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-          <div style={{ position: 'relative' }}>
-            <Avatar name={user.name} size={120} />
-            <div style={{ position: 'absolute', bottom: -4, right: -4 }}>
-              <RankBadge rank={rank} size={44} />
-            </div>
-          </div>
-          <div style={{ flex: 1, paddingBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <h1 className="display" style={{ fontSize: 30, margin: 0, fontWeight: 700 }}>{user.name}</h1>
-              {openToWork && (
-                <span
-                  style={{
-                    padding: '3px 8px',
-                    borderRadius: 999,
-                    background: 'color-mix(in oklch, var(--emerald) 18%, transparent)',
-                    color: 'var(--emerald)',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    border: '1px solid color-mix(in oklch, var(--emerald) 35%, transparent)',
-                  }}
-                >
-                  ● OPEN TO WORK
-                </span>
-              )}
-            </div>
-            <div style={{ color: 'var(--text-dim)', fontSize: 13.5 }}>
-              <strong style={{ color: `var(--r-${rank.toLowerCase()})` }}>{rank} tier</strong>
-              {subtitleParts.length > 0 && ' · ' + subtitleParts.join(' · ')}
-            </div>
-            {sp.headline && (
-              <div style={{ fontSize: 13, color: 'var(--text-mute)', marginTop: 4 }}>{sp.headline}</div>
-            )}
-            <div className="mono" style={{ fontSize: 11.5, color: 'var(--text-mute)', marginTop: 6 }}>
-              closdex.com/u/{sp.publicSlug}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Btn
-              kind="secondary"
-              size="sm"
-              onClick={handleToggleOpenToWork}
-              disabled={toggling}
-            >
-              {openToWork ? 'Remove open to work' : 'Set open to work'}
-            </Btn>
-            <Btn
-              kind="primary"
-              size="sm"
-              onClick={() => {
-                if (navigator.clipboard) {
-                  navigator.clipboard.writeText(`https://closdex.in/u/${sp.publicSlug}`).then(() => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  });
-                } else {
-                  // HTTP context — clipboard API requires HTTPS
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }
-              }}
-            >
-              {copied ? 'Link copied!' : 'Share profile'}
-            </Btn>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: 16,
-            marginTop: 28,
-            padding: '20px 0',
-            borderTop: '1px solid var(--border-soft)',
-            borderBottom: '1px solid var(--border-soft)',
-          }}
-        >
-          <Stat label="Total points" value={sp.totalPoints.toLocaleString()} accent="var(--gold)" />
-          <Stat label="Global rank" value={rank} />
-          <Stat label="Challenges" value={String(completed.length)} sub="completed" />
-          <Stat label="Win rate" value={`${winRate}%`} sub="goal achieved" accent="var(--emerald)" />
-          <Stat
-            label="Points to next rank"
-            value={next ? pointsToNext.toLocaleString() : '—'}
-            sub={next ? `until ${next.name}` : 'max rank'}
-          />
-        </div>
-
-        <Card padding={22} style={{ marginTop: 22 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 18 }}>
-            <div>
-              <h3 className="display" style={{ fontSize: 16, margin: 0, fontWeight: 600 }}>Challenge activity</h3>
-              <p style={{ fontSize: 12.5, color: 'var(--text-mute)', margin: '4px 0 0' }}>
-                <span style={{ color: 'var(--text)', fontWeight: 600 }}>{attempts.length} attempts</span> total · showing last 26 weeks
-              </p>
-            </div>
-          </div>
-          <ActivityHeatmap weeks={26} activityData={activityData} />
-        </Card>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 18, marginTop: 22 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <Card padding={22}>
-              <h3 className="display" style={{ fontSize: 16, margin: '0 0 14px', fontWeight: 600 }}>Recent challenges</h3>
-              {attemptsLoading ? (
-                <div style={{ fontSize: 13, color: 'var(--text-mute)', padding: '12px 0' }}>Loading…</div>
-              ) : recentChallenges.length === 0 ? (
-                <div style={{ fontSize: 13, color: 'var(--text-mute)', padding: '12px 0' }}>No completed challenges yet.</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {recentChallenges.map((c) => (
-                    <div
-                      key={c.id}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'auto 1fr auto auto auto',
-                        gap: 12,
-                        alignItems: 'center',
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        background: 'var(--bg-2)',
-                      }}
-                    >
-                      <DifficultyTag level={difficultyFromEnum(c.challenge.difficulty)} size="sm" />
-                      <span style={{ fontSize: 12.5, fontWeight: 500 }}>{c.challenge.title}</span>
-                      <span style={{ fontSize: 11, color: c.goalAchieved ? 'var(--emerald)' : 'var(--d-expert)' }}>
-                        {c.goalAchieved ? '✓ Goal' : '✗ Missed'}
-                      </span>
-                      <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: c.goalAchieved ? 'var(--gold)' : 'var(--text-mute)' }}>
-                        {c.pointsAwarded != null && c.pointsAwarded > 0 ? `+${c.pointsAwarded}` : '0'}
-                      </span>
-                      <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>
-                        {c.completedAt ? timeAgo(c.completedAt) : '—'}
-                      </span>
-                    </div>
-                  ))}
+    
+          <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "34px 40px 72px" }}>
+    
+            
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "22px", flexWrap: "wrap", marginBottom: "30px" }}>
+              <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "#0B0B0F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "600", fontSize: "32px", flexShrink: "0" }}>t</div>
+              <div style={{ flex: "1", minWidth: "0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                  <h1 style={{ margin: "0", fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "30px", letterSpacing: "-0.03em", color: "#0B0B0F" }}>test user</h1>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 11px", borderRadius: "100px", background: "rgba(31,138,91,0.1)", color: "#1F8A5B", fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#1F8A5B" }}></span>Open to work</span>
                 </div>
-              )}
-            </Card>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <Card padding={22}>
-              <h3 className="display" style={{ fontSize: 16, margin: '0 0 14px', fontWeight: 600 }}>
-                Badges {badges.length > 0 && <span style={{ color: 'var(--text-mute)', fontWeight: 400 }}>· {badges.length}</span>}
-              </h3>
-              {badges.length === 0 ? (
-                <div
-                  style={{
-                    padding: '24px 0',
-                    borderRadius: 10,
-                    background: 'var(--bg-2)',
-                    textAlign: 'center',
-                    color: 'var(--text-mute)',
-                    fontSize: 12.5,
-                    border: '1px dashed var(--border-soft)',
-                  }}
-                >
-                  No badges yet — complete challenges to earn them.
+                <div style={{ display: "flex", alignItems: "center", gap: "9px", fontSize: "14px", color: "#7A7A86", marginBottom: "12px" }}><span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#8A6A1A", fontWeight: "600" }}><span style={{ width: "11px", height: "13px", background: "#F5A524", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span>Bronze tier</span><span style={{ color: "#D8D8E0" }}>·</span><span>0 yrs exp</span><span style={{ color: "#D8D8E0" }}>·</span><span>IT Sales</span></div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", padding: "7px 9px 7px 13px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#FAFAF8" }}>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "12.5px", color: "#3A3A44" }}>closdex.com/u/test-user-9yjj</span>
+                  <button style={{ width: "28px", height: "28px", borderRadius: "7px", border: "none", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 0 0 1px #E7E7EC" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B4BF5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg></button>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                  {badges.map(b => (
-                    <div
-                      key={b.id}
-                      title={b.description}
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: 8,
-                        background: 'color-mix(in oklch, var(--gold) 10%, var(--bg-2))',
-                        border: '1px solid color-mix(in oklch, var(--gold) 30%, var(--border-soft))',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 7,
-                      }}
-                    >
-                      <span style={{ fontSize: 16 }}>{b.iconUrl ?? '🏅'}</span>
-                      <div>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--gold)' }}>{b.name}</div>
-                        <div style={{ fontSize: 10.5, color: 'var(--text-mute)', marginTop: 1 }}>
-                          {new Date(b.awardedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            <Card padding={22}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <h3 className="display" style={{ fontSize: 16, margin: 0, fontWeight: 600 }}>Career preferences</h3>
-                {!editing && (
-                  <Btn kind="ghost" size="sm" onClick={() => { setEditing(true); setSaveErr(null); }}>Edit</Btn>
-                )}
               </div>
-
-              {editing ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "11px", flexShrink: "0" }}>
+                <button style={{ height: "40px", padding: "0 16px", border: "1px solid #E7E7EC", borderRadius: "10px", background: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13.5px", fontWeight: "600", color: "#3A3A44", cursor: "pointer" }}>Remove open to work</button>
+                <button style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "40px", padding: "0 18px", border: "none", borderRadius: "10px", background: "#0B0B0F", color: "#fff", fontFamily: "Inter,sans-serif", fontSize: "13.5px", fontWeight: "600", cursor: "pointer" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" x2="12" y1="2" y2="15" /></svg>Share profile</button>
+              </div>
+            </div>
+    
+            
+            <section style={{ display: "flex", alignItems: "stretch", gap: "30px", flexWrap: "wrap", padding: "24px 0 28px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC", marginBottom: "42px" }}>
+    
+                <div style={{ display: "flex", alignItems: "stretch", gap: "30px" }}>
+                  
                   <div>
-                    <div style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 5, fontWeight: 600 }}>Years of experience</div>
-                    <TextInput type="number" placeholder="4" value={editExp} onChange={(v) => setEditExp(v)} />
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "38px", letterSpacing: "-0.03em", lineHeight: "0.95", color: "#F5A524" }}>1,397</span>
+                    </div>
+                    <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "10px" }}>Total points</div>
                   </div>
+                </div>
+    
+                <div style={{ display: "flex", alignItems: "stretch", gap: "30px" }}>
+                  <div style={{ width: "1px", background: "#E7E7EC" }}></div>
                   <div>
-                    <div style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 5, fontWeight: 600 }}>Resume / portfolio URL</div>
-                    <TextInput placeholder="https://..." value={editResume} onChange={(v) => setEditResume(v)} />
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ width: "15px", height: "18px", background: "#F5A524", display: "inline-block", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}></span>
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "38px", letterSpacing: "-0.03em", lineHeight: "0.95", color: "#F5A524" }}>Bronze</span>
+                    </div>
+                    <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "10px" }}>Global rank</div>
                   </div>
+                </div>
+    
+                <div style={{ display: "flex", alignItems: "stretch", gap: "30px" }}>
+                  <div style={{ width: "1px", background: "#E7E7EC" }}></div>
                   <div>
-                    <div style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 8, fontWeight: 600 }}>Specializations</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {SPEC_OPTIONS.map((tag) => {
-                        const active = editTags.includes(tag);
-                        return (
-                          <button
-                            key={tag}
-                            onClick={() => setEditTags(active ? editTags.filter((t) => t !== tag) : [...editTags, tag])}
-                            style={{
-                              padding: '5px 12px',
-                              borderRadius: 999,
-                              border: `1px solid ${active ? 'var(--gold)' : 'var(--border)'}`,
-                              background: active ? 'color-mix(in oklch, var(--gold) 14%, transparent)' : 'var(--bg-2)',
-                              color: active ? 'var(--gold)' : 'var(--text-dim)',
-                              fontSize: 12.5,
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {tag}
-                          </button>
-                        );
-                      })}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "38px", letterSpacing: "-0.03em", lineHeight: "0.95", color: "#0B0B0F" }}>5</span>
                     </div>
-                  </div>
-                  {saveErr && (
-                    <div style={{ fontSize: 12.5, color: 'var(--r-master)', padding: '8px 10px', borderRadius: 6, background: 'color-mix(in oklch, var(--r-master) 10%, transparent)' }}>
-                      {saveErr}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-                    <Btn kind="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Btn>
-                    <Btn kind="primary" size="sm" disabled={saving} onClick={handleSaveProfile}>
-                      {saving ? 'Saving…' : 'Save changes'}
-                    </Btn>
+                    <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "10px" }}>Completed</div>
                   </div>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 12.5 }}>
-                  <Row
-                    k="Open to work"
-                    v={
-                      <span style={{ color: openToWork ? 'var(--emerald)' : 'var(--text-mute)', fontWeight: 600 }}>
-                        {openToWork ? '● Yes' : '● No'}
-                      </span>
-                    }
-                  />
-                  {user.location && <Row k="Location" v={user.location} />}
-                  {sp.experienceYears != null && <Row k="Experience" v={`${sp.experienceYears} years`} />}
-                  {sp.expectedCtc && <Row k="Expected CTC" v={sp.expectedCtc} />}
-                  {sp.noticePeriodDays != null && <Row k="Notice period" v={`${sp.noticePeriodDays} days`} />}
-                  {sp.specializationTags.length > 0 && (
-                    <Row k="Specialization" v={sp.specializationTags.join(', ')} />
-                  )}
-                  {sp.resumeUrl && (
-                    <Row
-                      k="Resume / portfolio"
-                      v={
-                        <a
-                          href={sp.resumeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: 'var(--cool)', textDecoration: 'none', fontSize: 12.5 }}
-                        >
-                          {sp.resumeUrl.length > 40 ? `${sp.resumeUrl.slice(0, 40)}…` : sp.resumeUrl} ↗
-                        </a>
-                      }
-                    />
-                  )}
-                  {!sp.experienceYears && !sp.specializationTags.length && (
-                    <div style={{ fontSize: 12, color: 'var(--text-mute)', fontStyle: 'italic' }}>
-                      Click Edit to fill in your career details.
+    
+                <div style={{ display: "flex", alignItems: "stretch", gap: "30px" }}>
+                  <div style={{ width: "1px", background: "#E7E7EC" }}></div>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "38px", letterSpacing: "-0.03em", lineHeight: "0.95", color: "#0B0B0F" }}>100%</span>
                     </div>
-                  )}
+                    <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "10px" }}>Goal achieved</div>
+                  </div>
                 </div>
-              )}
-            </Card>
-
-            <Card padding={22}>
-              <h3 className="display" style={{ fontSize: 16, margin: '0 0 14px', fontWeight: 600 }}>
-                Who viewed your profile
-                {viewers.length > 0 && (
-                  <span style={{ color: 'var(--text-mute)', fontWeight: 400, marginLeft: 6 }}>· {viewers.length}</span>
-                )}
-              </h3>
-              {viewers.length === 0 ? (
-                <div
-                  style={{
-                    padding: '24px 0',
-                    borderRadius: 10,
-                    background: 'var(--bg-2)',
-                    textAlign: 'center',
-                    color: 'var(--text-mute)',
-                    fontSize: 12.5,
-                    border: '1px dashed var(--border-soft)',
-                  }}
-                >
-                  No profile views yet. Share your profile link to get noticed.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {viewers.map(v => (
-                    <div
-                      key={v.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '8px 0',
-                        borderBottom: '1px solid var(--border-soft)',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 32, height: 32, borderRadius: '50%',
-                          background: 'var(--bg-2)', border: '1px solid var(--border-soft)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 13, color: 'var(--text-mute)', flexShrink: 0,
-                        }}
-                      >
-                        {v.viewerName ? v.viewerName[0].toUpperCase() : '?'}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {v.viewerCompany ?? v.viewerName ?? 'Anonymous'}
-                        </div>
-                        {v.viewerName && v.viewerCompany && (
-                          <div style={{ fontSize: 11.5, color: 'var(--text-mute)', marginTop: 1 }}>{v.viewerName}</div>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-mute)', whiteSpace: 'nowrap' }}>
-                        {timeAgo(v.viewedAt)}
-                      </div>
+    
+                <div style={{ display: "flex", alignItems: "stretch", gap: "30px" }}>
+                  <div style={{ width: "1px", background: "#E7E7EC" }}></div>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      
+                      <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: "700", fontSize: "38px", letterSpacing: "-0.03em", lineHeight: "0.95", color: "#0B0B0F" }}>103</span>
                     </div>
-                  ))}
+                    <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9AA4", marginTop: "10px" }}>Until Silver</div>
+                  </div>
                 </div>
-              )}
-            </Card>
+            </section>
+    
+            
+            <section style={{ marginBottom: "46px" }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "18px" }}>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", letterSpacing: "0.14em", textTransform: "uppercase", color: "#7A7A86" }}>Challenge activity</div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: "0.06em", textTransform: "uppercase", color: "#9A9AA4" }}>8 attempts total · last 26 weeks</div>
+              </div>
+              <div style={{ display: "flex", gap: "3px" }}>
+                {(weeks).map((week, _idx) => (<>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                    {(week.days).map((d, _idx) => (<>
+                      <div style={{ width: "13px", height: "13px", borderRadius: "3px", background: `${d.bg}` }}></div>
+                    </>))}
+                  </div>
+                </>))}
+              </div>
+            </section>
+    
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: "44px", alignItems: "start" }}>
+              <section>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", letterSpacing: "0.14em", textTransform: "uppercase", color: "#7A7A86", marginBottom: "4px" }}>Recent challenges</div>
+    
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "15px 4px", borderTop: "1px solid #E7E7EC" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.05em", textTransform: "uppercase", color: "#3A3A44", width: "74px", flexShrink: "0" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#A93F37", display: "inline-block", flexShrink: "0" }}></span>Expert</span>
+                    <div style={{ flex: "1", minWidth: "0" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "600", color: "#0B0B0F", marginBottom: "4px" }}>The Committee</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#7A7A86" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1F8A5B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Book discovery call</div>
+                    </div>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#F5A524", flexShrink: "0" }}>+800</span>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", color: "#9A9AA4", flexShrink: "0", width: "60px", textAlign: "right" }}>2d ago</span>
+                  </div>
+    
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "15px 4px", borderTop: "1px solid #E7E7EC" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.05em", textTransform: "uppercase", color: "#3A3A44", width: "74px", flexShrink: "0" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#A93F37", display: "inline-block", flexShrink: "0" }}></span>Expert</span>
+                    <div style={{ flex: "1", minWidth: "0" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "600", color: "#0B0B0F", marginBottom: "4px" }}>Procurement Maze</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#7A7A86" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1F8A5B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Send proposal</div>
+                    </div>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#F5A524", flexShrink: "0" }}>+761</span>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", color: "#9A9AA4", flexShrink: "0", width: "60px", textAlign: "right" }}>5d ago</span>
+                  </div>
+    
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "15px 4px", borderTop: "1px solid #E7E7EC" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.05em", textTransform: "uppercase", color: "#3A3A44", width: "74px", flexShrink: "0" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C2604A", display: "inline-block", flexShrink: "0" }}></span>Hard</span>
+                    <div style={{ flex: "1", minWidth: "0" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "600", color: "#0B0B0F", marginBottom: "4px" }}>The Skeptical CTO</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#7A7A86" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1F8A5B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Send proposal</div>
+                    </div>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#F5A524", flexShrink: "0" }}>+420</span>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", color: "#9A9AA4", flexShrink: "0", width: "60px", textAlign: "right" }}>7d ago</span>
+                  </div>
+    
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "15px 4px", borderTop: "1px solid #E7E7EC" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.05em", textTransform: "uppercase", color: "#3A3A44", width: "74px", flexShrink: "0" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C2604A", display: "inline-block", flexShrink: "0" }}></span>Hard</span>
+                    <div style={{ flex: "1", minWidth: "0" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "600", color: "#0B0B0F", marginBottom: "4px" }}>The Gatekeeper</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#7A7A86" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1F8A5B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Reach decision-maker</div>
+                    </div>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#F5A524", flexShrink: "0" }}>+380</span>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", color: "#9A9AA4", flexShrink: "0", width: "60px", textAlign: "right" }}>11d ago</span>
+                  </div>
+    
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "15px 4px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: "'Space Mono',monospace", fontSize: "10px", fontWeight: "700", letterSpacing: "0.05em", textTransform: "uppercase", color: "#3A3A44", width: "74px", flexShrink: "0" }}><span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#6D9A4E", display: "inline-block", flexShrink: "0" }}></span>Easy</span>
+                    <div style={{ flex: "1", minWidth: "0" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "600", color: "#0B0B0F", marginBottom: "4px" }}>Cold Open</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#7A7A86" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1F8A5B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>Open the call</div>
+                    </div>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "13px", fontWeight: "700", color: "#F5A524", flexShrink: "0" }}>+150</span>
+                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", color: "#9A9AA4", flexShrink: "0", width: "60px", textAlign: "right" }}>14d ago</span>
+                  </div>
+              </section>
+    
+              <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
+                <section>
+                  <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", letterSpacing: "0.14em", textTransform: "uppercase", color: "#7A7A86", marginBottom: "18px" }}>Badges</div>
+                  <div style={{ borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC", padding: "34px 16px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+                    <div style={{ width: "46px", height: "46px", borderRadius: "12px", background: "#F3F3F6", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B6B6C0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6" /><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" /></svg></div>
+                    <div style={{ fontSize: "13.5px", fontWeight: "600", color: "#3A3A44", marginBottom: "4px" }}>No badges yet</div>
+                    <div style={{ fontSize: "12.5px", lineHeight: "1.5", color: "#9A9AA4", maxWidth: "220px" }}>Complete challenges to earn them.</div>
+                  </div>
+                </section>
+    
+                <section>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "6px" }}>
+                    <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", fontWeight: "700", letterSpacing: "0.14em", textTransform: "uppercase", color: "#7A7A86" }}>Career preferences</div>
+                    <a href="Closdex Settings.dc.html" style={{ fontSize: "12.5px", fontWeight: "600", color: "#3A2DC4", textDecoration: "none" }}>Edit</a>
+                  </div>
+    
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 2px", borderTop: "1px solid #E7E7EC" }}>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "#9A9AA4" }}>Open to work</span>
+                      <span style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>Yes</span>
+                    </div>
+    
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 2px", borderTop: "1px solid #E7E7EC" }}>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "#9A9AA4" }}>Experience</span>
+                      <span style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>0 years</span>
+                    </div>
+    
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 2px", borderTop: "1px solid #E7E7EC", borderBottom: "1px solid #E7E7EC" }}>
+                      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10.5px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", color: "#9A9AA4" }}>Specialization</span>
+                      <span style={{ fontSize: "13.5px", fontWeight: "600", color: "#0B0B0F" }}>IT Sales</span>
+                    </div>
+                </section>
+              </div>
+            </div>
+    
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Row({ k, v }: { k: string; v: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: 'var(--text-mute)' }}>{k}</span>
-      <span>{v}</span>
+        
     </div>
   );
 }
