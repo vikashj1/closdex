@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useRequireAuth } from '@/lib/auth';
-import { api, AttemptDetail, ChallengeSummary, LeaderboardEntry } from '@/lib/api';
+import { api, AttemptDetail, BadgeDefinition, ChallengeSummary, EarnedBadge, LeaderboardEntry } from '@/lib/api';
 import { RANKS, RankName, currentRank, nextRank } from '@/lib/constants';
 
 // Heatmap colour ramp (light → violet) — matches Vikash's prototype.
@@ -78,6 +78,8 @@ export default function DashboardPage() {
   const [attempts, setAttempts] = useState<AttemptDetail[] | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [challenges, setChallenges] = useState<ChallengeSummary[]>([]);
+  const [allBadges, setAllBadges] = useState<BadgeDefinition[]>([]);
+  const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -88,7 +90,11 @@ export default function DashboardPage() {
     api.challenges.list({ perPage: 20 })
       .then((r) => setChallenges(r.items))
       .catch(() => setChallenges([]));
+    api.badges.listDefinitions().then(setAllBadges).catch(() => setAllBadges([]));
+    api.badges.listEarned().then(setEarnedBadges).catch(() => setEarnedBadges([]));
   }, [user]);
+
+  const earnedIds = new Set(earnedBadges.map((b) => b.id));
 
   // Derived stats (default to 0 when data still loading or missing).
   const totalPoints = user?.salesperson?.totalPoints ?? 0;
@@ -258,13 +264,14 @@ export default function DashboardPage() {
               pointerEvents: 'none',
             }}
           />
+          <div style={{ position: 'relative' }}>
           <div
             style={{
-              position: 'relative',
               display: 'flex',
               flexWrap: 'wrap',
               gap: 40,
               alignItems: 'flex-end',
+              marginBottom: 28,
             }}
           >
             {/* Tier + points */}
@@ -402,70 +409,72 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Climb bar */}
-            <div style={{ flex: 1, minWidth: 240, paddingBottom: 4 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  marginBottom: 9,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'Space Mono',monospace",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.7)',
-                  }}
-                >
-                  {targetName ? `Progress to ${targetName}` : 'Top of the ladder'}
-                </span>
-                {targetName && (
-                  <span
-                    style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, color: '#F5A524' }}
-                  >
-                    <span style={{ fontWeight: 700 }}>{formatNumber(totalPoints)}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.45)' }}>
-                      {' '}
-                      / {formatNumber(targetMin)}
-                    </span>
-                  </span>
-                )}
-              </div>
-              <div
-                style={{
-                  height: 8,
-                  borderRadius: 100,
-                  background: 'rgba(255,255,255,0.12)',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    width: `${progressPct}%`,
-                    height: '100%',
-                    borderRadius: 100,
-                    background: 'linear-gradient(90deg,#F5A524,#F7B948)',
-                  }}
-                />
-              </div>
-              <div
+          </div>
+
+          {/* Climb bar — full width, below the points/stats row */}
+          <div style={{ width: '100%' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                marginBottom: 9,
+              }}
+            >
+              <span
                 style={{
                   fontFamily: "'Space Mono',monospace",
-                  fontSize: 10.5,
-                  letterSpacing: '0.1em',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
                   textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.5)',
-                  marginTop: 9,
+                  color: 'rgba(255,255,255,0.7)',
                 }}
               >
-                {targetName ? `${formatNumber(pointsToGo)} points to go` : 'Grandmaster'}
-              </div>
+                {targetName ? `Progress to ${targetName}` : 'Top of the ladder'}
+              </span>
+              {targetName && (
+                <span
+                  style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, color: '#F5A524' }}
+                >
+                  <span style={{ fontWeight: 700 }}>{formatNumber(totalPoints)}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.45)' }}>
+                    {' '}
+                    / {formatNumber(targetMin)}
+                  </span>
+                </span>
+              )}
             </div>
+            <div
+              style={{
+                height: 8,
+                borderRadius: 100,
+                background: 'rgba(255,255,255,0.12)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${progressPct}%`,
+                  height: '100%',
+                  borderRadius: 100,
+                  background: 'linear-gradient(90deg,#F5A524,#F7B948)',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                fontFamily: "'Space Mono',monospace",
+                fontSize: 10.5,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.5)',
+                marginTop: 9,
+              }}
+            >
+              {targetName ? `${formatNumber(pointsToGo)} points to go` : 'Grandmaster'}
+            </div>
+          </div>
           </div>
         </section>
 
@@ -757,52 +766,240 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ===== HEATMAP ===== */}
-        <section style={{ marginBottom: 42 }}>
+        {/* ===== HEATMAP + BADGES ===== */}
+        <section style={{ display: 'flex', gap: 48, alignItems: 'stretch', marginBottom: 46 }}>
+          {/* Heatmap */}
+          <div style={{ flexShrink: 0 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: 24,
+                marginBottom: 18,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Space Mono',monospace",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: '#7A7A86',
+                }}
+              >
+                Your challenge activity
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Space Mono',monospace",
+                  fontSize: 11,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: '#9A9AA4',
+                }}
+              >
+                Last 26 weeks
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 3 }}>
+              {heatmapWeeks.map((week, wi) => (
+                <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {week.days.map((d, di) => (
+                    <div
+                      key={di}
+                      title={`${d.count} attempts`}
+                      style={{ width: 13, height: 13, borderRadius: 3, background: d.bg }}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7,
+                marginTop: 14,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "'Space Mono',monospace",
+                  fontSize: 10.5,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: '#9A9AA4',
+                }}
+              >
+                Less
+              </span>
+              {HEAT_RAMP.map((bg) => (
+                <span
+                  key={bg}
+                  style={{ width: 13, height: 13, borderRadius: 3, background: bg }}
+                />
+              ))}
+              <span
+                style={{
+                  fontFamily: "'Space Mono',monospace",
+                  fontSize: 10.5,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: '#9A9AA4',
+                }}
+              >
+                More
+              </span>
+            </div>
+          </div>
+
+          {/* Collected badges */}
           <div
             style={{
+              flex: 1,
+              minWidth: 0,
+              paddingLeft: 48,
+              borderLeft: '1px solid #E7E7EC',
               display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              marginBottom: 14,
+              flexDirection: 'column',
             }}
           >
             <div
               style={{
-                fontFamily: "'Space Mono',monospace",
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: '#7A7A86',
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: 24,
+                marginBottom: 18,
               }}
             >
-              Challenge activity
+              <div
+                style={{
+                  fontFamily: "'Space Mono',monospace",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: '#7A7A86',
+                }}
+              >
+                Collected badges
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Space Mono',monospace",
+                  fontSize: 11,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: '#9A9AA4',
+                }}
+              >
+                {earnedBadges.length} of {allBadges.length}
+              </div>
             </div>
             <div
               style={{
-                fontFamily: "'Space Mono',monospace",
-                fontSize: 11,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: '#9A9AA4',
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '26px 30px',
+                alignContent: 'flex-start',
               }}
             >
-              Last 26 weeks · {totalHeatmapAttempts} attempts
+              {allBadges.length === 0 ? (
+                <div style={{ fontSize: 13, color: '#9A9AA4', padding: '8px 0' }}>
+                  No badges defined yet.
+                </div>
+              ) : (
+                allBadges.map((b) => {
+                  const earned = earnedIds.has(b.id);
+                  return (
+                    <div
+                      key={b.id}
+                      title={`${b.name}${b.description ? ' — ' + b.description : ''}`}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 9,
+                        width: 64,
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'relative',
+                          width: 54,
+                          height: 60,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: earned
+                            ? 'linear-gradient(160deg,#2C2256,#14101F)'
+                            : '#F3F3F6',
+                          clipPath:
+                            'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                        }}
+                      >
+                        {earned && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              inset: 2,
+                              background:
+                                'linear-gradient(160deg,#6E5FF7,#4A3AD9)',
+                              clipPath:
+                                'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                            }}
+                          />
+                        )}
+                        {earned ? (
+                          <svg
+                            width={22}
+                            height={22}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#FFFFFF"
+                            strokeWidth={1.7}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{ position: 'relative' }}
+                          >
+                            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z" />
+                            <path d="m9 12 2 2 4-4" />
+                          </svg>
+                        ) : (
+                          <svg
+                            width={20}
+                            height={20}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#C2C2CC"
+                            strokeWidth={1.8}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect width={18} height={11} x={3} y={11} rx={2} />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        )}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: earned ? '#3A3A44' : '#B6B6C0',
+                          textAlign: 'center',
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {earned ? b.name : 'Locked'}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: 3 }}>
-            {heatmapWeeks.map((week, wi) => (
-              <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {week.days.map((d, di) => (
-                  <div
-                    key={di}
-                    title={`${d.count} attempts`}
-                    style={{ width: 13, height: 13, borderRadius: 3, background: d.bg }}
-                  />
-                ))}
-              </div>
-            ))}
           </div>
         </section>
 
