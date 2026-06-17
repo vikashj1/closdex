@@ -13,6 +13,31 @@ const DIM_LABELS: Record<string, string> = {
   goalExecution: 'Goal execution',
 };
 
+// Coach tip per weakest rubric dimension. Mirrors the dashboard's coach map so
+// the salesperson hears a consistent voice across the journey.
+const COACH_TIPS: Record<string, { focus: string; tip: string }> = {
+  discovery: {
+    focus: 'discovery',
+    tip: 'Ask one open-ended question before pitching — let the buyer name the pain first.',
+  },
+  objectionHandling: {
+    focus: 'objection handling',
+    tip: 'Acknowledge the objection in their words, then ask one clarifying question before answering.',
+  },
+  valueArticulation: {
+    focus: 'value articulation',
+    tip: 'Translate features into rupee impact or hours saved. Numbers beat adjectives.',
+  },
+  conversationalQuality: {
+    focus: 'conversation flow',
+    tip: 'Mirror their last sentence and ask one short follow-up — drop the script.',
+  },
+  goalExecution: {
+    focus: 'goal execution',
+    tip: 'State the next step early and end every message with a clear ask, not a question.',
+  },
+};
+
 interface RubricDim { key: string; label: string; v: number }
 
 function extractDims(rubricScores: Record<string, number> | null | undefined): RubricDim[] {
@@ -183,6 +208,19 @@ function ResultPageInner({ params }: { params: { id: string } }) {
   const dimAvg = dimsHaveData
     ? (dims.reduce((s, d) => s + d.v, 0) / dims.length).toFixed(1)
     : '—';
+
+  // Coach tip = weakest rubric dim from this attempt. Falls back when there's
+  // no rubric data (scoring still in flight, or quarantined with no breakdown).
+  let weakestDim: string | null = null;
+  if (dimsHaveData) {
+    let lowest = Infinity;
+    for (const d of dims) {
+      if (d.v < lowest) { lowest = d.v; weakestDim = d.key; }
+    }
+  }
+  const coach = weakestDim && COACH_TIPS[weakestDim]
+    ? COACH_TIPS[weakestDim]
+    : { focus: 'the next round', tip: 'Try the same persona at the next difficulty when your discovery feels solid.' };
 
   return (
     <main style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
@@ -451,10 +489,10 @@ function ResultPageInner({ params }: { params: { id: string } }) {
             </svg>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#0B0B0F', marginBottom: 3, fontFamily: "'Space Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                Coach tip
+                {weakestDim ? `Work on: ${coach.focus}` : 'Coach tip'}
               </div>
               <div style={{ fontSize: 13, color: '#5A5A66', lineHeight: 1.6 }}>
-                Try the same persona at <span style={{ color: '#0B0B0F', fontWeight: 600 }}>the next difficulty</span> when your discovery feels solid.
+                {coach.tip}
               </div>
             </div>
           </div>

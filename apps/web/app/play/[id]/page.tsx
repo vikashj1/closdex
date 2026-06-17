@@ -933,7 +933,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
               </span>
             </div>
             <div style={{ fontSize: 12.5, color: '#7A7A86', lineHeight: 1.5 }}>
-              {'Be specific — vague commitments don\'t count.'}
+              {attempt.challenge.goalDescription || 'Be specific — vague commitments don\'t count.'}
             </div>
           </div>
         </div>

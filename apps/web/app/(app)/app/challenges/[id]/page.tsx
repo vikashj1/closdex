@@ -439,7 +439,8 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
                   {goalLabel}
                 </div>
                 <div style={{ fontSize: 12.5, color: '#7A7A86', marginTop: 8, lineHeight: 1.5 }}>
-                  Be specific. The AI evaluator looks for an explicit yes — vague commitments don{'’'}t count.
+                  {challenge.goalDescription ||
+                    `Be specific. The AI evaluator looks for an explicit yes — vague commitments don’t count.`}
                 </div>
               </div>
             </section>
