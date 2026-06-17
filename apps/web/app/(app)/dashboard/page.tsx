@@ -17,6 +17,46 @@ const DIFF_DOT: Record<string, string> = {
   EXPERT: '#A93F37',
 };
 
+// Per-rank shield palette — used by the hero tier badge + the next-rank chip.
+const RANK_HEX: Record<RankName, string> = {
+  Rookie:      '#969080',
+  Bronze:      '#C77F3E',
+  Silver:      '#B5B8C2',
+  Gold:        '#F5A524',
+  Platinum:    '#8FB6D9',
+  Diamond:     '#4FB6D9',
+  Master:      '#8E4CD9',
+  Grandmaster: '#D04A4A',
+};
+
+// Heading + tip per weakest rubric dimension. Drives the "Coach tip" card.
+const COACH_TIPS: Record<string, { focus: string; tip: string }> = {
+  discovery: {
+    focus: 'discovery & listening',
+    tip: 'Ask one open-ended question before you pitch — let the buyer name the pain first.',
+  },
+  objectionHandling: {
+    focus: 'objection handling',
+    tip: 'Acknowledge the objection in their words, then ask one clarifying question before answering.',
+  },
+  valueArticulation: {
+    focus: 'value articulation',
+    tip: 'Translate features into rupee impact or hours saved. Numbers beat adjectives.',
+  },
+  conversationalQuality: {
+    focus: 'conversation flow',
+    tip: 'Drop the script. Mirror their last sentence and ask one short follow-up.',
+  },
+  goalExecution: {
+    focus: 'goal execution',
+    tip: 'State the next step early and end every message with a clear ask, not a question.',
+  },
+};
+const COACH_TIP_FALLBACK = {
+  focus: 'a quick warm-up',
+  tip: 'Clear one challenge today to unlock a personalised coach tip based on your performance.',
+};
+
 const MS_DAY = 24 * 60 * 60 * 1000;
 
 function formatNumber(n: number): string {
@@ -150,6 +190,37 @@ export default function DashboardPage() {
     })
     .slice(0, 3);
 
+  // Coach tip = lowest-scoring rubric dim across the user's last 10 completed
+  // attempts. Falls back to a generic prompt when there's no rubric data yet.
+  const ratedAttempts = completedAttempts
+    .filter((a) => a.rubricScores && Object.keys(a.rubricScores).length > 0)
+    .sort((a, b) => {
+      const ta = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const tb = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      return tb - ta;
+    })
+    .slice(0, 10);
+  let weakestDim: string | null = null;
+  if (ratedAttempts.length > 0) {
+    const sums: Record<string, { total: number; n: number }> = {};
+    for (const a of ratedAttempts) {
+      for (const [k, v] of Object.entries(a.rubricScores ?? {})) {
+        if (typeof v !== 'number') continue;
+        if (!sums[k]) sums[k] = { total: 0, n: 0 };
+        sums[k].total += v;
+        sums[k].n += 1;
+      }
+    }
+    let lowest = Infinity;
+    for (const [k, { total, n }] of Object.entries(sums)) {
+      const avg = total / n;
+      if (avg < lowest) { lowest = avg; weakestDim = k; }
+    }
+  }
+  const coach = weakestDim && COACH_TIPS[weakestDim]
+    ? COACH_TIPS[weakestDim]
+    : COACH_TIP_FALLBACK;
+
   // Leaderboard top 3 with user position if known.
   const topThree = leaderboard.slice(0, 3);
   const mySlug = user?.salesperson?.publicSlug;
@@ -281,7 +352,7 @@ export default function DashboardPage() {
                   style={{
                     width: 13,
                     height: 15,
-                    background: '#F5A524',
+                    background: RANK_HEX[rank],
                     display: 'inline-block',
                     clipPath: 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
                   }}
@@ -293,7 +364,7 @@ export default function DashboardPage() {
                     fontWeight: 700,
                     letterSpacing: '0.16em',
                     textTransform: 'uppercase',
-                    color: '#F5A524',
+                    color: RANK_HEX[rank],
                   }}
                 >
                   {tierLabel(rank)}
@@ -691,7 +762,9 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Coach tip — generic coaching content, not personal data, stays static */}
+          {/* Coach tip — derived from the user's weakest rubric dimension across
+              their last 10 completed attempts. Falls back to a generic prompt
+              when there's no rubric data yet. */}
           <div
             style={{
               padding: '20px 24px',
@@ -714,10 +787,10 @@ export default function DashboardPage() {
               Coach tip
             </div>
             <div style={{ fontSize: 14.5, fontWeight: 600, color: '#0B0B0F', marginBottom: 7 }}>
-              Work on: objection handling
+              {weakestDim ? `Work on: ${coach.focus}` : coach.focus[0].toUpperCase() + coach.focus.slice(1)}
             </div>
             <div style={{ fontSize: 12.5, lineHeight: 1.5, color: '#7A7A86' }}>
-              Lead with a question before you pitch — let the buyer name the pain first.
+              {coach.tip}
             </div>
           </div>
 
@@ -745,7 +818,7 @@ export default function DashboardPage() {
                     style={{
                       width: 13,
                       height: 15,
-                      background: '#C0C0C8',
+                      background: RANK_HEX[targetName],
                       display: 'inline-block',
                       clipPath: 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
                     }}
