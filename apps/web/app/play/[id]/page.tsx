@@ -31,6 +31,10 @@ export default function ConversationPage({ params }: { params: { id: string } })
   const [micHover, setMicHover] = useState(false);
   const [sendHover, setSendHover] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  // Shown when the conversation closes (goal achieved or message cap hit).
+  // The user can dismiss it to keep scrolling through the chat, or click
+  // through to the result page.
+  const [closeModalOpen, setCloseModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const inputBaseRef = useRef('');
@@ -152,8 +156,11 @@ export default function ConversationPage({ params }: { params: { id: string } })
     try {
       const res = await api.attempts.send(attempt.id, text, clientMeta);
       setAttempt(res.attempt);
+      // Don't auto-redirect — surface a dismissible modal so the salesperson
+      // can still scroll back through the conversation before viewing the
+      // result page.
       if (res.attempt.status !== 'IN_PROGRESS') {
-        router.push(`/app/challenges/${res.attempt.challenge.id}/result?attempt=${res.attempt.id}`);
+        setCloseModalOpen(true);
       }
     } catch (err) {
       setAttempt(prevAttempt);
@@ -1101,6 +1108,131 @@ export default function ConversationPage({ params }: { params: { id: string } })
           </div>
         </div>
       </aside>
+
+      {/* Goal-achieved / conversation-closed modal — pops once status transitions
+          away from IN_PROGRESS so the salesperson can still scroll back through
+          the chat instead of being yanked to the result page. */}
+      {closeModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(11,11,15,0.55)',
+            backdropFilter: 'blur(2px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: 24,
+          }}
+          onClick={() => setCloseModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 440,
+              width: '100%',
+              background: '#FFFFFF',
+              borderRadius: 18,
+              padding: '32px 32px 26px',
+              boxShadow: '0 24px 64px rgba(11,11,15,0.32)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 18,
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                margin: '0 auto',
+                borderRadius: '50%',
+                background: attempt.goalAchieved
+                  ? 'rgba(31,138,91,0.12)'
+                  : 'rgba(154,154,164,0.14)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: attempt.goalAchieved ? '#1F8A5B' : '#7A7A86',
+              }}
+            >
+              {attempt.goalAchieved ? (
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              ) : (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 8v4" />
+                  <path d="M12 16h.01" />
+                </svg>
+              )}
+            </div>
+
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  fontFamily: "'Space Grotesk',sans-serif",
+                  fontWeight: 700,
+                  fontSize: 24,
+                  letterSpacing: '-0.02em',
+                  color: '#0B0B0F',
+                }}
+              >
+                {attempt.goalAchieved ? 'Goal achieved!' : 'Conversation closed'}
+              </h2>
+              <p style={{ margin: '8px 0 0', fontSize: 13.5, color: '#5A5A66', lineHeight: 1.55 }}>
+                {attempt.goalAchieved
+                  ? 'Nice work. Scroll back through the conversation when you want to review what landed — or head to the result page for the full breakdown.'
+                  : 'The conversation has ended. You can still scroll through it before heading to the result page.'}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => setCloseModalOpen(false)}
+                style={{
+                  flex: 1,
+                  background: '#FFFFFF',
+                  color: '#3A3A44',
+                  border: '1px solid #E7E7EC',
+                  borderRadius: 10,
+                  padding: '11px 16px',
+                  fontFamily: 'Inter,sans-serif',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Review conversation
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(`/app/challenges/${attempt.challenge.id}/result?attempt=${attempt.id}`)}
+                style={{
+                  flex: 1,
+                  background: '#0B0B0F',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '11px 16px',
+                  fontFamily: 'Inter,sans-serif',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                View result
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
