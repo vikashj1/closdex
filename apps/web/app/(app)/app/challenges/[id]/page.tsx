@@ -25,6 +25,9 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   const [isCompleted, setIsCompleted] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [bestAttempt, setBestAttempt] = useState<AttemptDetail | null>(null);
+  // Pre-existing in-progress attempt for THIS challenge. The backend rejects a
+  // fresh Start with 400 when one exists, so we resume into /play/:id instead.
+  const [inProgress, setInProgress] = useState<AttemptDetail | null>(null);
   const [backHover, setBackHover] = useState(false);
   const [ctaHover, setCtaHover] = useState(false);
 
@@ -53,6 +56,10 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
           );
           setBestAttempt(best);
         }
+        const live = mine.find(
+          (a) => a.challenge.id === params.id && a.status === 'IN_PROGRESS',
+        );
+        setInProgress(live ?? null);
       }
       setLoading(false);
     }).catch((err: unknown) => {
@@ -72,6 +79,11 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
     if (!challenge || (isCompleted && !canRetry)) return;
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent(`/app/challenges/${challenge.id}`)}`);
+      return;
+    }
+    // Resume the live attempt if one exists — the backend rejects duplicates.
+    if (inProgress) {
+      router.push(`/play/${inProgress.id}`);
       return;
     }
     setStarting(true);
@@ -778,7 +790,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                           <path d="m13 2-3 7h7l-9 13 3-9H4l9-11z" />
                         </svg>
-                        {starting ? 'Starting…' : 'Try again'}
+                        {starting ? 'Starting…' : inProgress ? 'Resume conversation' : 'Try again'}
                       </button>
                       <div
                         style={{
@@ -840,7 +852,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m13 2-3 7h7l-9 13 3-9H4l9-11z" />
                     </svg>
-                    {starting ? 'Starting…' : 'Start challenge'}
+                    {starting ? 'Starting…' : inProgress ? 'Resume conversation' : 'Start challenge'}
                   </button>
                   <div
                     style={{
@@ -853,7 +865,9 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
                       lineHeight: 1.5,
                     }}
                   >
-                    Once started, abandoning costs −25 pts.
+                    {inProgress
+                      ? 'You have a live attempt — pick up where you left off.'
+                      : 'Once started, abandoning costs −25 pts.'}
                   </div>
                 </>
               )}
