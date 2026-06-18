@@ -233,7 +233,10 @@ export default function ConversationPage({ params }: { params: { id: string } })
       }}
     >
       {/* ============ CHAT COLUMN ============ */}
-      <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #E7E7EC', minWidth: 0 }}>
+      {/* minHeight:0 lets the flex:1 messages area constrain so the footer
+          stays pinned at the bottom instead of being pushed off-viewport as
+          new messages arrive. */}
+      <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #E7E7EC', minWidth: 0, minHeight: 0, height: '100vh' }}>
         {/* Top bar */}
         <header
           style={{
