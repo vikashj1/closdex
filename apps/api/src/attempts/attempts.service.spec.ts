@@ -80,8 +80,11 @@ function makePrismaMock(opts: {
   return { prisma, txStubs };
 }
 
-function makeAi(reply = 'LEAD_REPLY'): AiLeadService {
-  return { respond: jest.fn().mockResolvedValue(reply) } as unknown as AiLeadService;
+function makeAi(reply = 'LEAD_REPLY', goalAchieved = false): AiLeadService {
+  return {
+    respond: jest.fn().mockResolvedValue(reply),
+    evaluateGoal: jest.fn().mockResolvedValue(goalAchieved),
+  } as unknown as AiLeadService;
 }
 
 function makeQueue(): ScoringQueueService & { enqueue: jest.Mock } {

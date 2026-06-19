@@ -9,7 +9,7 @@ import {
 import { AttemptStatus, ChallengeStatus, MessageSender, UserRole } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
-import { AiLeadService, GOAL_ACHIEVED_TOKEN } from '../ai/ai-lead.service';
+import { AiLeadService } from '../ai/ai-lead.service';
 import { ScoringQueueService } from '../scoring/scoring-queue.service';
 
 @Injectable()
@@ -122,15 +122,17 @@ export class AttemptsService {
       ? fullHistory.slice(summaryUpToCount)
       : fullHistory;
 
-    let rawReply: string;
+    let leadReply: string;
     try {
-      rawReply = await this.aiLead.respond({
+      const raw = await this.aiLead.respond({
         personaName: attempt.challenge.persona.name,
         personaPrompt: attempt.challenge.persona.personalityPrompt,
         history: trimmedHistory,
         priorSummary: priorSummary ?? undefined,
-        goalDescription: attempt.challenge.goalDescription,
+        // No goalDescription here — the lead model must stay blind to the
+        // salesperson's target so it can't cooperatively cave.
       });
+      leadReply = raw.trim();
     } catch (err) {
       this.logger.error('AI lead failed to respond', err);
       throw new ServiceUnavailableException(
@@ -138,9 +140,20 @@ export class AttemptsService {
       );
     }
 
-    // Detect goal achievement signalled by the lead (no extra LLM call).
-    const goalAchievedSignal = rawReply.includes(GOAL_ACHIEVED_TOKEN);
-    const leadReply = rawReply.replace(GOAL_ACHIEVED_TOKEN, '').trimEnd();
+    // Goal detection is a separate, low-temperature judge call. The lead never
+    // saw the goal text. If the judge fails we fall back to NO so we under-
+    // detect rather than over-credit.
+    let goalAchievedSignal = false;
+    try {
+      goalAchievedSignal = await this.aiLead.evaluateGoal({
+        personaName: attempt.challenge.persona.name,
+        goalDescription: attempt.challenge.goalDescription,
+        history: [...trimmedHistory, { sender: MessageSender.LEAD, content: leadReply }],
+        priorSummary: priorSummary ?? undefined,
+      });
+    } catch (err) {
+      this.logger.warn(`Goal evaluator failed for attempt ${attempt.id}: ${(err as Error).message}`);
+    }
 
     const messagesUsed = attempt.messagesUsed + 1;
     const reachedCap = messagesUsed >= attempt.challenge.maxMessages;
