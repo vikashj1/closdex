@@ -80,10 +80,13 @@ function makePrismaMock(opts: {
   return { prisma, txStubs };
 }
 
-function makeAi(reply = 'LEAD_REPLY', goalAchieved = false): AiLeadService {
+function makeAi(reply = 'LEAD_REPLY', verdict: { goalAchieved?: boolean; closed?: boolean } = {}): AiLeadService {
   return {
     respond: jest.fn().mockResolvedValue(reply),
-    evaluateGoal: jest.fn().mockResolvedValue(goalAchieved),
+    evaluateGoal: jest.fn().mockResolvedValue({
+      goalAchieved: verdict.goalAchieved ?? false,
+      closed: verdict.closed ?? false,
+    }),
   } as unknown as AiLeadService;
 }
 

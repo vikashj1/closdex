@@ -140,24 +140,29 @@ export class AttemptsService {
       );
     }
 
-    // Goal detection is a separate, low-temperature judge call. The lead never
-    // saw the goal text. If the judge fails we fall back to NO so we under-
-    // detect rather than over-credit.
+    // Goal + closure detection is a separate, low-temperature judge call. The
+    // lead never saw the goal text. Closed=true means either party has walked
+    // away ("goodbye", "I'm done here", "I don't want to work with you") — we
+    // end the attempt so the user can't keep spamming messages into a dead
+    // conversation. If the judge fails we fall back to {no, no}.
     let goalAchievedSignal = false;
+    let conversationClosed = false;
     try {
-      goalAchievedSignal = await this.aiLead.evaluateGoal({
+      const verdict = await this.aiLead.evaluateGoal({
         personaName: attempt.challenge.persona.name,
         goalDescription: attempt.challenge.goalDescription,
         history: [...trimmedHistory, { sender: MessageSender.LEAD, content: leadReply }],
         priorSummary: priorSummary ?? undefined,
       });
+      goalAchievedSignal = verdict.goalAchieved;
+      conversationClosed = verdict.closed;
     } catch (err) {
       this.logger.warn(`Goal evaluator failed for attempt ${attempt.id}: ${(err as Error).message}`);
     }
 
     const messagesUsed = attempt.messagesUsed + 1;
     const reachedCap = messagesUsed >= attempt.challenge.maxMessages;
-    const shouldComplete = reachedCap || goalAchievedSignal;
+    const shouldComplete = reachedCap || goalAchievedSignal || conversationClosed;
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.message.create({

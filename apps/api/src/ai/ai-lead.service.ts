@@ -26,6 +26,16 @@ interface EvaluateGoalInput {
   priorSummary?: string;
 }
 
+export interface GoalVerdict {
+  /** True when the salesperson has DEFINITIVELY achieved the stated goal. */
+  goalAchieved: boolean;
+  /** True when the conversation has clearly ended — either party walked
+   *  away, said goodbye, declared the matter closed, or explicitly refused
+   *  to continue. Used to short-circuit IN_PROGRESS so the user can't keep
+   *  spamming messages into a closed conversation. */
+  closed: boolean;
+}
+
 interface SummarizeInput {
   personaName: string;
   /** Existing summary covering anything older than `newMessages` (null on first run). */
@@ -91,16 +101,18 @@ export class AiLeadService {
   }
 
   /** Judges, in a fully isolated low-temperature call, whether the salesperson
-   *  has DEFINITIVELY achieved the stated goal. The lead model never sees the
-   *  goal text — only this judge does. Returns false on any LLM failure so
-   *  under-detection is preferred over over-detection. */
+   *  has DEFINITIVELY achieved the stated goal AND whether the conversation
+   *  has ended (either party walked away / said goodbye / closed the matter).
+   *  The lead model never sees the goal text — only this judge does. Returns
+   *  {goalAchieved:false, closed:false} on any LLM failure so we under-detect
+   *  rather than over-credit / prematurely end. */
   async evaluateGoal({
     personaName,
     goalDescription,
     history,
     priorSummary,
-  }: EvaluateGoalInput): Promise<boolean> {
-    if (history.length === 0) return false;
+  }: EvaluateGoalInput): Promise<GoalVerdict> {
+    if (history.length === 0) return { goalAchieved: false, closed: false };
 
     const transcript = history
       .map((m) => `${m.sender === MessageSender.SALESPERSON ? 'Salesperson' : personaName}: ${m.content}`)
@@ -111,13 +123,23 @@ export class AiLeadService {
       : '';
 
     const system = [
-      `You are an outcome judge for a sales-roleplay conversation.`,
-      `Decide whether the salesperson has DEFINITIVELY and EXPLICITLY achieved the stated goal.`,
-      `Be conservative — vague hints, polite expressions of interest, "let me think about it",`,
-      `or "maybe we can chat next week" do NOT count. Only return YES when the lead has`,
-      `unambiguously committed (e.g., agreed to a specific time/date, accepted a proposal,`,
-      `provided the requested intro, confirmed the next concrete step).`,
-      `Output exactly one word on a single line: YES or NO.`,
+      `You are an outcome judge for a sales-roleplay conversation. Answer two questions about the transcript.`,
+      ``,
+      `GOAL: did the salesperson DEFINITIVELY and EXPLICITLY achieve the stated goal? Be conservative —`,
+      `vague hints, polite expressions of interest, "let me think about it", or "maybe we can chat next week"`,
+      `do NOT count. Only YES when the lead has unambiguously committed (e.g., agreed to a specific time/date,`,
+      `accepted a proposal, provided the requested intro, confirmed the next concrete step).`,
+      ``,
+      `CLOSED: has the conversation effectively ended? YES when either side has clearly walked away,`,
+      `said goodbye, declared the matter closed, refused to continue, or fired/dismissed the other party.`,
+      `Examples of CLOSED=YES: "I don't want to work with you anymore", "have a good day", "I'm done here",`,
+      `"goodbye", "let's part ways", "I'll consider this matter closed". A simple "ok" or short acknowledgement`,
+      `is NOT closure on its own — closure requires explicit termination language from either party.`,
+      ``,
+      `Output EXACTLY two lines, no extra text:`,
+      `GOAL: YES`,
+      `CLOSED: NO`,
+      `(replace YES/NO with your verdict per line)`,
     ].join('\n');
 
     const user = [
@@ -126,7 +148,7 @@ export class AiLeadService {
       ``,
       `Stated goal: ${goalDescription}`,
       ``,
-      `Has the salesperson achieved the goal? Answer YES or NO.`,
+      `Output the two-line verdict.`,
     ].join('\n');
 
     const reply = await this.llm.complete(
@@ -134,10 +156,13 @@ export class AiLeadService {
         { role: 'system', content: system },
         { role: 'user', content: user },
       ],
-      { maxTokens: 8, temperature: 0 },
+      { maxTokens: 16, temperature: 0 },
     );
 
-    return /^\s*yes\b/i.test(reply.trim());
+    const text = reply.trim();
+    const goalAchieved = /goal\s*:\s*yes\b/i.test(text);
+    const closed = /closed\s*:\s*yes\b/i.test(text);
+    return { goalAchieved, closed };
   }
 
   /** Compresses the conversation history into a one-paragraph rolling summary.
