@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, ReactNode, useEffect, useState } from 'react';
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
@@ -386,10 +386,57 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [search, setSearch] = useState('');
   // Mobile drawer: sidebar slides in from the left on phones. Closed by
-  // default; the hamburger in the topbar toggles it, and any nav click
-  // closes it again so we don't trap focus inside.
+  // default; the hamburger in the topbar toggles it, and any nav click,
+  // route change, scrim tap, Escape press, or left-swipe closes it.
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const drawerRef = useRef<HTMLElement | null>(null);
   useEffect(() => { setMobileNavOpen(false); }, [pathname]);
+  // Body-scroll-lock + Esc close + focus restoration + focus-trap while open.
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    lastFocusedRef.current = document.activeElement as HTMLElement | null;
+    // Move focus to the drawer so screen readers + keyboard users start there.
+    const aside = drawerRef.current;
+    aside?.focus?.();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setMobileNavOpen(false);
+      } else if (e.key === 'Tab') {
+        // Simple focus trap: keep tab cycle inside the drawer.
+        const focusables = aside?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusables || focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          last.focus(); e.preventDefault();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          first.focus(); e.preventDefault();
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKey);
+      // Restore focus to the trigger (hamburger) once the drawer closes.
+      lastFocusedRef.current?.focus?.();
+    };
+  }, [mobileNavOpen]);
+  // Swipe-left to close. Track touchstart x → if delta < -50px close.
+  function onTouchStart(e: React.TouchEvent) {
+    (e.currentTarget as any).__touchX = e.touches[0].clientX;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    const startX = (e.currentTarget as any).__touchX as number | undefined;
+    if (startX == null) return;
+    const endX = e.changedTouches[0].clientX;
+    if (endX - startX < -50) setMobileNavOpen(false);
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -458,6 +505,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
       {/* ───── Sidebar ───── */}
       <aside
+        ref={drawerRef as any}
+        id="closdex-mobile-nav"
+        tabIndex={-1}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        aria-label="Navigation"
         style={{
           width: 248,
           flexShrink: 0,
@@ -466,6 +519,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
+          outline: 'none',
         }}
       >
         {/* Logo */}
@@ -645,15 +699,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             background: COLOR.paper,
           }}
         >
-          {/* Hamburger — visible only on phones (show-mobile-only) */}
+          {/* Hamburger — visible only below lg (show-mobile-only) */}
           <button
             type="button"
             className="show-mobile-only"
             aria-label="Open navigation"
+            aria-expanded={mobileNavOpen}
+            aria-controls="closdex-mobile-nav"
             onClick={() => setMobileNavOpen(true)}
             style={{
-              width: 38,
-              height: 38,
+              width: 44,
+              height: 44,
               borderRadius: 10,
               border: `1px solid ${COLOR.hairline}`,
               background: COLOR.paper,
@@ -664,11 +720,37 @@ export function AppShell({ children }: { children: ReactNode }) {
               cursor: 'pointer',
             }}
           >
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 6h18" />
               <path d="M3 12h18" />
               <path d="M3 18h18" />
             </svg>
+          </button>
+          {/* Closdex logo — visible only below lg (sidebar is hidden). Routes
+              to home so users have a one-tap escape from any inner page. */}
+          <button
+            type="button"
+            className="show-mobile-only"
+            onClick={() => router.push('/dashboard')}
+            aria-label="Closdex home"
+            style={{
+              alignItems: 'center',
+              gap: 8,
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              color: COLOR.ink,
+              flexShrink: 0,
+            }}
+          >
+            <svg width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M12 2.5 22 20.5H2L12 2.5Z" fill={COLOR.ink} />
+              <path d="M12 12.2 16.8 20.5H7.2L12 12.2Z" fill={COLOR.violet} />
+            </svg>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: '-0.03em', color: COLOR.ink }}>
+              Closdex
+            </span>
           </button>
           {/* Search */}
           <div style={{ position: 'relative', flex: 1, maxWidth: 460 }}>
