@@ -139,7 +139,7 @@ export default function DisputesPage() {
     router.push(`/app/challenges/${d.attempt.challenge.id}/result?attempt=${d.attempt.id}`);
 
   return (
-    <div>
+    <div data-resp-page="disputes">
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
         {/* Header */}
         <div style={{ marginBottom: '8px' }}>
@@ -285,6 +285,7 @@ export default function DisputesPage() {
             </p>
             <button
               type="button"
+              data-disputes-empty-cta
               onClick={() => router.push('/app/attempts')}
               style={{
                 marginTop: '28px',
@@ -326,6 +327,8 @@ export default function DisputesPage() {
           <>
             {/* Filter tabs */}
             <div
+              className="r-hscroll"
+              data-disputes-filter-tabs
               style={{
                 marginTop: '34px',
                 display: 'flex',

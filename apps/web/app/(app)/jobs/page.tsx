@@ -121,8 +121,23 @@ export default function JobsPage() {
     ];
   }, [apps]);
 
+  // Lock body scroll while the mobile filter sheet is open + close on Escape.
+  useEffect(() => {
+    if (!filterOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFilterOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [filterOpen]);
+
   return (
-    <div>
+    <div data-resp-page="jobs">
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
         <div
           style={{
@@ -241,6 +256,21 @@ export default function JobsPage() {
 
         {filterOpen && (
           <div
+            onClick={() => setFilterOpen(false)}
+            data-jobs-scrim
+            aria-hidden="true"
+            style={{
+              display: 'none',
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(11,11,15,0.45)',
+              zIndex: 90,
+            }}
+          />
+        )}
+        {filterOpen && (
+          <div
+            data-jobs-filter-panel
             style={{
               marginBottom: '24px',
               padding: '18px 20px',
@@ -251,6 +281,48 @@ export default function JobsPage() {
               gap: '18px',
             }}
           >
+            <div
+              data-jobs-filter-header
+              style={{
+                display: 'none',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: '12px',
+                borderBottom: '1px solid #E7E7EC',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Space Grotesk',sans-serif",
+                  fontWeight: 700,
+                  fontSize: '16px',
+                  color: '#0B0B0F',
+                }}
+              >
+                Filters
+              </div>
+              <button
+                type="button"
+                onClick={() => setFilterOpen(false)}
+                aria-label="Close filters"
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  border: '1px solid #E7E7EC',
+                  borderRadius: '10px',
+                  background: '#fff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#3A3A44',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <div>
               <div
                 style={{
@@ -409,6 +481,7 @@ export default function JobsPage() {
           Application pipeline
         </div>
         <section
+          data-jobs-pipeline
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -418,18 +491,27 @@ export default function JobsPage() {
             marginBottom: '40px',
           }}
         >
-          {pipeline.map((step, idx) => (
-            <PipelineStep
-              key={step.label}
-              label={step.label}
-              value={step.value}
-              accent={step.accent}
-              showChevron={idx < pipeline.length - 1}
-            />
-          ))}
+          <div
+            className="r-hscroll"
+            style={{ display: 'flex', alignItems: 'center', width: '100%' }}
+          >
+            {pipeline.map((step, idx) => (
+              <PipelineStep
+                key={step.label}
+                label={step.label}
+                value={step.value}
+                accent={step.accent}
+                showChevron={idx < pipeline.length - 1}
+              />
+            ))}
+          </div>
         </section>
 
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '26px', marginBottom: '8px' }}>
+        <nav
+          className="r-hscroll"
+          data-jobs-tabs
+          style={{ display: 'flex', alignItems: 'center', gap: '26px', marginBottom: '8px' }}
+        >
           <button
             onClick={() => setTab('all')}
             style={{
@@ -496,6 +578,7 @@ export default function JobsPage() {
               return (
                 <div
                   key={j.id}
+                  data-jobs-card
                   onClick={() => router.push(`/jobs/${j.id}`)}
                   style={{
                     display: 'flex',
@@ -595,6 +678,7 @@ export default function JobsPage() {
                   </div>
                   {salary && (
                     <span
+                      data-jobs-card-salary
                       style={{
                         fontFamily: "'Space Mono',monospace",
                         fontSize: '13px',
@@ -607,6 +691,7 @@ export default function JobsPage() {
                     </span>
                   )}
                   <span
+                    data-jobs-card-bookmark
                     style={{
                       width: '38px',
                       height: '38px',
@@ -634,6 +719,7 @@ export default function JobsPage() {
                     </svg>
                   </span>
                   <button
+                    data-jobs-card-details
                     onClick={(e) => {
                       e.stopPropagation();
                       router.push(`/jobs/${j.id}`);
@@ -656,6 +742,7 @@ export default function JobsPage() {
                   </button>
                   {applied ? (
                     <span
+                      data-jobs-card-cta
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -680,6 +767,7 @@ export default function JobsPage() {
                     </span>
                   ) : (
                     <button
+                      data-jobs-card-cta
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/jobs/${j.id}`);

@@ -114,9 +114,10 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div>
+    <div data-resp="notifications">
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
         <div
+          data-notif-header
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -153,7 +154,7 @@ export default function NotificationsPage() {
               {unreadCount} unread
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+          <div data-notif-toolbar style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
             <label
               onClick={() => setShowUnreadOnly((p) => !p)}
               style={{

@@ -195,7 +195,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div>
+    <div data-resp="settings">
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '34px 40px 72px' }}>
         <div
           style={{
@@ -222,22 +222,22 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <nav
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '26px',
-            borderBottom: '1px solid #E7E7EC',
-            marginBottom: '36px',
-          }}
-        >
-          <button onClick={() => setTab('Profile')} style={tabLinkStyle(tab === 'Profile')}>
-            Profile
-          </button>
-          <button onClick={() => setTab('Security')} style={tabLinkStyle(tab === 'Security')}>
-            Security
-          </button>
-        </nav>
+        <div className="r-hscroll" style={{ borderBottom: '1px solid #E7E7EC', marginBottom: '36px' }}>
+          <nav
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '26px',
+            }}
+          >
+            <button onClick={() => setTab('Profile')} style={tabLinkStyle(tab === 'Profile')}>
+              Profile
+            </button>
+            <button onClick={() => setTab('Security')} style={tabLinkStyle(tab === 'Security')}>
+              Security
+            </button>
+          </nav>
+        </div>
 
         {tab === 'Profile' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
@@ -414,7 +414,7 @@ export default function SettingsPage() {
 
             {renderMsg(profileMsg)}
 
-            <div style={{ display: 'flex', paddingTop: '8px', borderTop: '1px solid #E7E7EC', marginTop: '6px' }}>
+            <div className="r-sticky-cta" style={{ display: 'flex', paddingTop: '8px', borderTop: '1px solid #E7E7EC', marginTop: '6px' }}>
               <button
                 onClick={saveProfile}
                 disabled={profileSaving}
@@ -473,7 +473,7 @@ export default function SettingsPage() {
 
             {renderMsg(pwMsg)}
 
-            <div style={{ display: 'flex', paddingTop: '8px', borderTop: '1px solid #E7E7EC', marginTop: '6px' }}>
+            <div className="r-sticky-cta" style={{ display: 'flex', paddingTop: '8px', borderTop: '1px solid #E7E7EC', marginTop: '6px' }}>
               <button
                 onClick={changePassword}
                 disabled={pwSaving || !currentPassword || !newPassword || !confirmPassword}

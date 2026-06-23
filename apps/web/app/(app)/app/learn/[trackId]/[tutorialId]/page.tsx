@@ -163,7 +163,7 @@ export default function TutorialPage() {
   const typeLabel = tutorial.type === 'VIDEO' ? 'Video' : 'Article';
 
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 40px 80px' }}>
+    <div data-resp="tutorial" style={{ maxWidth: 860, margin: '0 auto', padding: '32px 40px 80px' }}>
       {/* Back link */}
       <button
         onClick={() => router.push(`/learn/${trackId}`)}
@@ -274,6 +274,7 @@ export default function TutorialPage() {
         {tutorial.type === 'VIDEO' && tutorial.contentUrl ? (
           <iframe
             src={tutorial.contentUrl}
+            data-tutorial-iframe
             style={{
               width: '100%',
               height: 420,

@@ -122,7 +122,7 @@ export default function AttemptsPage() {
   if (authLoading || !user) return null;
 
   return (
-    <div>
+    <div data-resp-page="attempts">
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
 
         <div style={{ marginBottom: '34px' }}>
@@ -130,7 +130,7 @@ export default function AttemptsPage() {
           <p style={{ margin: '9px 0 0', fontSize: '15px', color: '#7A7A86' }}>Full history of your challenge attempts.</p>
         </div>
 
-        <section style={{ display: 'flex', alignItems: 'stretch', gap: '34px', padding: '24px 0 30px', borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', marginBottom: '34px' }}>
+        <section data-attempts-stats="true" style={{ display: 'flex', alignItems: 'stretch', gap: '34px', padding: '24px 0 30px', borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', marginBottom: '34px' }}>
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '34px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
@@ -174,8 +174,8 @@ export default function AttemptsPage() {
           </div>
         </section>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap', marginBottom: '6px' }}>
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
+        <div data-attempts-toolbar="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap', marginBottom: '6px' }}>
+          <nav data-attempts-pills="true" style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
             {STATUS_FILTERS.map(({ key, label }) => {
               const active = statusFilter === key;
               return (
@@ -208,7 +208,7 @@ export default function AttemptsPage() {
               );
             })}
           </nav>
-          <div style={{ position: 'relative', width: '250px' }}>
+          <div data-attempts-search="true" style={{ position: 'relative', width: '250px' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9A9AA4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
             <input
               value={search}
@@ -219,8 +219,8 @@ export default function AttemptsPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: '18px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: GRID, gap: '20px', alignItems: 'center', padding: '0 4px 12px', borderBottom: '1px solid #E7E7EC' }}>
+        <div data-attempts-table="true" style={{ marginTop: '18px' }}>
+          <div data-attempts-thead="true" style={{ display: 'grid', gridTemplateColumns: GRID, gap: '20px', alignItems: 'center', padding: '0 4px 12px', borderBottom: '1px solid #E7E7EC' }}>
             <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Challenge</div>
             <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Difficulty</div>
             <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Status</div>
@@ -257,6 +257,7 @@ export default function AttemptsPage() {
               return (
                 <div
                   key={a.id}
+                  data-attempts-row="true"
                   onClick={() => handleRowClick(a)}
                   role="button"
                   tabIndex={0}

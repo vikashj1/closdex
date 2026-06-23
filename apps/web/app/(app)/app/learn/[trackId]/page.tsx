@@ -203,7 +203,7 @@ export default function TrackDetailPage() {
   const pct = totalTutorials > 0 ? Math.round((completedCount / totalTutorials) * 100) : 0;
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 40px 80px' }}>
+    <div data-resp="learn-track" style={{ maxWidth: 900, margin: '0 auto', padding: '32px 40px 80px' }}>
       {/* Back link */}
       <button
         onClick={() => router.push('/app/learn')}

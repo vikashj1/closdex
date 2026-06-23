@@ -136,7 +136,7 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <div>
+    <div data-resp-page="applications">
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
 
         {/* Header */}
@@ -189,7 +189,11 @@ export default function ApplicationsPage() {
         </div>
 
         {/* Filter pills */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '30px' }}>
+        <div
+          className="r-hscroll"
+          data-applications-filter-pills
+          style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '30px' }}
+        >
           {FILTER_TABS.map((tab) => {
             const active = statusFilter === tab.value;
             const count = counts[tab.value] || 0;
@@ -296,6 +300,7 @@ export default function ApplicationsPage() {
               return (
                 <div
                   key={app.id}
+                  data-applications-row
                   role="link"
                   tabIndex={0}
                   onClick={() => router.push(`/jobs/${j.id}`)}
@@ -333,7 +338,7 @@ export default function ApplicationsPage() {
                   >
                     {initials || '—'}
                   </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div data-applications-meta style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '15px', fontWeight: 600, color: '#0B0B0F' }}>{j.title}</span>
                       <span
@@ -380,7 +385,7 @@ export default function ApplicationsPage() {
                       )}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div data-applications-date style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div
                       style={{
                         fontFamily: "'Space Mono',monospace",
@@ -399,6 +404,7 @@ export default function ApplicationsPage() {
                     </div>
                   </div>
                   <a
+                    data-applications-view
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();

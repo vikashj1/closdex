@@ -114,7 +114,7 @@ export default function JobDetailPage() {
     : null;
 
   return (
-    <main style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
+    <main data-resp-page="job-detail" style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 40px 80px' }}>
 
         {/* Back link */}
@@ -143,7 +143,7 @@ export default function JobDetailPage() {
 
         {/* Title card */}
         <section style={{ border: '1px solid #E7E7EC', borderRadius: 14, padding: 28, background: '#FFFFFF', marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
+          <div data-job-detail-title-row style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
 
             {/* Left */}
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -176,7 +176,7 @@ export default function JobDetailPage() {
             </div>
 
             {/* Right: Apply button / Applied pill */}
-            <div style={{ flexShrink: 0 }}>
+            <div data-job-detail-apply-slot style={{ flexShrink: 0 }}>
               {applied ? (
                 <div style={{
                   padding: '11px 22px',
@@ -337,6 +337,46 @@ export default function JobDetailPage() {
           </section>
         )}
 
+      </div>
+
+      {/* Mobile-only sticky CTA — pinned to viewport bottom on phones.
+          Hidden on tablet+ via .r-sticky-cta media query (CSS in globals.css). */}
+      <div className="r-sticky-cta" data-job-detail-sticky-cta>
+        {applied ? (
+          <div style={{
+            padding: '12px 22px',
+            borderRadius: 10,
+            background: 'rgba(31,138,91,0.10)',
+            border: '1px solid rgba(31,138,91,0.30)',
+            color: '#1F8A5B',
+            fontFamily: 'Inter,sans-serif',
+            fontSize: 14,
+            fontWeight: 600,
+            textAlign: 'center',
+          }}>
+            Applied ✓
+          </div>
+        ) : (
+          <button
+            onClick={handleApply}
+            disabled={applying}
+            style={{
+              background: '#5B4BF5',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              padding: '12px 22px',
+              fontFamily: 'Inter,sans-serif',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: applying ? 'default' : 'pointer',
+              opacity: applying ? 0.7 : 1,
+              width: '100%',
+            }}
+          >
+            {applying ? 'Applying…' : 'Apply now'}
+          </button>
+        )}
       </div>
     </main>
   );

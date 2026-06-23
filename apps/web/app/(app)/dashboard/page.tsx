@@ -234,10 +234,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div>
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '34px 40px 72px' }}>
+    <div data-resp="dashboard-home">
+      <div data-dash-page style={{ maxWidth: 1180, margin: '0 auto', padding: '34px 40px 72px' }}>
         {/* Title row */}
         <div
+          data-dash-title-row
           style={{
             display: 'flex',
             alignItems: 'flex-start',
@@ -274,40 +275,42 @@ export default function DashboardPage() {
               )}
             </p>
           </div>
-          <button
-            onClick={() => router.push('/app/challenges')}
-            style={{
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: '#0B0B0F',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 10,
-              padding: '11px 18px',
-              fontFamily: 'Inter,sans-serif',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            <svg
-              width={16}
-              height={16}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.9}
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <div className="r-sticky-cta" data-dash-cta-wrap>
+            <button
+              onClick={() => router.push('/app/challenges')}
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#0B0B0F',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                padding: '11px 18px',
+                fontFamily: 'Inter,sans-serif',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
             >
-              <circle cx={12} cy={12} r={9} />
-              <circle cx={12} cy={12} r={5} />
-              <circle cx={12} cy={12} r={1.4} />
-            </svg>
-            Take a challenge
-          </button>
+              <svg
+                width={16}
+                height={16}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.9}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx={12} cy={12} r={9} />
+                <circle cx={12} cy={12} r={5} />
+                <circle cx={12} cy={12} r={1.4} />
+              </svg>
+              Take a challenge
+            </button>
+          </div>
         </div>
 
         {/* ===== RANK HERO ===== */}
@@ -399,7 +402,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Inline stats */}
-            <div style={{ display: 'flex', gap: 34, paddingBottom: 6 }}>
+            <div data-dash-hero-stats style={{ display: 'flex', gap: 34, paddingBottom: 6 }}>
               <div>
                 <div
                   style={{
@@ -551,6 +554,7 @@ export default function DashboardPage() {
 
         {/* ===== UTILITY STRIP ===== */}
         <section
+          data-dash-utility
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4,1fr)',
@@ -840,7 +844,7 @@ export default function DashboardPage() {
         </section>
 
         {/* ===== HEATMAP + BADGES ===== */}
-        <section style={{ display: 'flex', gap: 48, alignItems: 'stretch', marginBottom: 46 }}>
+        <section data-dash-heatbadge style={{ display: 'flex', gap: 48, alignItems: 'stretch', marginBottom: 46 }}>
           {/* Heatmap */}
           <div style={{ flexShrink: 0 }}>
             <div
@@ -876,18 +880,20 @@ export default function DashboardPage() {
                 Last 26 weeks
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 3 }}>
-              {heatmapWeeks.map((week, wi) => (
-                <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {week.days.map((d, di) => (
-                    <div
-                      key={di}
-                      title={`${d.count} attempts`}
-                      style={{ width: 13, height: 13, borderRadius: 3, background: d.bg }}
-                    />
-                  ))}
-                </div>
-              ))}
+            <div className="r-hscroll">
+              <div style={{ display: 'flex', gap: 3 }}>
+                {heatmapWeeks.map((week, wi) => (
+                  <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {week.days.map((d, di) => (
+                      <div
+                        key={di}
+                        title={`${d.count} attempts`}
+                        style={{ width: 13, height: 13, borderRadius: 3, background: d.bg }}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
             <div
               style={{
@@ -1077,7 +1083,7 @@ export default function DashboardPage() {
         </section>
 
         {/* ===== THREE PANELS ===== */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.45fr 1fr', gap: 50 }}>
+        <div data-dash-panels style={{ display: 'grid', gridTemplateColumns: '1.45fr 1fr', gap: 50 }}>
           {/* Recommended challenges */}
           <section>
             <div

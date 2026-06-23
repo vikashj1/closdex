@@ -141,6 +141,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
 
   return (
     <main
+      data-resp-page="challenge-detail"
       style={{
         flex: 1,
         overflowY: 'auto',
@@ -670,6 +671,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
 
             {/* CTA card */}
             <section
+              data-cta-card="true"
               style={{
                 border: '1px solid #F4E4C4',
                 borderRadius: 14,

@@ -214,6 +214,7 @@ export default function LearnPage() {
 
   const renderTrackGrid = () => (
     <div
+      data-learn-grid
       style={{
         marginTop: '40px',
         display: 'grid',
@@ -337,7 +338,7 @@ export default function LearnPage() {
   );
 
   return (
-    <div>
+    <div data-resp="learn">
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
         {headerBlock}
         {loading

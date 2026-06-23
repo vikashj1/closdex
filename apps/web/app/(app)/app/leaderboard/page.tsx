@@ -87,7 +87,7 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <div>
+    <div data-resp="leaderboard">
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap', marginBottom: '24px' }}>
@@ -98,7 +98,7 @@ export default function LeaderboardPage() {
           <button style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '38px', padding: '0 15px', border: '1px solid #E7E7EC', borderRadius: '10px', background: '#fff', fontFamily: 'Inter,sans-serif', fontSize: '13px', fontWeight: '600', color: '#3A3A44', cursor: 'pointer' }}>All categories<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></button>
         </div>
 
-        <div style={{ marginBottom: '30px' }}>
+        <div style={{ marginBottom: '30px' }} className="r-hscroll" data-leaderboard-tabs>
           <div style={{ display: 'inline-flex', border: '1px solid #E7E7EC', borderRadius: '10px', overflow: 'hidden' }}>
             {PERIODS.map((p, i) => {
               const active = period === p.key;
@@ -150,7 +150,7 @@ export default function LeaderboardPage() {
             {(podium.first || podium.second || podium.third) && (
               <section style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', background: 'radial-gradient(120% 140% at 50% 0%, #3A2D7A 0%, #221A45 42%, #14101F 74%, #0B0B0F 100%)', padding: '40px 36px 0', marginBottom: '46px' }}>
                 <div style={{ position: 'absolute', top: '-70px', left: '50%', transform: 'translateX(-50%)', width: '420px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,165,36,0.16) 0%, rgba(245,165,36,0) 65%)', pointerEvents: 'none' }}></div>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '30px' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '30px' }} data-leaderboard-podium>
 
                   {podium.second && (
                     <PodiumSlot
@@ -183,8 +183,8 @@ export default function LeaderboardPage() {
             )}
 
             <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', fontWeight: '700', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86', marginBottom: '14px' }}>Full ranking</div>
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr 150px 110px', gap: '18px', alignItems: 'center', padding: '0 14px 12px' }}>
+            <div data-leaderboard-list>
+              <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr 150px 110px', gap: '18px', alignItems: 'center', padding: '0 14px 12px' }} data-leaderboard-head>
                 <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Rank</div>
                 <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Player</div>
                 <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Tier</div>
@@ -200,6 +200,7 @@ export default function LeaderboardPage() {
                   <div
                     key={entry.salesperson.publicSlug}
                     onClick={() => goToProfile(entry.salesperson.publicSlug)}
+                    data-leaderboard-entry
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '64px 1fr 150px 110px',
@@ -275,6 +276,7 @@ function PodiumSlot({
   return (
     <div
       onClick={onClick}
+      data-podium-slot={position}
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '160px', cursor: 'pointer' }}
     >
       {isFirst ? (

@@ -269,11 +269,11 @@ export default function ProfilePage() {
   const publicUrlDisplay = `closdex.com/u/${sp.publicSlug}`;
 
   return (
-    <div>
+    <div data-resp="sp-profile">
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
 
         {/* Header row ─────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '22px', flexWrap: 'wrap', marginBottom: '30px' }}>
+        <div data-sp-profile-header style={{ display: 'flex', alignItems: 'flex-start', gap: '22px', flexWrap: 'wrap', marginBottom: '30px' }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#0B0B0F', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: '32px', flexShrink: 0 }}>
             {initial}
           </div>
@@ -321,7 +321,7 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
+          <div data-sp-profile-actions style={{ display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
             <button
               onClick={handleToggleOpenToWork}
               disabled={toggling}
@@ -346,7 +346,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Stats row ──────────────────────────────────────────────────── */}
-        <section style={{ display: 'flex', alignItems: 'stretch', gap: '30px', flexWrap: 'wrap', padding: '24px 0 28px', borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', marginBottom: '42px' }}>
+        <section data-sp-profile-stats style={{ display: 'flex', alignItems: 'stretch', gap: '30px', flexWrap: 'wrap', padding: '24px 0 28px', borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', marginBottom: '42px' }}>
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '30px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -416,19 +416,21 @@ export default function ProfilePage() {
               {attempts.length} attempts total · last 26 weeks
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '3px' }}>
-            {weeks.map((week, wi) => (
-              <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                {week.days.map((d, di) => (
-                  <div key={di} style={{ width: '13px', height: '13px', borderRadius: '3px', background: d.bg }} />
-                ))}
-              </div>
-            ))}
+          <div className="r-hscroll">
+            <div style={{ display: 'flex', gap: '3px' }}>
+              {weeks.map((week, wi) => (
+                <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {week.days.map((d, di) => (
+                    <div key={di} style={{ width: '13px', height: '13px', borderRadius: '3px', background: d.bg }} />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Two-column main ────────────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: '44px', alignItems: 'start' }}>
+        <div data-sp-profile-lower style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: '44px', alignItems: 'start' }}>
 
           {/* Recent challenges ─────────────────────────────────────── */}
           <section>

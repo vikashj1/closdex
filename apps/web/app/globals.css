@@ -789,3 +789,395 @@ body { min-height: 100vh; }
 button { font-family: inherit; cursor: pointer; }
 input, textarea, select { font-family: inherit; color: inherit; background: transparent; border: none; outline: none; }
 a { color: inherit; text-decoration: none; }
+
+/* ─── Salesperson profile mobile responsive ─────────────────────────────────
+   Header (avatar + identity + actions) goes vertical on phones with the avatar
+   centered and the action buttons in a full-width row. Stat strip wraps
+   5 → 2 → 1. Lower 2-col area stacks vertically. Heatmap is in .r-hscroll. */
+@media (max-width: 767px) {
+  [data-resp="sp-profile"] [data-sp-profile-header] {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 14px !important;
+  }
+  [data-resp="sp-profile"] [data-sp-profile-header] > div:nth-child(2) {
+    width: 100% !important;
+    text-align: center !important;
+  }
+  [data-resp="sp-profile"] [data-sp-profile-header] > div:nth-child(2) > div {
+    justify-content: center !important;
+  }
+  [data-resp="sp-profile"] [data-sp-profile-actions] {
+    width: 100% !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+  }
+  [data-resp="sp-profile"] [data-sp-profile-actions] > button,
+  [data-resp="sp-profile"] [data-sp-profile-actions] > a {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+  }
+  /* Stat strip — flex row collapses to 1 col on phones. The data-resp blanket
+     handles grids; the strip is flex, so we explicitly stack children. The
+     internal `width: 1px` dividers are hidden so we don't get stray hairlines. */
+  [data-resp="sp-profile"] [data-sp-profile-stats] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 18px !important;
+  }
+  [data-resp="sp-profile"] [data-sp-profile-stats] > div {
+    width: 100% !important;
+  }
+  [data-resp="sp-profile"] [data-sp-profile-stats] > div > div[style*="width: 1px"] {
+    display: none !important;
+  }
+  /* Lower two-col area: data-resp blanket already collapses this to 1fr;
+     ensure spacing reads cleanly. */
+  [data-resp="sp-profile"] [data-sp-profile-lower] {
+    gap: 32px !important;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  /* Stat strip on tablet — 2-up wrap so 5 items lay 2 + 2 + 1 instead of
+     overflowing into 5 cramped columns. */
+  [data-resp="sp-profile"] [data-sp-profile-stats] > div {
+    flex: 1 1 calc(50% - 30px) !important;
+  }
+  [data-resp="sp-profile"] [data-sp-profile-stats] > div > div[style*="width: 1px"] {
+    display: none !important;
+  }
+}
+
+/* ─── Settings mobile responsive ────────────────────────────────────────────
+   Form fields are already in 2-col grids that the data-resp blanket collapses
+   to 1 column. Tabs nav is wrapped in .r-hscroll. The Save changes button is
+   pinned via .r-sticky-cta — add bottom padding so content doesn't slip under. */
+@media (max-width: 767px) {
+  [data-resp="settings"] > div {
+    padding-bottom: 96px !important;
+  }
+  /* Inputs + selects get violet focus ring on phones. */
+  [data-resp="settings"] input:focus,
+  [data-resp="settings"] select:focus,
+  [data-resp="settings"] textarea:focus {
+    border-color: #5B4BF5 !important;
+    box-shadow: 0 0 0 3px rgba(91,75,245,0.18) !important;
+  }
+  /* Tabs nav inside .r-hscroll keeps a single row; tighten gap for narrow
+     viewports. */
+  [data-resp="settings"] .r-hscroll nav {
+    flex-wrap: nowrap !important;
+  }
+  [data-resp="settings"] .r-hscroll nav > button {
+    flex-shrink: 0 !important;
+  }
+  /* Header (Settings title + Sign out) — let sign-out button sit beside the
+     title at narrow widths rather than wrapping to its own line below. */
+  [data-resp="settings"] > div > div:first-child > button {
+    min-height: 44px !important;
+  }
+}
+
+/* Desktop + tablet: keep the focus ring on the inputs too so the spec line
+   "violet focus ring" applies everywhere, not only mobile. */
+[data-resp="settings"] input:focus,
+[data-resp="settings"] select:focus,
+[data-resp="settings"] textarea:focus {
+  border-color: #5B4BF5 !important;
+  box-shadow: 0 0 0 3px rgba(91,75,245,0.18) !important;
+}
+
+/* ─── Notifications mobile responsive ───────────────────────────────────────
+   Header (title + toolbar) wraps cleanly. Each row collapses so the timestamp
+   tucks under the body rather than wrapping awkwardly. */
+@media (max-width: 767px) {
+  [data-resp="notifications"] [data-notif-header] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+  [data-resp="notifications"] [data-notif-toolbar] {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    justify-content: space-between !important;
+  }
+  [data-resp="notifications"] [data-notif-toolbar] > button {
+    min-height: 44px !important;
+  }
+  /* Row layout — title row already wraps; ensure the timestamp drops under the
+     body when the row is too narrow to hold it on the right. */
+  [data-resp="notifications"] > div > div:last-child > div {
+    flex-wrap: wrap !important;
+  }
+  [data-resp="notifications"] > div > div:last-child > div > div:nth-child(2) {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+  [data-resp="notifications"] > div > div:last-child > div > span:last-child {
+    margin-left: 23px !important;
+    margin-top: 2px !important;
+  }
+}
+
+/* ─── Learn hub mobile responsive ───────────────────────────────────────────
+   Track grid: 3-col desktop → 2-col tablet → 1-col phone. The auto-fill
+   minmax(330px, 1fr) auto-collapses to 1 col below ~660px viewport, but on
+   the smallest devices (≤360px) we force it explicitly so the card never
+   triggers horizontal overflow. */
+@media (max-width: 767px) {
+  [data-resp="learn"] [data-learn-grid] {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  [data-resp="learn"] [data-learn-grid] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* ─── Leaderboard mobile responsive (slice 56 batch 2) ─────────────────────
+   Redesigned salesperson leaderboard (Vikash 2026-06-16). Desktop grid is
+   `64px 1fr 150px 110px` (rank / player / tier / points). On phones we
+   compress each row to a 3-col layout: rank | avatar+name | points.
+   The podium stacks vertically with #1 on top (gold), then #2, then #3
+   using flex order. Period tabs already wrap in `.r-hscroll`. */
+@media (max-width: 767px) {
+  /* Podium: stack vertically, #1 first. */
+  [data-resp="leaderboard"] [data-leaderboard-podium] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot] {
+    width: 100% !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+    background: rgba(255,255,255,0.04) !important;
+  }
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot="1"] {
+    order: 1 !important;
+    background: rgba(245,165,36,0.10) !important;
+  }
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot="2"] { order: 2 !important; }
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot="3"] { order: 3 !important; }
+  /* Drop the crown SVG / spacer above each avatar and the 122x60-108 pedestal
+     block. We keep the avatar, name, tier pill, points. */
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot] > svg:first-child,
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot] > div:last-child[style*="border-radius: 12px 12px 0 0"] {
+    display: none !important;
+  }
+  /* The 30px spacer div (non-first podium slots) — drop it. It's an empty div
+     with inline `height: 30px` and no other styles. */
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot] > div[style*="height: '30px'"]:first-child,
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot] > div[style*="height: 30px"]:first-child {
+    display: none !important;
+  }
+  /* Avatar circle loses its bottom margin in the new flex-row layout. */
+  [data-resp="leaderboard"] [data-leaderboard-podium] [data-podium-slot] > div[style*="border-radius: 50%"] {
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important;
+  }
+  /* Full ranking header: 3-col, hide standalone tier column. */
+  [data-resp="leaderboard"] [data-leaderboard-head] {
+    grid-template-columns: 44px 1fr auto !important;
+    gap: 10px !important;
+    padding: 0 12px 10px !important;
+  }
+  [data-resp="leaderboard"] [data-leaderboard-head] > :nth-child(3) {
+    display: none !important;
+  }
+  /* Full ranking row: 3-col grid (rank | player | points). Specificity
+     boosted with `[data-leaderboard-entry][data-leaderboard-entry]` to beat
+     the data-resp blanket `grids → 1fr` rule. */
+  [data-resp="leaderboard"] [data-leaderboard-entry][data-leaderboard-entry] {
+    display: grid !important;
+    grid-template-columns: 44px 1fr auto !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    align-items: center !important;
+  }
+  /* Hide the standalone tier column on phones (3rd child). */
+  [data-resp="leaderboard"] [data-leaderboard-entry][data-leaderboard-entry] > :nth-child(3) {
+    display: none !important;
+  }
+  /* Keep avatar+name flex on one row. */
+  [data-resp="leaderboard"] [data-leaderboard-entry][data-leaderboard-entry] > :nth-child(2) {
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+  }
+  /* Tabs marginBottom polish. */
+  [data-resp="leaderboard"] [data-leaderboard-tabs] {
+    margin-bottom: 22px !important;
+  }
+}
+
+/* ─── Attempt result mobile responsive (slice 56 batch 2) ─────────────────
+   Desktop runs a 2-col grid (breakdown + radar). The data-resp blanket
+   already collapses to 1fr. Two extras here: radar SVG scales fluidly with
+   a max-width cap, and the actions row stacks full-width on phones. */
+@media (max-width: 767px) {
+  /* Radar SVG: scale to fit its column, capped so it doesn't grow past the
+     desktop intent. */
+  [data-resp="result"] [data-result-radar] {
+    width: 100% !important;
+    max-width: 240px !important;
+    height: auto !important;
+    flex-shrink: 1 !important;
+  }
+  /* Radar row: stack SVG above the dim list on phones. */
+  [data-resp="result"] [data-result-radar-row] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 18px !important;
+  }
+  /* Action buttons: stack vertical, full width, ≥44px tap target. */
+  [data-resp="result"] [data-result-actions] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  [data-resp="result"] [data-result-actions] > button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+}
+
+/* ─── Learn track + tutorial mobile responsive (slice 56 batch 2) ─────────
+   Track detail: tutorial rows are already a vertical stack. Progress bar
+   header is already 100% width. No overrides needed beyond what the
+   data-resp blanket provides.
+   Tutorial page: VIDEO iframe is inline 420px on desktop; shrink to 240
+   on phones so it sits in one viewport. Quiz option buttons go full-width
+   for a ≥44px tap target. */
+@media (max-width: 767px) {
+  /* VIDEO iframe height. */
+  [data-resp="tutorial"] [data-tutorial-iframe] {
+    height: 240px !important;
+  }
+  /* Quiz option buttons — they live inside a flexDirection: column wrapper
+     with gap 7. Inline serializes to `flex-direction:column` so match both. */
+  [data-resp="tutorial"] section div[style*="flex-direction: column"][style*="gap: 7"] > button,
+  [data-resp="tutorial"] section div[style*="flexDirection: column"][style*="gap: 7"] > button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+}
+
+/* ─── Dashboard (Home) mobile + tablet responsive ──────────────────────────
+   Targets the logged-in salesperson Home at /dashboard. The page lives inside
+   <main data-resp="app"> which already catches generic padding/grid collapse;
+   these rules layer on the page-specific behavior:
+   - Rank-hero inline stats: 2-col grid on phones (≤767), 1-col on tiny phones
+     (≤479). Vertical hairline dividers between stats are hidden when wrapping.
+     Tablet (768-1023) stays 3-col flex — no override needed.
+   - Utility strip (4-col): 2x2 on tablet, vertical stack with hairlines on
+     phone.
+   - Heatmap + badges (flex row, 48px gap, badges col has a left border):
+     stack vertically on tablet + phone; the badges column drops its left
+     border / left padding and gains a top hairline instead.
+   - Bottom 3-panel grid (1.45fr | 1fr): stack vertically on tablet (the
+     data-resp blanket already does this on phone).
+   - "Take a challenge" CTA: pinned to viewport bottom on phones via
+     `.r-sticky-cta` (defined earlier); page wrapper gets 76px bottom pad. */
+@media (max-width: 767px) {
+  /* Page wrapper: extra bottom padding so content clears the sticky CTA. */
+  [data-resp="dashboard-home"] [data-dash-page] {
+    padding-bottom: 76px !important;
+  }
+  /* Title row: stack so heading wraps cleanly above the CTA wrapper. The CTA
+     wrapper itself gets repositioned by .r-sticky-cta. */
+  [data-resp="dashboard-home"] [data-dash-title-row] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  /* Rank-hero inline stats: 3-up flex → 2-up grid; dividers (2nd, 4th
+     children) hide. */
+  [data-resp="dashboard-home"] [data-dash-hero-stats] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 18px 24px !important;
+    padding-bottom: 0 !important;
+  }
+  [data-resp="dashboard-home"] [data-dash-hero-stats] > :nth-child(2),
+  [data-resp="dashboard-home"] [data-dash-hero-stats] > :nth-child(4) {
+    display: none !important;
+  }
+  /* Utility strip: stack with hairlines flipped from right to bottom. */
+  [data-resp="dashboard-home"] [data-dash-utility] {
+    grid-template-columns: 1fr !important;
+  }
+  [data-resp="dashboard-home"] [data-dash-utility] > div {
+    border-right: none !important;
+    border-bottom: 1px solid #E7E7EC !important;
+    padding: 18px 0 !important;
+  }
+  [data-resp="dashboard-home"] [data-dash-utility] > div:last-child {
+    border-bottom: none !important;
+  }
+  /* Heatmap + badges: stack; badges col borders flip from left to top. */
+  [data-resp="dashboard-home"] [data-dash-heatbadge] {
+    flex-direction: column !important;
+    gap: 28px !important;
+  }
+  [data-resp="dashboard-home"] [data-dash-heatbadge] > div:nth-child(2) {
+    padding-left: 0 !important;
+    padding-top: 24px !important;
+    border-left: none !important;
+    border-top: 1px solid #E7E7EC !important;
+  }
+  /* Bottom 3 panels: data-resp blanket already collapses to 1fr; just tighten
+     the gap so the panels don't sit 50px apart on a phone. */
+  [data-resp="dashboard-home"] [data-dash-panels] {
+    gap: 28px !important;
+  }
+}
+
+@media (max-width: 479px) {
+  /* Tiny phones: rank-hero stats stack into one column. */
+  [data-resp="dashboard-home"] [data-dash-hero-stats] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  /* Tablet utility strip: 4-up → 2x2. Flip the right-border on the row-end
+     cells off, add a row-1 bottom border. */
+  [data-resp="dashboard-home"] [data-dash-utility] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  [data-resp="dashboard-home"] [data-dash-utility] > div:nth-child(2n) {
+    border-right: none !important;
+  }
+  [data-resp="dashboard-home"] [data-dash-utility] > div:nth-child(-n+2) {
+    border-bottom: 1px solid #E7E7EC !important;
+  }
+  /* Bottom 3 panels: stack on tablet. */
+  [data-resp="dashboard-home"] [data-dash-panels] {
+    grid-template-columns: 1fr !important;
+    gap: 36px !important;
+  }
+  /* Heatmap + badges: stack on tablet (48px horizontal gap was too tight). */
+  [data-resp="dashboard-home"] [data-dash-heatbadge] {
+    flex-direction: column !important;
+    gap: 32px !important;
+  }
+  [data-resp="dashboard-home"] [data-dash-heatbadge] > div:nth-child(2) {
+    padding-left: 0 !important;
+    padding-top: 24px !important;
+    border-left: none !important;
+    border-top: 1px solid #E7E7EC !important;
+  }
+}
+

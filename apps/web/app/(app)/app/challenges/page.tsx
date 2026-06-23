@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useRequireAuth } from '@/lib/auth';
 import { ApiError, api, type AttemptDetail, type ChallengeSummary } from '@/lib/api';
 
@@ -45,6 +45,7 @@ function formatGoalLabel(goalType: string): string {
 export default function ChallengesPage() {
   const { loading: authLoading } = useRequireAuth('SALESPERSON');
   const router = useRouter();
+  const pathname = usePathname();
 
   const [items, setItems] = useState<ChallengeSummary[]>([]);
   const [total, setTotal] = useState(0);
@@ -57,6 +58,23 @@ export default function ChallengesPage() {
   const [diff, setDiff] = useState<DiffFilter>('All');
   const [goalFilter, setGoalFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFiltersOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [filtersOpen]);
+
+  useEffect(() => {
+    setFiltersOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -103,9 +121,36 @@ export default function ChallengesPage() {
   }, [items, diff, goalFilter, searchQuery]);
 
   return (
-    <div>
+    <div data-resp="challenges" data-filter-open={filtersOpen ? 'true' : 'false'}>
+      {filtersOpen && (
+        <div
+          onClick={() => setFiltersOpen(false)}
+          className="show-mobile-only"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,15,0.42)', zIndex: 99, display: 'none' }}
+        />
+      )}
       <div style={{ display: 'flex', alignItems: 'stretch', minHeight: '100%' }}>
-        <aside style={{ width: '236px', flexShrink: 0, borderRight: '1px solid #E7E7EC', padding: '36px 26px 40px 40px' }}>
+        <aside className="challenges-filter-aside" data-open={filtersOpen ? 'true' : 'false'} style={{ width: '236px', flexShrink: 0, borderRight: '1px solid #E7E7EC', padding: '36px 26px 40px 40px' }}>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(false)}
+            className="challenges-filter-close show-mobile-only"
+            aria-label="Close filters"
+            style={{
+              display: 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 36,
+              height: 36,
+              border: '1px solid #E7E7EC',
+              borderRadius: 10,
+              background: '#fff',
+              marginBottom: 14,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
           <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86', marginBottom: '14px' }}>Difficulty</div>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginBottom: '34px' }}>
             {DIFFICULTIES.map((d) => {
@@ -175,8 +220,33 @@ export default function ChallengesPage() {
                 {loading ? 'Loading…' : `Showing ${filtered.length} of ${total} challenges`}
               </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ position: 'relative', width: '230px' }}>
+            <div className="challenges-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(true)}
+                className="show-mobile-only"
+                style={{
+                  display: 'none',
+                  alignItems: 'center',
+                  gap: 8,
+                  height: 36,
+                  padding: '0 14px',
+                  border: '1px solid #E7E7EC',
+                  borderRadius: 10,
+                  background: '#fff',
+                  fontFamily: 'Inter,sans-serif',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#3A3A44',
+                  cursor: 'pointer',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18M6 12h12M10 18h4" />
+                </svg>
+                Filters
+              </button>
+              <div className="challenges-search" style={{ position: 'relative', width: '230px' }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9A9AA4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
                   <circle cx="11" cy="11" r="7" />
                   <path d="m21 21-4.3-4.3" />

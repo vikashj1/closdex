@@ -223,7 +223,7 @@ function ResultPageInner({ params }: { params: { id: string } }) {
     : { focus: 'the next round', tip: 'Try the same persona at the next difficulty when your discovery feels solid.' };
 
   return (
-    <main style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }}>
+    <main style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF' }} data-resp="result">
       <div style={{ maxWidth: 1020, margin: '0 auto', padding: '40px 40px 80px' }}>
 
         {/* Back link */}
@@ -419,10 +419,10 @@ function ResultPageInner({ params }: { params: { id: string } }) {
                 {scoring ? 'Waiting for evaluator…' : 'No rubric data available.'}
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }} data-result-radar-row>
 
                 {/* Radar SVG */}
-                <svg width="200" height="200" viewBox="0 0 260 260" style={{ flexShrink: 0 }}>
+                <svg width="200" height="200" viewBox="0 0 260 260" style={{ flexShrink: 0, maxWidth: '100%', height: 'auto' }} data-result-radar>
                   {ringPolygons.map((points, lvl) => (
                     <polygon key={lvl} points={points} fill="none" stroke="#EAEAEF" strokeWidth="0.8" />
                   ))}
@@ -499,7 +499,7 @@ function ResultPageInner({ params }: { params: { id: string } }) {
         </section>
 
         {/* ===== ACTIONS ===== */}
-        <section style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+        <section style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 8 }} data-result-actions>
           <button
             onClick={() => router.push('/app/challenges')}
             style={{
