@@ -385,6 +385,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const streak = user?.salesperson?.currentStreakDays ?? 0;
   const [unreadCount, setUnreadCount] = useState(0);
   const [search, setSearch] = useState('');
+  // Mobile drawer: sidebar slides in from the left on phones. Closed by
+  // default; the hamburger in the topbar toggles it, and any nav click
+  // closes it again so we don't trap focus inside.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => { setMobileNavOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (!user) return;
@@ -424,6 +429,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div
+      data-resp="app-shell"
+      data-mobile-open={mobileNavOpen ? 'true' : 'false'}
       style={{
         display: 'flex',
         height: '100vh',
@@ -435,6 +442,20 @@ export function AppShell({ children }: { children: ReactNode }) {
         WebkitFontSmoothing: 'antialiased',
       }}
     >
+      {/* Mobile drawer scrim — visible only on phones when nav is open. */}
+      {mobileNavOpen && (
+        <div
+          className="show-mobile-only"
+          onClick={() => setMobileNavOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(11,11,15,0.4)',
+            zIndex: 90,
+            display: 'block',
+          }}
+        />
+      )}
       {/* ───── Sidebar ───── */}
       <aside
         style={{
@@ -624,6 +645,31 @@ export function AppShell({ children }: { children: ReactNode }) {
             background: COLOR.paper,
           }}
         >
+          {/* Hamburger — visible only on phones (show-mobile-only) */}
+          <button
+            type="button"
+            className="show-mobile-only"
+            aria-label="Open navigation"
+            onClick={() => setMobileNavOpen(true)}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              border: `1px solid ${COLOR.hairline}`,
+              background: COLOR.paper,
+              color: COLOR.ink,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" />
+              <path d="M3 12h18" />
+              <path d="M3 18h18" />
+            </svg>
+          </button>
           {/* Search */}
           <div style={{ position: 'relative', flex: 1, maxWidth: 460 }}>
             <svg
@@ -779,7 +825,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* Scroll content */}
-        <main style={{ flex: 1, overflowY: 'auto', background: COLOR.paper }}>{children}</main>
+        <main data-resp="app" style={{ flex: 1, overflowY: 'auto', background: COLOR.paper }}>{children}</main>
       </div>
     </div>
   );

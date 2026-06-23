@@ -165,6 +165,7 @@ export default function PublicProfilePage() {
 
   return (
     <div
+      data-resp="profile"
       style={{
         minHeight: '100vh',
         background: '#FFFFFF',

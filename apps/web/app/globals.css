@@ -604,6 +604,71 @@ body { min-height: 100vh; }
   }
 }
 
+/* ─── Redesigned salesperson AppShell — mobile drawer + topbar polish ──────
+   The 2026-06 dashboard-redesign rewrote AppShell from scratch and didn't
+   inherit the original responsive coverage. Below: the sidebar becomes a
+   slide-in drawer on phones (driven by [data-mobile-open] on the root), the
+   search input collapses on tablets/phones so the hamburger + avatar can
+   breathe, and the page content gets snug padding. */
+@media (max-width: 1023px) {
+  /* Sidebar -> fixed slide-in drawer below tablet. */
+  [data-resp="app-shell"] > aside {
+    position: fixed !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100 !important;
+    width: 280px !important;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 0 0 32px rgba(11,11,15,0.18);
+  }
+  [data-resp="app-shell"][data-mobile-open="true"] > aside {
+    transform: translateX(0);
+  }
+  /* Topbar search input shrinks on tablets; hides on phones. */
+  [data-resp="app-shell"] header > div[style*="maxWidth: 460"] {
+    flex: 0 1 260px !important;
+  }
+}
+@media (max-width: 767px) {
+  [data-resp="app-shell"] header > div[style*="maxWidth: 460"] {
+    display: none !important;
+  }
+  /* Topbar tightens on phones. */
+  [data-resp="app-shell"] header {
+    height: 56px !important;
+    padding: 0 14px !important;
+    gap: 10px !important;
+  }
+  /* User chip — hide the name label and tier text on phones to save room;
+     keep the avatar circle visible. */
+  [data-resp="app-shell"] header > div:last-child > div[style*="line-height: 1.1"] {
+    display: none !important;
+  }
+  [data-resp="app-shell"] header > div:last-child > div[style*="border-radius: 100px"] {
+    display: none !important;
+  }
+  /* Main page content padding — shrink on phones. */
+  main[data-resp="app"] > div > div[style*="padding"] {
+    padding: 18px 14px !important;
+  }
+  /* Common dashboard/page max-width wrapper picks up tighter padding. */
+  main[data-resp="app"] [style*="max-width: 1180px"],
+  main[data-resp="app"] [style*="maxWidth: 1180"] {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+}
+
+/* Topbar collapse classes — used by the hamburger button + the user-name
+   chip so they obey breakpoint switches without ternary in JSX. The
+   `show-mobile-only` class is already defined further up; this just makes
+   the hamburger's flex shape apply when revealed. */
+@media (max-width: 1023px) {
+  .show-mobile-only { display: inline-flex !important; }
+}
+
 .stripe-ph {
   background-image: repeating-linear-gradient(135deg, var(--surface-2) 0 8px, var(--surface) 8px 16px);
 }

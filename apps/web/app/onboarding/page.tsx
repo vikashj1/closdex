@@ -78,6 +78,7 @@ export default function OnboardingPage() {
 
   return (
     <div
+      data-resp="auth"
       style={{
         minHeight: '100vh',
         width: '100%',

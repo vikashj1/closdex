@@ -227,6 +227,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
 
   return (
     <div
+      data-resp="play"
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 340px',
