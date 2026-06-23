@@ -65,7 +65,19 @@ export class DisputesService {
     return this.prisma.scoreDispute.findMany({
       where: { salespersonId: profile.id },
       orderBy: { createdAt: 'desc' },
-      include: { attempt: { select: { id: true, finalScore: true, challengeId: true } } },
+      include: {
+        attempt: {
+          select: {
+            id: true,
+            finalScore: true,
+            challengeId: true,
+            // Frontend's DisputeSummary expects attempt.challenge.{id,title} on
+            // the My Disputes page; without this nested include the page
+            // crashed reading d.attempt.challenge.title on render.
+            challenge: { select: { id: true, title: true } },
+          },
+        },
+      },
     });
   }
 
