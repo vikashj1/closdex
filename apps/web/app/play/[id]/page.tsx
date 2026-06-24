@@ -246,9 +246,9 @@ export default function ConversationPage({ params }: { params: { id: string } })
           stays pinned at the bottom instead of being pushed off-viewport as
           new messages arrive. */}
       <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #E7E7EC', minWidth: 0, minHeight: 0, height: '100vh' }}>
-        {/* Top bar */}
+        {/* Top bar — desktop only; mobile uses .play-mobile-chrome below. */}
         <header
-          data-r="wrap-sm gap16-sm"
+          data-r="hide-sm"
           style={{
             minHeight: 64,
             flexShrink: 0,
@@ -493,9 +493,325 @@ export default function ConversationPage({ params }: { params: { id: string } })
           </button>
         </header>
 
+        {/* ─── Mobile chrome ─ replaces the desktop header below 768. ───── */}
+        <div className="play-mobile-chrome" style={{ flexShrink: 0 }}>
+          <header
+            style={{
+              background: '#fff',
+              borderBottom: '1px solid #E7E7EC',
+              padding: '10px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              position: 'sticky',
+              top: 0,
+              zIndex: 5,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+              <button
+                type="button"
+                onClick={() => router.push(`/app/challenges/${challenge.id}`)}
+                aria-label="Go back"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#7A7A86',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(160deg,#4A3AD9,#2C2256)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: "'Space Grotesk',sans-serif",
+                    fontWeight: 700,
+                    fontSize: 14,
+                  }}
+                >
+                  {personaInitial}
+                </div>
+                <span
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    background: '#22C55E',
+                    border: '2px solid #fff',
+                  }}
+                />
+              </div>
+              <div style={{ minWidth: 0, lineHeight: 1.15 }}>
+                <h1
+                  style={{
+                    margin: 0,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: '#0B0B0F',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {personaName}
+                </h1>
+                <p
+                  style={{
+                    margin: 0,
+                    marginTop: 2,
+                    fontFamily: "'Space Mono',monospace",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: '#9A9AA4',
+                  }}
+                >
+                  Online
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  background: '#EEF2FF',
+                  color: '#4338CA',
+                  fontFamily: 'Inter,sans-serif',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: '#6366F1',
+                    animation: 'pulseDot 1.4s ease-in-out infinite',
+                  }}
+                />
+                LIVE
+              </div>
+              <button
+                type="button"
+                onClick={end}
+                disabled={ending || isClosed}
+                aria-label="End conversation"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#EF4444',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: ending || isClosed ? 'not-allowed' : 'pointer',
+                  opacity: ending || isClosed ? 0.5 : 1,
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M9 9l6 6" />
+                  <path d="m15 9-6 6" />
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          {/* Context summary row */}
+          <section style={{ background: '#fff', borderBottom: '1px solid #F1F1F4' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 18,
+                padding: '8px 14px',
+                overflowX: 'auto',
+                fontSize: 11.5,
+                scrollbarWidth: 'none',
+              }}
+            >
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <span style={{ color: '#9A9AA4', fontWeight: 600, letterSpacing: '0.04em' }}>GOAL:</span>
+                <span style={{ color: '#B45309', fontWeight: 700, textTransform: 'uppercase' }}>
+                  {goalLabel}
+                </span>
+              </div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <span style={{ color: '#9A9AA4', fontWeight: 600, letterSpacing: '0.04em' }}>MESSAGES:</span>
+                <span style={{ color: '#0B0B0F', fontWeight: 600 }}>{messagesUsed} / {cap}</span>
+              </div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <span style={{ color: '#9A9AA4', fontWeight: 600, letterSpacing: '0.04em' }}>ATTEMPT:</span>
+                <span style={{ color: '#0B0B0F', fontWeight: 600 }}>#{attempt.attemptNumber}</span>
+              </div>
+            </div>
+
+            <details style={{ borderTop: '1px solid #F1F1F4' }}>
+              <summary
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 14px',
+                  fontSize: 11.5,
+                  color: '#7A7A86',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  listStyle: 'none',
+                }}
+              >
+                <span>Show Lead Details &amp; Goal</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <div
+                style={{
+                  background: '#FAFAF8',
+                  padding: 14,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #FDE68A',
+                    borderRadius: 12,
+                    padding: 12,
+                  }}
+                >
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 7,
+                        background: '#FEF3C7',
+                        color: '#B45309',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+                      </svg>
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: '#B45309',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {goalLabel}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: '#3A3A44' }}>
+                    {challenge.goalDescription}
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #E7E7EC',
+                    borderRadius: 12,
+                    padding: 12,
+                    display: 'flex',
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: 'linear-gradient(160deg,#4A3AD9,#2C2256)',
+                      color: '#fff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: "'Space Grotesk',sans-serif",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {personaInitial}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <h4 style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#0B0B0F' }}>
+                      {personaName}
+                    </h4>
+                    {personaRoleCompany && (
+                      <p style={{ margin: '2px 0 6px', fontSize: 10.5, color: '#9A9AA4' }}>
+                        {personaRoleCompany}
+                      </p>
+                    )}
+                    {persona?.contextSnippet && (
+                      <p
+                        style={{
+                          margin: 0,
+                          padding: 8,
+                          fontSize: 10.5,
+                          color: '#7A7A86',
+                          fontStyle: 'italic',
+                          background: '#FAFAF8',
+                          borderRadius: 6,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        “{persona.contextSnippet}”
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </details>
+          </section>
+        </div>
+
         {/* Messages scroll area */}
         <div
           ref={scrollRef}
+          data-play-thread
           style={{
             flex: 1,
             overflowY: 'auto',
@@ -533,9 +849,90 @@ export default function ConversationPage({ params }: { params: { id: string } })
             </div>
 
             {conversation.messages.length === 0 && (
-              <div style={{ color: '#7A7A86', textAlign: 'center', padding: 40, fontSize: 13 }}>
-                The lead is waiting. Send the first message to open the conversation.
-              </div>
+              <>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    color: '#7A7A86',
+                    textAlign: 'center',
+                    padding: '32px 24px 16px',
+                    gap: 14,
+                  }}
+                >
+                  <div
+                    className="play-mobile-coach"
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: '50%',
+                      background: '#F1F1F4',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#C7C7CE',
+                    }}
+                  >
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="8" cy="12" r="0.5" />
+                      <circle cx="12" cy="12" r="0.5" />
+                      <circle cx="16" cy="12" r="0.5" />
+                      <path d="M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 13, maxWidth: 280 }}>
+                    The lead is waiting. Send the first message to open the conversation.
+                  </p>
+                </div>
+                <div
+                  className="play-mobile-coach"
+                  style={{
+                    marginTop: 12,
+                    background: '#EEF2FF',
+                    border: '1px solid #E0E7FF',
+                    borderRadius: 16,
+                    padding: 14,
+                    gap: 10,
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: '#fff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                      flexShrink: 0,
+                      color: '#6366F1',
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p
+                      style={{
+                        margin: '0 0 2px',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: '#4338CA',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      Coach Tip
+                    </p>
+                    <p style={{ margin: 0, fontSize: 12.5, color: '#312E81', lineHeight: 1.5 }}>
+                      Listen first. Open-ended questions earn more rubric points than pitching.
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
 
             {conversation.messages.map((m) => {
@@ -671,6 +1068,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
 
         {/* Input bar */}
         <footer
+          data-play-composer
           style={{
             flexShrink: 0,
             padding: '16px 24px 20px',

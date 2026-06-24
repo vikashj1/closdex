@@ -555,53 +555,24 @@ body { min-height: 100vh; }
   [data-resp="profile"] h1 { font-size: clamp(1.5rem, 6vw, 2rem) !important; }
 }
 
-/* ─── Play / chat page mobile layout ──────────────────────────────────────
-   Desktop runs a 1fr 320px split — chat on the left, persona/goal sidebar
-   on the right. On phones the sidebar hides (its content is duplicated in
-   the top pills), the chat takes the full viewport, message padding tightens,
-   and the top bar wraps into two rows so persona + pills + End button don't
-   collide. */
+/* ─── Play / chat page — desktop runs a 1fr 340px split; below 768 the
+   right rail vanishes (data-r="hide-sm"), the desktop top bar hides
+   (data-r="hide-sm" on the <header>), and a dedicated mobile chrome
+   block (.play-mobile-chrome) renders instead. See play/[id]/page.tsx. */
+.play-mobile-chrome { display: none; }
+.play-mobile-coach  { display: none; }
+
 @media (max-width: 767px) {
-  [data-resp="play"] {
-    grid-template-columns: 1fr !important;
+  .play-mobile-chrome { display: block; }
+  .play-mobile-coach  { display: flex; }
+  /* Tighten the chat scroller for phone widths. */
+  [data-resp="play"] [data-play-thread] { padding: 16px 0 12px !important; }
+  [data-resp="play"] [data-play-thread] > div { padding: 0 16px !important; }
+  /* Composer — let it sit close to the bottom and respect home-indicator. */
+  [data-resp="play"] [data-play-composer] {
+    padding: 10px 14px env(safe-area-inset-bottom, 14px) !important;
   }
-  [data-resp="play"] > aside {
-    display: none !important;
-  }
-  /* Top bar (back + avatar + name on left, pills + End on right). Stack into
-     two rows when the row gets cramped. */
-  [data-resp="play"] > div > div:first-child {
-    flex-wrap: wrap !important;
-    padding: 10px 12px !important;
-    row-gap: 8px !important;
-  }
-  /* Pills cluster (Goal / Messages / Attempt / End) — horizontal scroll on
-     overflow rather than wrap into a 4-row tower. */
-  [data-resp="play"] > div > div:first-child > div:last-child {
-    width: 100% !important;
-    overflow-x: auto !important;
-    flex-wrap: nowrap !important;
-    gap: 14px !important;
-    padding-bottom: 2px !important;
-  }
-  /* Messages scroller — drop the 80px side padding to 12px. */
-  [data-resp="play"] [style*="padding: '24px 80px'"],
-  [data-resp="play"] [style*="padding: 24px 80px"] {
-    padding: 16px 12px !important;
-  }
-  /* Chat bubbles — let them grow wider before wrapping. */
-  [data-resp="play"] [style*="max-width: '62%'"],
-  [data-resp="play"] [style*="maxWidth: 62%"] {
-    max-width: 84% !important;
-  }
-  /* Composer row — keep textarea + Send side-by-side but tighten padding. */
-  [data-resp="play"] [style*="padding: '12px 22px 22px'"],
-  [data-resp="play"] [style*="padding: 12px 22px 22px"] {
-    padding: 10px 12px env(safe-area-inset-bottom, 12px) !important;
-  }
-  [data-resp="play"] textarea {
-    font-size: 14px !important;
-  }
+  [data-resp="play"] textarea { font-size: 14px !important; }
 }
 
 /* ─── Redesigned salesperson AppShell — mobile drawer + topbar polish ──────
