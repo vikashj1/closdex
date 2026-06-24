@@ -1,0 +1,279 @@
+/* ============================================================================
+   Canonical responsive layer for the logged-in Closdex app
+   ============================================================================
+   Ported verbatim from Vikash's 11 .dc.html references (2026-06-24). The
+   desktop inline styles on every (app)/* page are the base; these rules
+   override down at <=1023 (tablet) and <=767 (mobile).
+
+   Activates ONLY inside the AppShell — drives sidebar→drawer, bottom-nav,
+   search overlay, bottom-sheet, sticky CTA, and per-element layout shifts
+   via the `data-r="…"` token system.
+   ========================================================================== */
+
+/* ─── shell helpers ──────────────────────────────────────────────────────── */
+.r-topbar-left { display: none; align-items: center; gap: 11px; }
+.r-icon-btn {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: 1px solid #E7E7EC;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: #3A3A44;
+  flex-shrink: 0;
+}
+.r-icon-btn:hover { background: #FAFAF8; }
+.r-search-btn { display: none; }
+
+.app-scrim {
+  position: fixed; inset: 0;
+  background: rgba(11, 11, 15, 0.5);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.2s ease;
+  z-index: 55;
+  display: none;
+}
+
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  z-index: 50;
+  height: 60px;
+  display: none;
+  align-items: stretch;
+  padding: 0 4px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid #E7E7EC;
+}
+.bottom-nav a {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  color: #9A9AA4;
+  font-family: Inter, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 44px;
+}
+.bottom-nav a[data-active] { color: #3A2DC4; }
+
+.search-overlay {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 65;
+  display: flex; align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border-bottom: 1px solid #E7E7EC;
+  transform: translateY(-105%);
+  transition: transform 0.2s ease;
+}
+html.search-open .search-overlay { transform: translateY(0); }
+
+/* ─── tablet + mobile shell (≤1023) ──────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .app-sidebar {
+    position: fixed !important;
+    top: 0; left: 0; bottom: 0;
+    z-index: 60;
+    width: 320px; max-width: 84vw;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+  html.drawer-open .app-sidebar {
+    transform: translateX(0);
+    box-shadow: 10px 0 50px rgba(0, 0, 0, 0.22);
+  }
+  .app-scrim { display: block; }
+  html.drawer-open .app-scrim { opacity: 1; visibility: visible; }
+  .r-topbar-left { display: flex; }
+  .app-topbar { gap: 12px !important; padding: 0 16px !important; }
+  .app-search-field { max-width: 320px !important; }
+
+  [data-r~="stack"]      { flex-direction: column !important; }
+  [data-r~="wrap"]       { flex-wrap: wrap !important; }
+  [data-r~="cols2"]      { grid-template-columns: repeat(2, 1fr) !important; }
+  [data-r~="cols1"]      { grid-template-columns: 1fr !important; }
+  [data-r~="full"]       { width: 100% !important; max-width: none !important; flex: none !important; }
+  [data-r~="alignstart"] { align-items: flex-start !important; }
+  [data-r~="scrollx"]    {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  [data-r~="scrollx"]::-webkit-scrollbar { display: none; }
+  [data-r~="scrollx"] > * { flex: none !important; }
+  [data-r~="minw0"]      { min-width: 0 !important; }
+}
+
+/* ─── desktop (≥1024) ─ hide all mobile chrome ───────────────────────────── */
+@media (min-width: 1024px) {
+  .app-scrim,
+  .bottom-nav,
+  .r-topbar-left,
+  .r-search-btn,
+  .search-overlay { display: none !important; }
+}
+
+/* ─── tablet only (768–1023) ─────────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .r-page { padding-left: 24px !important; padding-right: 24px !important; }
+  [data-r~="cols1-md"] { grid-template-columns: 1fr !important; }
+  [data-r~="stack-md"] { flex-direction: column !important; }
+}
+
+/* ─── mobile (≤767) ──────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .bottom-nav      { display: flex; }
+  .r-search-btn    { display: flex; }
+  .app-search-field { display: none !important; }
+  .app-acct-name,
+  .app-tier-chip   { display: none !important; }
+  .app-acct        { padding-left: 0 !important; border-left: none !important; }
+  .app-topbar      { padding: 0 14px !important; }
+  .r-page          {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-bottom: 92px !important;
+  }
+  .r-title         { font-size: 26px !important; }
+
+  [data-r~="stack-sm"]      { flex-direction: column !important; align-items: stretch !important; }
+  [data-r~="alignstart-sm"] { align-items: flex-start !important; }
+  [data-r~="wrap-sm"]       { flex-wrap: wrap !important; }
+  [data-r~="cols1-sm"]      { grid-template-columns: 1fr !important; }
+  [data-r~="cols2-sm"]      { grid-template-columns: repeat(2, 1fr) !important; }
+  [data-r~="full-sm"]       { width: 100% !important; max-width: none !important; }
+  [data-r~="hide-sm"]       { display: none !important; }
+  [data-r~="gap16-sm"]      { gap: 16px !important; }
+  [data-r~="gap20-sm"]      { gap: 20px 16px !important; }
+
+  [data-r~="rec"] {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 7px 14px !important;
+    grid-template-columns: none !important;
+  }
+  [data-r~="rec"] > * { text-align: left !important; }
+  [data-r~="rec"] > [data-rec-title] { flex: 1 0 100% !important; }
+
+  [data-r~="btnfull"]  { width: 100% !important; justify-content: center !important; }
+  [data-r~="pad-sm"]   { padding: 24px 20px !important; }
+  [data-r~="noedge"]   { border-left: none !important; padding-left: 0 !important; }
+  [data-r~="divrows"] > * {
+    border-right: none !important;
+    border-left: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border-top: 1px solid #E7E7EC !important;
+  }
+  [data-r~="divrows"] > *:first-child { border-top: none !important; }
+  [data-r~="gap0-sm"]  { gap: 0 !important; }
+  [data-r~="mt16-sm"]  { margin-top: 16px !important; }
+
+  /* Leaderboard podium: #1 on top so the gold accent leads. */
+  .r-podium > div:nth-child(2) { order: -1; }
+}
+
+@media (max-width: 1023px) {
+  [data-r~="scrollx"] { padding-bottom: 5px; }
+}
+
+/* ─── filter bottom-sheet ────────────────────────────────────────────────── */
+.r-filters-btn { display: none; }
+.r-sheet-scrim { display: none; }
+.r-sheet-head  { display: none; }
+
+@media (max-width: 1023px) {
+  .r-sheet {
+    position: fixed !important;
+    left: 0; right: 0; bottom: 0;
+    z-index: 60;
+    width: auto !important;
+    max-width: none !important;
+    max-height: 82vh;
+    overflow-y: auto;
+    background: #fff;
+    border-right: none !important;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    box-shadow: 0 -12px 50px rgba(0, 0, 0, 0.22);
+    transform: translateY(100%);
+    transition: transform 0.2s ease;
+    padding: 8px 20px 28px !important;
+  }
+  html.sheet-open .r-sheet { transform: translateY(0); }
+
+  .r-sheet-scrim {
+    display: block;
+    position: fixed; inset: 0;
+    background: rgba(11, 11, 15, 0.5);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.2s ease;
+    z-index: 55;
+  }
+  html.sheet-open .r-sheet-scrim { opacity: 1; visibility: visible; }
+
+  .r-sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0;
+    background: #fff;
+    padding: 12px 0 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #E7E7EC;
+  }
+
+  .r-filters-btn { display: inline-flex; }
+}
+@media (min-width: 1024px) {
+  .r-sheet-scrim,
+  .r-filters-btn,
+  .r-sheet-head { display: none !important; }
+}
+
+/* ─── sticky-bottom CTA bar (sits above bottom-nav at 60px) ──────────────── */
+.r-cta-bar { display: none; }
+
+@media (max-width: 767px) {
+  .r-cta-bar {
+    display: flex;
+    position: fixed; left: 0; right: 0; bottom: 60px;
+    z-index: 48;
+    padding: 12px 16px;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid #E7E7EC;
+  }
+  .r-cta-bar > * { flex: 1; justify-content: center; }
+
+  /* Settings-page Save button uses a dedicated class so it can hug the bar. */
+  .settings-save {
+    position: fixed; left: 0; right: 0; bottom: 60px;
+    z-index: 48;
+    margin: 0 !important;
+    padding: 12px 16px !important;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid #E7E7EC !important;
+  }
+  .settings-save button {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0 !important;
+  }
+  /* Extra bottom padding on Settings to clear the sticky Save above bottom-nav. */
+  .r-page.settings-page { padding-bottom: 148px !important; }
+}
+
+/* ─── reduced-motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
+  .app-scrim,
+  .search-overlay,
+  html.sheet-open .r-sheet,
+  .r-sheet { transition: none !important; }
+}

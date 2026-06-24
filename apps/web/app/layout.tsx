@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth';
 import './globals.css';
+import './responsive.css';
 
 // Three fonts the prototype calls out: Space Grotesk (display), DM Sans (body),
 // JetBrains Mono (numbers / code). next/font hashes them into the build so no

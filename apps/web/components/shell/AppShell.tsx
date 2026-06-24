@@ -1,9 +1,10 @@
 'use client';
 
-import { CSSProperties, ReactNode, useEffect, useRef, useState } from 'react';
+import { CSSProperties, ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { AppShellController } from './AppShellController';
 
 // ─── shared design tokens (kept inline to match Closdex's no-Tailwind rule) ─────
 const COLOR = {
@@ -385,58 +386,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const streak = user?.salesperson?.currentStreakDays ?? 0;
   const [unreadCount, setUnreadCount] = useState(0);
   const [search, setSearch] = useState('');
-  // Mobile drawer: sidebar slides in from the left on phones. Closed by
-  // default; the hamburger in the topbar toggles it, and any nav click,
-  // route change, scrim tap, Escape press, or left-swipe closes it.
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const lastFocusedRef = useRef<HTMLElement | null>(null);
-  const drawerRef = useRef<HTMLElement | null>(null);
-  useEffect(() => { setMobileNavOpen(false); }, [pathname]);
-  // Body-scroll-lock + Esc close + focus restoration + focus-trap while open.
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    lastFocusedRef.current = document.activeElement as HTMLElement | null;
-    // Move focus to the drawer so screen readers + keyboard users start there.
-    const aside = drawerRef.current;
-    aside?.focus?.();
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setMobileNavOpen(false);
-      } else if (e.key === 'Tab') {
-        // Simple focus trap: keep tab cycle inside the drawer.
-        const focusables = aside?.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        );
-        if (!focusables || focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          last.focus(); e.preventDefault();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          first.focus(); e.preventDefault();
-        }
-      }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKey);
-      // Restore focus to the trigger (hamburger) once the drawer closes.
-      lastFocusedRef.current?.focus?.();
-    };
-  }, [mobileNavOpen]);
-  // Swipe-left to close. Track touchstart x → if delta < -50px close.
-  function onTouchStart(e: React.TouchEvent) {
-    (e.currentTarget as any).__touchX = e.touches[0].clientX;
-  }
-  function onTouchEnd(e: React.TouchEvent) {
-    const startX = (e.currentTarget as any).__touchX as number | undefined;
-    if (startX == null) return;
-    const endX = e.changedTouches[0].clientX;
-    if (endX - startX < -50) setMobileNavOpen(false);
-  }
+  // Drawer / sheet / search-overlay state is managed by AppShellController
+  // (mounted below) via DOM classes on <html> — no React state here.
 
   useEffect(() => {
     if (!user) return;
@@ -476,8 +427,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div
-      data-resp="app-shell"
-      data-mobile-open={mobileNavOpen ? 'true' : 'false'}
+      className="app-shell"
       style={{
         display: 'flex',
         height: '100vh',
@@ -489,27 +439,92 @@ export function AppShell({ children }: { children: ReactNode }) {
         WebkitFontSmoothing: 'antialiased',
       }}
     >
-      {/* Mobile drawer scrim — visible only on phones when nav is open. */}
-      {mobileNavOpen && (
-        <div
-          className="show-mobile-only"
-          onClick={() => setMobileNavOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(11,11,15,0.4)',
-            zIndex: 90,
-            display: 'block',
-          }}
+      <AppShellController />
+
+      {/* Drawer scrim — class-driven, opacity flips with html.drawer-open. */}
+      <div className="app-scrim" data-drawer-close />
+
+      {/* Search overlay — slides down from the top on phones via html.search-open. */}
+      <div className="search-overlay">
+        <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="#9A9AA4" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <circle cx={11} cy={11} r={7} />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          placeholder="Search challenges… (Enter)"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={onSearch}
+          style={{ flex: 1, height: 40, border: 'none', background: 'transparent', fontFamily: 'Inter,sans-serif', fontSize: 15, color: '#0B0B0F', outline: 'none' }}
         />
-      )}
+        <button
+          type="button"
+          data-search-close
+          style={{ border: 'none', background: 'none', cursor: 'pointer', fontFamily: "'Space Mono',monospace", fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#7A7A86', padding: 8 }}
+        >
+          Cancel
+        </button>
+      </div>
+
+      {/* Mobile bottom-nav — 5 tabs. Visible only ≤767px. */}
+      <nav className="bottom-nav" aria-label="Primary">
+        {[
+          { href: '/dashboard', label: 'Home', match: (p: string) => p === '/dashboard',
+            d: 'M3 9.5 12 3l9 6.5 M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5' },
+          { href: '/app/challenges', label: 'Challenges', match: (p: string) => p.startsWith('/app/challenges'),
+            paths: [{ d: 'M0 0', _: null }] },
+          { href: '/app/leaderboard', label: 'Ranks', match: (p: string) => p.startsWith('/app/leaderboard') },
+          { href: '/jobs', label: 'Jobs', match: (p: string) => p === '/jobs' || p.startsWith('/jobs/') },
+          { href: '/profile', label: 'Profile', match: (p: string) => p.startsWith('/profile') },
+        ].map((tab) => {
+          const active = tab.match(pathname);
+          return (
+            <a key={tab.href} href={tab.href} {...(active ? { 'data-active': '' } : {})}>
+              {tab.label === 'Home' && (
+                <svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9.5 12 3l9 6.5" />
+                  <path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5" />
+                </svg>
+              )}
+              {tab.label === 'Challenges' && (
+                <svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx={12} cy={12} r={9} />
+                  <circle cx={12} cy={12} r={5} />
+                  <circle cx={12} cy={12} r={1.4} />
+                </svg>
+              )}
+              {tab.label === 'Ranks' && (
+                <svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                  <path d="M4 22h16" />
+                  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                </svg>
+              )}
+              {tab.label === 'Jobs' && (
+                <svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+                  <rect width={20} height={14} x={2} y={7} rx={2} />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+              )}
+              {tab.label === 'Profile' && (
+                <svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx={12} cy={8} r={4} />
+                  <path d="M5.5 21a8 8 0 0 1 13 0" />
+                </svg>
+              )}
+              <span>{tab.label}</span>
+            </a>
+          );
+        })}
+      </nav>
+
       {/* ───── Sidebar ───── */}
       <aside
-        ref={drawerRef as any}
+        className="app-sidebar"
         id="closdex-mobile-nav"
-        tabIndex={-1}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
         aria-label="Navigation"
         style={{
           width: 248,
@@ -519,7 +534,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
-          outline: 'none',
         }}
       >
         {/* Logo */}
@@ -688,6 +702,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         {/* Top bar */}
         <header
+          className="app-topbar"
           style={{
             height: 64,
             flexShrink: 0,
@@ -699,61 +714,25 @@ export function AppShell({ children }: { children: ReactNode }) {
             background: COLOR.paper,
           }}
         >
-          {/* Hamburger — visible only below lg (show-mobile-only) */}
-          <button
-            type="button"
-            className="show-mobile-only"
-            aria-label="Open navigation"
-            aria-expanded={mobileNavOpen}
-            aria-controls="closdex-mobile-nav"
-            onClick={() => setMobileNavOpen(true)}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 10,
-              border: `1px solid ${COLOR.hairline}`,
-              background: COLOR.paper,
-              color: COLOR.ink,
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              cursor: 'pointer',
-            }}
-          >
-            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 6h18" />
-              <path d="M3 12h18" />
-              <path d="M3 18h18" />
-            </svg>
-          </button>
-          {/* Closdex logo — visible only below lg (sidebar is hidden). Routes
-              to home so users have a one-tap escape from any inner page. */}
-          <button
-            type="button"
-            className="show-mobile-only"
-            onClick={() => router.push('/dashboard')}
-            aria-label="Closdex home"
-            style={{
-              alignItems: 'center',
-              gap: 8,
-              background: 'transparent',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              color: COLOR.ink,
-              flexShrink: 0,
-            }}
-          >
-            <svg width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden>
+          {/* Mobile-only left cluster: hamburger + Closdex logo. */}
+          <div className="r-topbar-left">
+            <button className="r-icon-btn" data-drawer-toggle aria-label="Open menu">
+              <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+                <line x1={3} x2={21} y1={6} y2={6} />
+                <line x1={3} x2={21} y1={12} y2={12} />
+                <line x1={3} x2={21} y1={18} y2={18} />
+              </svg>
+            </button>
+            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" style={{ display: 'block', flexShrink: 0 }} aria-hidden>
               <path d="M12 2.5 22 20.5H2L12 2.5Z" fill={COLOR.ink} />
               <path d="M12 12.2 16.8 20.5H7.2L12 12.2Z" fill={COLOR.violet} />
             </svg>
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: '-0.03em', color: COLOR.ink }}>
               Closdex
             </span>
-          </button>
-          {/* Search */}
-          <div style={{ position: 'relative', flex: 1, maxWidth: 460 }}>
+          </div>
+          {/* Desktop search field — hidden ≤767 (the r-search-btn opens overlay). */}
+          <div className="app-search-field" style={{ position: 'relative', flex: 1, maxWidth: 460 }}>
             <svg
               width={16}
               height={16}
@@ -794,6 +773,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           </div>
           <div style={{ flex: 1 }} />
+
+          {/* Mobile-only search icon — opens the search-overlay. */}
+          <button
+            className="r-icon-btn r-search-btn"
+            data-search-toggle
+            aria-label="Search"
+            type="button"
+          >
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <circle cx={11} cy={11} r={7} />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </button>
 
           {/* Notifications */}
           <HoverButton
@@ -848,6 +840,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {user ? (
             <button
               type="button"
+              className="app-acct"
               onClick={() => router.push('/profile')}
               style={{
                 display: 'flex',
@@ -879,10 +872,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 {avatarInitial}
               </div>
-              <div style={{ lineHeight: 1.1, textAlign: 'left' }}>
+              <div className="app-acct-name" style={{ lineHeight: 1.1, textAlign: 'left' }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: COLOR.ink }}>{userName}</div>
               </div>
-              <TierBadge tier={tier} />
+              <span className="app-tier-chip"><TierBadge tier={tier} /></span>
             </button>
           ) : (
             <button
@@ -907,7 +900,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* Scroll content */}
-        <main data-resp="app" style={{ flex: 1, overflowY: 'auto', background: COLOR.paper }}>{children}</main>
+        <main style={{ flex: 1, overflowY: 'auto', background: COLOR.paper }}>{children}</main>
       </div>
     </div>
   );
