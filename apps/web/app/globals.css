@@ -555,24 +555,51 @@ body { min-height: 100vh; }
   [data-resp="profile"] h1 { font-size: clamp(1.5rem, 6vw, 2rem) !important; }
 }
 
-/* ─── Play / chat page — desktop runs a 1fr 340px split; below 768 the
-   right rail vanishes (data-r="hide-sm"), the desktop top bar hides
-   (data-r="hide-sm" on the <header>), and a dedicated mobile chrome
-   block (.play-mobile-chrome) renders instead. See play/[id]/page.tsx. */
+/* ─── Play / chat page — desktop runs a 1fr 340px split; below 1024 the
+   right rail vanishes and the desktop top bar hides — a dedicated mobile
+   chrome block (.play-mobile-chrome) renders instead. See play/[id]/page.tsx.
+
+   We don't rely on the data-r token for the grid collapse because CSS Grid
+   keeps explicit tracks even when an item is display:none — so a hidden
+   aside still reserves its 340px column. Belt + suspenders: collapse the
+   grid directly on the data-resp root. */
 .play-mobile-chrome { display: none; }
 .play-mobile-coach  { display: none; }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
+  [data-resp="play"] {
+    grid-template-columns: 1fr !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    max-width: 100% !important;
+  }
+  [data-resp="play"] > aside { display: none !important; }
+  /* Desktop top bar is data-r="hide-sm" (≤767) — extend coverage to 1023
+     so the mobile chrome handles landscape phones + small tablets too. */
+  [data-resp="play"] > div > header:first-child { display: none !important; }
   .play-mobile-chrome { display: block; }
-  .play-mobile-coach  { display: flex; }
-  /* Tighten the chat scroller for phone widths. */
+  /* Inner chat-column wrapper: kill the border that ran down the seam of
+     the now-collapsed 2-col grid (it sits at the right edge on mobile). */
+  [data-resp="play"] > div:first-of-type {
+    border-right: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  /* Edge-to-edge scroller + tight thread side padding. */
   [data-resp="play"] [data-play-thread] { padding: 16px 0 12px !important; }
-  [data-resp="play"] [data-play-thread] > div { padding: 0 16px !important; }
+  [data-resp="play"] [data-play-thread] > div {
+    padding: 0 14px !important;
+    max-width: 100% !important;
+  }
   /* Composer — let it sit close to the bottom and respect home-indicator. */
   [data-resp="play"] [data-play-composer] {
     padding: 10px 14px env(safe-area-inset-bottom, 14px) !important;
   }
   [data-resp="play"] textarea { font-size: 14px !important; }
+}
+
+@media (max-width: 767px) {
+  .play-mobile-coach { display: flex; }
 }
 
 /* ─── Redesigned salesperson AppShell — mobile drawer + topbar polish ──────
