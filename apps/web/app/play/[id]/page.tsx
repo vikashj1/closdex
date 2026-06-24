@@ -228,6 +228,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
   return (
     <div
       data-resp="play"
+      data-r="cols1-sm"
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 340px',
@@ -247,14 +248,15 @@ export default function ConversationPage({ params }: { params: { id: string } })
       <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #E7E7EC', minWidth: 0, minHeight: 0, height: '100vh' }}>
         {/* Top bar */}
         <header
+          data-r="wrap-sm gap16-sm"
           style={{
-            height: 64,
+            minHeight: 64,
             flexShrink: 0,
             borderBottom: '1px solid #E7E7EC',
             display: 'flex',
             alignItems: 'center',
             gap: 18,
-            padding: '0 24px',
+            padding: '10px 24px',
             background: '#FFFFFF',
           }}
         >
@@ -347,7 +349,10 @@ export default function ConversationPage({ params }: { params: { id: string } })
           <div style={{ flex: 1 }} />
 
           {/* Stat pills */}
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, height: 38, flexShrink: 0 }}>
+          <div
+            data-r="scrollx full-sm"
+            style={{ display: 'flex', alignItems: 'stretch', gap: 0, height: 38, flexShrink: 0 }}
+          >
             <div
               style={{
                 display: 'flex',
@@ -835,6 +840,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
 
       {/* ============ RIGHT RAIL ============ */}
       <aside
+        data-r="hide-sm"
         style={{
           overflowY: 'auto',
           background: '#FAFAF8',

@@ -152,6 +152,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
       }}
     >
       <div
+        className="r-page"
         style={{
           maxWidth: 960,
           margin: '0 auto',
@@ -261,6 +262,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
               </div>
 
               <h1
+                className="r-title"
                 style={{
                   margin: '0 0 10px',
                   fontFamily: "'Space Grotesk', sans-serif",
@@ -318,6 +320,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
 
         {/* TWO-COLUMN BODY */}
         <div
+          data-r="cols1-sm gap20-sm"
           style={{
             display: 'grid',
             gridTemplateColumns: '1.4fr 1fr',
@@ -877,6 +880,36 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
           </div>
         </div>
       </div>
+
+      {/* Mobile sticky CTA — hidden on desktop; pins to viewport bottom on ≤767. */}
+      {(!isCompleted || canRetry) && (
+        <div className="r-cta-bar">
+          <button
+            onClick={onStart}
+            disabled={starting}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 9,
+              background: starting ? '#3A3A44' : '#0B0B0F',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 12,
+              padding: '14px 18px',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: starting ? 'not-allowed' : 'pointer',
+              minHeight: 48,
+            }}
+          >
+            <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+              <path d="m13 2-3 7h7l-9 13 3-9H4l9-11z" />
+            </svg>
+            {starting ? 'Starting…' : inProgress ? 'Resume conversation' : isCompleted ? 'Try again' : 'Start challenge'}
+          </button>
+        </div>
+      )}
     </main>
   );
 }
