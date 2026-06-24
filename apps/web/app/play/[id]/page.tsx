@@ -244,8 +244,10 @@ export default function ConversationPage({ params }: { params: { id: string } })
       {/* ============ CHAT COLUMN ============ */}
       {/* minHeight:0 lets the flex:1 messages area constrain so the footer
           stays pinned at the bottom instead of being pushed off-viewport as
-          new messages arrive. */}
-      <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #E7E7EC', minWidth: 0, minHeight: 0, height: '100vh' }}>
+          new messages arrive. Height: 100% fills the grid track (which is
+          100dvh) — using 100vh directly leaves the composer below the iOS
+          keyboard when it opens because vh doesn't shrink with the keyboard. */}
+      <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #E7E7EC', minWidth: 0, minHeight: 0, height: '100%' }}>
         {/* Top bar — desktop only; mobile uses .play-mobile-chrome below. */}
         <header
           data-r="hide-sm"
