@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useRequireAuth } from '@/lib/auth';
 import { ApiError, api, type AttemptDetail, type ChallengeSummary } from '@/lib/api';
 
@@ -45,7 +45,6 @@ function formatGoalLabel(goalType: string): string {
 export default function ChallengesPage() {
   const { loading: authLoading } = useRequireAuth('SALESPERSON');
   const router = useRouter();
-  const pathname = usePathname();
 
   const [items, setItems] = useState<ChallengeSummary[]>([]);
   const [total, setTotal] = useState(0);
@@ -58,23 +57,8 @@ export default function ChallengesPage() {
   const [diff, setDiff] = useState<DiffFilter>('All');
   const [goalFilter, setGoalFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
-  useEffect(() => {
-    if (!filtersOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFiltersOpen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [filtersOpen]);
-
-  useEffect(() => {
-    setFiltersOpen(false);
-  }, [pathname]);
+  // Filter rail is driven by AppShellController on mobile via the global
+  // html.sheet-open class (toggled by data-sheet-toggle / data-sheet-close).
 
   useEffect(() => {
     if (authLoading) return;
@@ -121,36 +105,21 @@ export default function ChallengesPage() {
   }, [items, diff, goalFilter, searchQuery]);
 
   return (
-    <div data-resp="challenges" data-filter-open={filtersOpen ? 'true' : 'false'}>
-      {filtersOpen && (
-        <div
-          onClick={() => setFiltersOpen(false)}
-          className="show-mobile-only"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(11,11,15,0.42)', zIndex: 99, display: 'none' }}
-        />
-      )}
+    <div>
+      <div className="r-sheet-scrim" data-sheet-close />
       <div style={{ display: 'flex', alignItems: 'stretch', minHeight: '100%' }}>
-        <aside className="challenges-filter-aside" data-open={filtersOpen ? 'true' : 'false'} style={{ width: '236px', flexShrink: 0, borderRight: '1px solid #E7E7EC', padding: '36px 26px 40px 40px' }}>
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(false)}
-            className="challenges-filter-close show-mobile-only"
-            aria-label="Close filters"
-            style={{
-              display: 'none',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 36,
-              height: 36,
-              border: '1px solid #E7E7EC',
-              borderRadius: 10,
-              background: '#fff',
-              marginBottom: 14,
-              cursor: 'pointer',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
+        <aside className="r-sheet" style={{ width: '236px', flexShrink: 0, borderRight: '1px solid #E7E7EC', padding: '36px 26px 40px 40px' }}>
+          <div className="r-sheet-head">
+            <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#0B0B0F' }}>Filters</span>
+            <button
+              type="button"
+              data-sheet-close
+              aria-label="Close filters"
+              style={{ width: 32, height: 32, border: '1px solid #E7E7EC', borderRadius: 8, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
           <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86', marginBottom: '14px' }}>Difficulty</div>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginBottom: '34px' }}>
             {DIFFICULTIES.map((d) => {
@@ -212,40 +181,28 @@ export default function ChallengesPage() {
           </div>
         </aside>
 
-        <div style={{ flex: 1, minWidth: 0, padding: '36px 40px 72px' }}>
+        <div className="r-page" style={{ flex: 1, minWidth: 0, padding: '36px 40px 72px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <div>
-              <h1 style={{ margin: 0, fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '30px', letterSpacing: '-0.03em', lineHeight: 1.05, color: '#0B0B0F' }}>Challenge library</h1>
+              <h1 className="r-title" style={{ margin: 0, fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '30px', letterSpacing: '-0.03em', lineHeight: 1.05, color: '#0B0B0F' }}>Challenge library</h1>
               <p style={{ margin: '9px 0 0', fontFamily: "'Space Mono',monospace", fontSize: '11.5px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9A9AA4' }}>
                 {loading ? 'Loading…' : `Showing ${filtered.length} of ${total} challenges`}
               </p>
-            </div>
-            <div className="challenges-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button
                 type="button"
-                onClick={() => setFiltersOpen(true)}
-                className="show-mobile-only"
-                style={{
-                  display: 'none',
-                  alignItems: 'center',
-                  gap: 8,
-                  height: 36,
-                  padding: '0 14px',
-                  border: '1px solid #E7E7EC',
-                  borderRadius: 10,
-                  background: '#fff',
-                  fontFamily: 'Inter,sans-serif',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: '#3A3A44',
-                  cursor: 'pointer',
-                }}
+                className="r-filters-btn"
+                data-sheet-toggle
+                style={{ marginTop: 12, height: 38, padding: '0 16px', border: '1px solid #E7E7EC', borderRadius: 10, background: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'Inter,sans-serif', fontSize: 13, fontWeight: 600, color: '#3A3A44' }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 6h18M6 12h12M10 18h4" />
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18" />
+                  <path d="M7 12h10" />
+                  <path d="M11 18h2" />
                 </svg>
                 Filters
               </button>
+            </div>
+            <div className="challenges-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div className="challenges-search" style={{ position: 'relative', width: '230px' }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9A9AA4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
                   <circle cx="11" cy="11" r="7" />

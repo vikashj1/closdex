@@ -138,7 +138,7 @@ export default function JobsPage() {
 
   return (
     <div data-resp-page="jobs">
-      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
+      <div className="r-page" style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
         <div
           style={{
             display: 'flex',
@@ -151,6 +151,7 @@ export default function JobsPage() {
         >
           <div>
             <h1
+              className="r-title"
               style={{
                 margin: '0',
                 fontFamily: "'Space Grotesk',sans-serif",
@@ -176,7 +177,28 @@ export default function JobsPage() {
               {loading ? 'Loading…' : `${filteredJobs.length} listing${filteredJobs.length === 1 ? '' : 's'}`}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div data-r="wrap-sm" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              data-sheet-toggle
+              className="r-filters-btn"
+              onClick={() => setFilterOpen(true)}
+              style={{
+                alignItems: 'center',
+                gap: '8px',
+                height: '38px',
+                padding: '0 15px',
+                border: '1px solid #E7E7EC',
+                borderRadius: '10px',
+                background: '#fff',
+                fontFamily: 'Inter,sans-serif',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#3A3A44',
+                cursor: 'pointer',
+              }}
+            >
+              Filters
+            </button>
             <button
               onClick={() => setFilterOpen((v) => !v)}
               style={{
@@ -258,6 +280,8 @@ export default function JobsPage() {
           <div
             onClick={() => setFilterOpen(false)}
             data-jobs-scrim
+            data-sheet-close
+            className="r-sheet-scrim"
             aria-hidden="true"
             style={{
               display: 'none',
@@ -271,6 +295,7 @@ export default function JobsPage() {
         {filterOpen && (
           <div
             data-jobs-filter-panel
+            className="r-sheet"
             style={{
               marginBottom: '24px',
               padding: '18px 20px',
@@ -482,6 +507,7 @@ export default function JobsPage() {
         </div>
         <section
           data-jobs-pipeline
+          data-r="scrollx"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -510,6 +536,7 @@ export default function JobsPage() {
         <nav
           className="r-hscroll"
           data-jobs-tabs
+          data-r="scrollx"
           style={{ display: 'flex', alignItems: 'center', gap: '26px', marginBottom: '8px' }}
         >
           <button
@@ -579,6 +606,7 @@ export default function JobsPage() {
                 <div
                   key={j.id}
                   data-jobs-card
+                  data-r="wrap-sm gap16-sm"
                   onClick={() => router.push(`/jobs/${j.id}`)}
                   style={{
                     display: 'flex',

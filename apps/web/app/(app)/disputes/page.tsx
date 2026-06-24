@@ -140,10 +140,11 @@ export default function DisputesPage() {
 
   return (
     <div data-resp-page="disputes">
-      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
+      <div className="r-page" style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
         {/* Header */}
         <div style={{ marginBottom: '8px' }}>
           <h1
+            className="r-title"
             style={{
               margin: '0',
               fontFamily: "'Space Grotesk',sans-serif",
@@ -286,6 +287,7 @@ export default function DisputesPage() {
             <button
               type="button"
               data-disputes-empty-cta
+              data-r="btnfull"
               onClick={() => router.push('/app/attempts')}
               style={{
                 marginTop: '28px',
@@ -329,6 +331,7 @@ export default function DisputesPage() {
             <div
               className="r-hscroll"
               data-disputes-filter-tabs
+              data-r="scrollx"
               style={{
                 marginTop: '34px',
                 display: 'flex',

@@ -46,6 +46,7 @@ export default function LearnPage() {
   const headerBlock = (
     <div style={{ marginBottom: '8px' }}>
       <h1
+        className="r-title"
         style={{
           margin: '0',
           fontFamily: "'Space Grotesk',sans-serif",
@@ -140,6 +141,7 @@ export default function LearnPage() {
       </p>
       <a
         href="/app/challenges"
+        data-r="btnfull"
         style={{
           marginTop: '28px',
           display: 'inline-flex',
@@ -215,6 +217,7 @@ export default function LearnPage() {
   const renderTrackGrid = () => (
     <div
       data-learn-grid
+      data-r="cols1-sm"
       style={{
         marginTop: '40px',
         display: 'grid',
@@ -339,7 +342,7 @@ export default function LearnPage() {
 
   return (
     <div data-resp="learn">
-      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
+      <div className="r-page" style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
         {headerBlock}
         {loading
           ? renderLoadingState()

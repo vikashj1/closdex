@@ -123,14 +123,14 @@ export default function AttemptsPage() {
 
   return (
     <div data-resp-page="attempts">
-      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
+      <div className="r-page" style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
 
         <div style={{ marginBottom: '34px' }}>
-          <h1 style={{ margin: '0', fontFamily: "'Space Grotesk',sans-serif", fontWeight: '700', fontSize: '33px', letterSpacing: '-0.03em', lineHeight: '1.05', color: '#0B0B0F' }}>My Attempts</h1>
+          <h1 className="r-title" style={{ margin: '0', fontFamily: "'Space Grotesk',sans-serif", fontWeight: '700', fontSize: '33px', letterSpacing: '-0.03em', lineHeight: '1.05', color: '#0B0B0F' }}>My Attempts</h1>
           <p style={{ margin: '9px 0 0', fontSize: '15px', color: '#7A7A86' }}>Full history of your challenge attempts.</p>
         </div>
 
-        <section data-attempts-stats="true" style={{ display: 'flex', alignItems: 'stretch', gap: '34px', padding: '24px 0 30px', borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', marginBottom: '34px' }}>
+        <section data-attempts-stats="true" data-r="cols2-sm gap20-sm" style={{ display: 'flex', alignItems: 'stretch', gap: '34px', padding: '24px 0 30px', borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', marginBottom: '34px' }}>
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '34px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
@@ -175,7 +175,7 @@ export default function AttemptsPage() {
         </section>
 
         <div data-attempts-toolbar="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap', marginBottom: '6px' }}>
-          <nav data-attempts-pills="true" style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
+          <nav data-attempts-pills="true" data-r="scrollx" style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
             {STATUS_FILTERS.map(({ key, label }) => {
               const active = statusFilter === key;
               return (
@@ -258,6 +258,7 @@ export default function AttemptsPage() {
                 <div
                   key={a.id}
                   data-attempts-row="true"
+                  data-r="rec"
                   onClick={() => handleRowClick(a)}
                   role="button"
                   tabIndex={0}
@@ -278,7 +279,7 @@ export default function AttemptsPage() {
                     outline: 'none',
                   }}
                 >
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#0B0B0F', minWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div data-rec-title style={{ fontSize: '14px', fontWeight: '600', color: '#0B0B0F', minWidth: '0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {a.challenge.title}
                     <span style={{ marginLeft: '8px', fontFamily: "'Space Mono',monospace", fontSize: '10.5px', fontWeight: '700', color: '#B6B6C0' }}>
                       #{a.attemptNumber} · {a.messagesUsed}/{a.challenge.maxMessages} msgs

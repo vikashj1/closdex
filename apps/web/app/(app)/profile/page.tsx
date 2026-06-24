@@ -273,7 +273,7 @@ export default function ProfilePage() {
       <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
 
         {/* Header row ─────────────────────────────────────────────────── */}
-        <div data-sp-profile-header style={{ display: 'flex', alignItems: 'flex-start', gap: '22px', flexWrap: 'wrap', marginBottom: '30px' }}>
+        <div data-sp-profile-header data-r="stack-sm gap16-sm alignstart-sm" style={{ display: 'flex', alignItems: 'flex-start', gap: '22px', flexWrap: 'wrap', marginBottom: '30px' }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#0B0B0F', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: '32px', flexShrink: 0 }}>
             {initial}
           </div>
@@ -321,10 +321,11 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
-          <div data-sp-profile-actions style={{ display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
+          <div data-sp-profile-actions data-r="full-sm stack-sm gap16-sm" style={{ display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0 }}>
             <button
               onClick={handleToggleOpenToWork}
               disabled={toggling}
+              data-r="btnfull"
               style={{ height: '40px', padding: '0 16px', border: '1px solid #E7E7EC', borderRadius: '10px', background: '#fff', fontFamily: 'Inter,sans-serif', fontSize: '13.5px', fontWeight: 600, color: '#3A3A44', cursor: toggling ? 'wait' : 'pointer', opacity: toggling ? 0.6 : 1 }}
             >
               {openToWork ? 'Remove open to work' : 'Mark open to work'}
@@ -333,6 +334,7 @@ export default function ProfilePage() {
               href={publicUrl}
               target="_blank"
               rel="noopener noreferrer"
+              data-r="btnfull"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '40px', padding: '0 18px', border: 'none', borderRadius: '10px', background: '#0B0B0F', color: '#fff', fontFamily: 'Inter,sans-serif', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -359,7 +361,7 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '30px' }}>
-            <div style={{ width: '1px', background: '#E7E7EC' }} />
+            <div data-r="hide-sm" style={{ width: '1px', background: '#E7E7EC' }} />
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '15px', height: '18px', background: rank.color, display: 'inline-block', clipPath: 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)' }} />
@@ -372,7 +374,7 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '30px' }}>
-            <div style={{ width: '1px', background: '#E7E7EC' }} />
+            <div data-r="hide-sm" style={{ width: '1px', background: '#E7E7EC' }} />
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '38px', letterSpacing: '-0.03em', lineHeight: '0.95', color: '#0B0B0F' }}>
@@ -384,7 +386,7 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '30px' }}>
-            <div style={{ width: '1px', background: '#E7E7EC' }} />
+            <div data-r="hide-sm" style={{ width: '1px', background: '#E7E7EC' }} />
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '38px', letterSpacing: '-0.03em', lineHeight: '0.95', color: '#0B0B0F' }}>
@@ -396,7 +398,7 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '30px' }}>
-            <div style={{ width: '1px', background: '#E7E7EC' }} />
+            <div data-r="hide-sm" style={{ width: '1px', background: '#E7E7EC' }} />
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '38px', letterSpacing: '-0.03em', lineHeight: '0.95', color: '#0B0B0F' }}>
@@ -416,7 +418,7 @@ export default function ProfilePage() {
               {attempts.length} attempts total · last 26 weeks
             </div>
           </div>
-          <div className="r-hscroll">
+          <div className="r-hscroll" data-r="scrollx">
             <div style={{ display: 'flex', gap: '3px' }}>
               {weeks.map((week, wi) => (
                 <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -430,7 +432,7 @@ export default function ProfilePage() {
         </section>
 
         {/* Two-column main ────────────────────────────────────────────── */}
-        <div data-sp-profile-lower style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: '44px', alignItems: 'start' }}>
+        <div data-sp-profile-lower data-r="cols1-sm gap20-sm" style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: '44px', alignItems: 'start' }}>
 
           {/* Recent challenges ─────────────────────────────────────── */}
           <section>

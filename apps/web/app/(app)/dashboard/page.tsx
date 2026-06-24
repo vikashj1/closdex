@@ -235,10 +235,11 @@ export default function DashboardPage() {
 
   return (
     <div data-resp="dashboard-home">
-      <div data-dash-page style={{ maxWidth: 1180, margin: '0 auto', padding: '34px 40px 72px' }}>
+      <div data-dash-page className="r-page" style={{ maxWidth: 1180, margin: '0 auto', padding: '34px 40px 72px' }}>
         {/* Title row */}
         <div
           data-dash-title-row
+          data-r="wrap-sm gap16-sm alignstart-sm"
           style={{
             display: 'flex',
             alignItems: 'flex-start',
@@ -249,6 +250,7 @@ export default function DashboardPage() {
         >
           <div>
             <h1
+              className="r-title"
               style={{
                 margin: 0,
                 fontFamily: "'Space Grotesk',sans-serif",
@@ -275,7 +277,7 @@ export default function DashboardPage() {
               )}
             </p>
           </div>
-          <div className="r-sticky-cta" data-dash-cta-wrap>
+          <div className="r-sticky-cta r-cta-bar" data-dash-cta-wrap>
             <button
               onClick={() => router.push('/app/challenges')}
               style={{

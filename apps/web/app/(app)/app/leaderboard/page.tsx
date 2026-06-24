@@ -88,17 +88,17 @@ export default function LeaderboardPage() {
 
   return (
     <div data-resp="leaderboard">
-      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
+      <div className="r-page" style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap', marginBottom: '24px' }}>
           <div>
-            <h1 style={{ margin: '0', fontFamily: "'Space Grotesk',sans-serif", fontWeight: '700', fontSize: '33px', letterSpacing: '-0.03em', lineHeight: '1.05', color: '#0B0B0F' }}>Leaderboard</h1>
+            <h1 className="r-title" style={{ margin: '0', fontFamily: "'Space Grotesk',sans-serif", fontWeight: '700', fontSize: '33px', letterSpacing: '-0.03em', lineHeight: '1.05', color: '#0B0B0F' }}>Leaderboard</h1>
             <p style={{ margin: '10px 0 0', fontFamily: "'Space Mono',monospace", fontSize: '11.5px', letterSpacing: '0.04em', color: '#9A9AA4' }}>IT Sales · India · weekly resets every Monday 00:00 IST</p>
           </div>
           <button style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '38px', padding: '0 15px', border: '1px solid #E7E7EC', borderRadius: '10px', background: '#fff', fontFamily: 'Inter,sans-serif', fontSize: '13px', fontWeight: '600', color: '#3A3A44', cursor: 'pointer' }}>All categories<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></button>
         </div>
 
-        <div style={{ marginBottom: '30px' }} className="r-hscroll" data-leaderboard-tabs>
+        <div data-r="scrollx" style={{ marginBottom: '30px' }} data-leaderboard-tabs>
           <div style={{ display: 'inline-flex', border: '1px solid #E7E7EC', borderRadius: '10px', overflow: 'hidden' }}>
             {PERIODS.map((p, i) => {
               const active = period === p.key;
@@ -148,9 +148,9 @@ export default function LeaderboardPage() {
         {!loading && !error && entries.length > 0 && (
           <>
             {(podium.first || podium.second || podium.third) && (
-              <section style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', background: 'radial-gradient(120% 140% at 50% 0%, #3A2D7A 0%, #221A45 42%, #14101F 74%, #0B0B0F 100%)', padding: '40px 36px 0', marginBottom: '46px' }}>
+              <section className="lb-podium-sec" style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', background: 'radial-gradient(120% 140% at 50% 0%, #3A2D7A 0%, #221A45 42%, #14101F 74%, #0B0B0F 100%)', padding: '40px 36px 0', marginBottom: '46px' }}>
                 <div style={{ position: 'absolute', top: '-70px', left: '50%', transform: 'translateX(-50%)', width: '420px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,165,36,0.16) 0%, rgba(245,165,36,0) 65%)', pointerEvents: 'none' }}></div>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '30px' }} data-leaderboard-podium>
+                <div className="r-podium" style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '30px' }} data-leaderboard-podium>
 
                   {podium.second && (
                     <PodiumSlot
@@ -184,7 +184,7 @@ export default function LeaderboardPage() {
 
             <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', fontWeight: '700', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86', marginBottom: '14px' }}>Full ranking</div>
             <div data-leaderboard-list>
-              <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr 150px 110px', gap: '18px', alignItems: 'center', padding: '0 14px 12px' }} data-leaderboard-head>
+              <div data-r="hide-sm" style={{ display: 'grid', gridTemplateColumns: '64px 1fr 150px 110px', gap: '18px', alignItems: 'center', padding: '0 14px 12px' }} data-leaderboard-head>
                 <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Rank</div>
                 <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Player</div>
                 <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Tier</div>
@@ -201,6 +201,7 @@ export default function LeaderboardPage() {
                     key={entry.salesperson.publicSlug}
                     onClick={() => goToProfile(entry.salesperson.publicSlug)}
                     data-leaderboard-entry
+                    data-r="rec"
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '64px 1fr 150px 110px',
@@ -218,7 +219,7 @@ export default function LeaderboardPage() {
                     <span style={{ fontFamily: "'Space Mono',monospace", fontSize: '13px', fontWeight: '700', color: isMe ? '#3A2DC4' : (entry.position <= 3 ? '#3A2DC4' : '#9A9AA4') }}>
                       {pad2(entry.position)}
                     </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: '0' }}>
+                    <div data-rec-title style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: '0' }}>
                       <span style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? '#0B0B0F' : '#EFEFF3', color: isMe ? '#fff' : '#3A3A44', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Space Grotesk',sans-serif", fontWeight: '600', fontSize: '12px', flexShrink: 0 }}>
                         {firstInitial(entry.salesperson.name)}
                       </span>

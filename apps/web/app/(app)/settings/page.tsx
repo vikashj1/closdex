@@ -196,7 +196,7 @@ export default function SettingsPage() {
 
   return (
     <div data-resp="settings">
-      <div style={{ maxWidth: '760px', margin: '0 auto', padding: '34px 40px 72px' }}>
+      <div className="r-page settings-page" style={{ maxWidth: '760px', margin: '0 auto', padding: '34px 40px 72px' }}>
         <div
           style={{
             display: 'flex',
@@ -206,6 +206,7 @@ export default function SettingsPage() {
           }}
         >
           <h1
+            className="r-title"
             style={{
               margin: 0,
               fontFamily: "'Space Grotesk',sans-serif",
@@ -241,7 +242,7 @@ export default function SettingsPage() {
 
         {tab === 'Profile' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
+            <div data-r="cols1-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
               <div style={fieldColStyle}>
                 <label style={labelStyle}>Display name</label>
                 <input
@@ -257,7 +258,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
+            <div data-r="cols1-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
               <div style={fieldColStyle}>
                 <label style={labelStyle}>Location</label>
                 <input
@@ -289,7 +290,7 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
+            <div data-r="cols1-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
               <div style={fieldColStyle}>
                 <label style={labelStyle}>Profile visibility</label>
                 <span style={{ fontSize: '12px', color: '#9A9AA4', marginTop: '-5px' }}>
@@ -414,7 +415,7 @@ export default function SettingsPage() {
 
             {renderMsg(profileMsg)}
 
-            <div className="r-sticky-cta" style={{ display: 'flex', paddingTop: '8px', borderTop: '1px solid #E7E7EC', marginTop: '6px' }}>
+            <div className="r-sticky-cta settings-save" style={{ display: 'flex', paddingTop: '8px', borderTop: '1px solid #E7E7EC', marginTop: '6px' }}>
               <button
                 onClick={saveProfile}
                 disabled={profileSaving}
@@ -448,7 +449,7 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
+            <div data-r="cols1-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '26px' }}>
               <div style={fieldColStyle}>
                 <label style={labelStyle}>New password</label>
                 <input
@@ -473,7 +474,7 @@ export default function SettingsPage() {
 
             {renderMsg(pwMsg)}
 
-            <div className="r-sticky-cta" style={{ display: 'flex', paddingTop: '8px', borderTop: '1px solid #E7E7EC', marginTop: '6px' }}>
+            <div className="r-sticky-cta settings-save" style={{ display: 'flex', paddingTop: '8px', borderTop: '1px solid #E7E7EC', marginTop: '6px' }}>
               <button
                 onClick={changePassword}
                 disabled={pwSaving || !currentPassword || !newPassword || !confirmPassword}

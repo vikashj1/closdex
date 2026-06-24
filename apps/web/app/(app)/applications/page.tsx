@@ -137,7 +137,7 @@ export default function ApplicationsPage() {
 
   return (
     <div data-resp-page="applications">
-      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
+      <div className="r-page" style={{ maxWidth: '1180px', margin: '0 auto', padding: '34px 40px 72px' }}>
 
         {/* Header */}
         <div
@@ -151,6 +151,7 @@ export default function ApplicationsPage() {
           }}
         >
           <h1
+            className="r-title"
             style={{
               margin: 0,
               fontFamily: "'Space Grotesk',sans-serif",
@@ -192,6 +193,7 @@ export default function ApplicationsPage() {
         <div
           className="r-hscroll"
           data-applications-filter-pills
+          data-r="scrollx"
           style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '30px' }}
         >
           {FILTER_TABS.map((tab) => {
@@ -301,6 +303,7 @@ export default function ApplicationsPage() {
                 <div
                   key={app.id}
                   data-applications-row
+                  data-r="wrap-sm gap16-sm"
                   role="link"
                   tabIndex={0}
                   onClick={() => router.push(`/jobs/${j.id}`)}
@@ -338,7 +341,7 @@ export default function ApplicationsPage() {
                   >
                     {initials || '—'}
                   </span>
-                  <div data-applications-meta style={{ flex: 1, minWidth: 0 }}>
+                  <div data-applications-meta data-rec-title style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '15px', fontWeight: 600, color: '#0B0B0F' }}>{j.title}</span>
                       <span
