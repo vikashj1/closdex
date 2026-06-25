@@ -1081,17 +1081,38 @@ export default function ConversationPage({ params }: { params: { id: string } })
           <div style={{ maxWidth: 760, margin: '0 auto' }}>
             <div
               style={{
+                position: 'relative',
                 display: 'flex',
                 gap: 10,
                 alignItems: 'flex-end',
                 background: inputFocused ? '#fff' : '#FAFAF8',
                 border: `1px solid ${inputFocused ? '#5B4BF5' : '#E7E7EC'}`,
                 borderRadius: 14,
-                padding: '12px 14px',
+                padding: '12px 14px 22px',
                 boxShadow: inputFocused ? '0 0 0 3px rgba(91,75,245,0.14)' : undefined,
                 transition: 'background 0.15s, border-color 0.15s, box-shadow 0.15s',
               }}
             >
+              <span
+                style={{
+                  position: 'absolute',
+                  left: 14,
+                  bottom: 6,
+                  fontFamily: "'Space Mono',monospace",
+                  fontSize: 10.5,
+                  letterSpacing: '0.03em',
+                  color:
+                    input.length >= 500
+                      ? '#A93F37'
+                      : input.length >= 450
+                      ? '#F5A524'
+                      : '#9A9AA4',
+                  pointerEvents: 'none',
+                }}
+              >
+                <span style={{ fontWeight: 700 }}>{input.length}</span>
+                {' / 500'}
+              </span>
               <textarea
                 value={input}
                 onChange={(e) => {
@@ -1119,7 +1140,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
                 disabled={isClosed || sending}
                 placeholder={
                   attempt.status === 'IN_PROGRESS'
-                    ? 'Type your reply… (Enter to send · Shift+Enter for newline)'
+                    ? 'Type your reply…'
                     : 'Conversation is closed.'
                 }
                 rows={2}
@@ -1205,36 +1226,6 @@ export default function ConversationPage({ params }: { params: { id: string } })
               </button>
             </div>
 
-            <div
-              data-play-composer-meta
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginTop: 9,
-                fontFamily: "'Space Mono',monospace",
-                fontSize: 10.5,
-                color: '#9A9AA4',
-                letterSpacing: '0.03em',
-              }}
-            >
-              <span>
-                <span
-                  style={{
-                    fontWeight: 700,
-                    color:
-                      input.length >= 500
-                        ? '#A93F37'
-                        : input.length >= 450
-                        ? '#F5A524'
-                        : '#3A3A44',
-                  }}
-                >
-                  {input.length}
-                </span>
-                {' / 500'}
-              </span>
-              <span>↩ Send  ·  ⇧↩ New line</span>
-            </div>
           </div>
         </footer>
       </div>

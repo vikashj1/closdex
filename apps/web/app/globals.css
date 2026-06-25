@@ -598,14 +598,27 @@ body { min-height: 100vh; }
     padding: 0 14px !important;
     max-width: 100% !important;
   }
-  /* Composer — flush against the keyboard / screen edge. */
+  /* Composer — keep at least 14px below the input even when iOS resolves
+     safe-area-inset-bottom to 0 (keyboard up). */
   [data-resp="play"] [data-play-composer] {
-    padding: 8px 12px env(safe-area-inset-bottom, 8px) !important;
+    padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
   }
-  /* Keyboard-hint meta row (0/500 + ↩/⇧↩) is irrelevant on touch and was
-     reading as off-white empty space under the input bar. */
-  [data-resp="play"] [data-play-composer-meta] { display: none !important; }
   [data-resp="play"] textarea { font-size: 14px !important; }
+
+  /* No scrollbars anywhere in the play screen on mobile — applies to the
+     thread, the context-summary horizontal scroller, and the collapsible
+     details panel. */
+  [data-resp="play"],
+  [data-resp="play"] * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  [data-resp="play"]::-webkit-scrollbar,
+  [data-resp="play"] *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
 }
 
 @media (max-width: 767px) {
