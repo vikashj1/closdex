@@ -1206,6 +1206,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
             </div>
 
             <div
+              data-play-composer-meta
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
