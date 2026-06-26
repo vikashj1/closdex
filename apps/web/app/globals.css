@@ -1167,9 +1167,12 @@ a { color: inherit; text-decoration: none; }
     border-left: none !important;
     border-top: 1px solid #E7E7EC !important;
   }
-  /* Bottom 3 panels: data-resp blanket already collapses to 1fr; just tighten
-     the gap so the panels don't sit 50px apart on a phone. */
+  /* Bottom 3 panels: collapse the 1.45fr|1fr grid to a single column so
+     Recommended, Leaderboard, and Recent activity each get full width
+     (otherwise the right column squashes into ~140px on a 360-wide phone
+     and Recent activity reads as missing). */
   [data-resp="dashboard-home"] [data-dash-panels] {
+    grid-template-columns: 1fr !important;
     gap: 28px !important;
   }
 }
