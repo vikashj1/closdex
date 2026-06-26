@@ -163,6 +163,12 @@ export default function ProfilePage() {
     return () => { cancelled = true; };
   }, [user]);
 
+  // Heatmap rebuild lives up here (above the early returns) so the hook
+  // order stays stable — calling useMemo only when user/salesperson are
+  // ready was a Hooks-rules violation and caused the mobile error boundary
+  // to flash on first render.
+  const weeks = useMemo(() => buildHeatmapWeeks(attempts), [attempts]);
+
   async function handleToggleOpenToWork() {
     if (toggling) return;
     const next = !openToWork;
@@ -257,8 +263,6 @@ export default function ProfilePage() {
   const pointsToNext = tier ? Math.max(0, tier.threshold - sp.totalPoints) : 0;
   const nextLabel = tier ? `Until ${tier.next}` : 'Max rank';
   const nextValue = tier ? pointsToNext.toLocaleString() : '—';
-
-  const weeks = useMemo(() => buildHeatmapWeeks(attempts), [attempts]);
 
   const subtitleParts: string[] = [];
   subtitleParts.push(`${sp.experienceYears ?? 0} yrs exp`);
