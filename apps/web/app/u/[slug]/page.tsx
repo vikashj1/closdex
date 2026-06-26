@@ -682,7 +682,11 @@ export default function PublicProfilePage() {
                     border: '1px solid #F4E4C4',
                   }}
                 >
-                  <span style={{ fontSize: 18, lineHeight: 1 }}>{b.icon}</span>
+                  {b.iconUrl ? (
+                    <img src={b.iconUrl} alt={b.name} width={22} height={22} style={{ objectFit: 'contain', display: 'block' }} />
+                  ) : (
+                    <span style={{ fontSize: 18, lineHeight: 1 }}>🏅</span>
+                  )}
                   <div>
                     <div
                       style={{

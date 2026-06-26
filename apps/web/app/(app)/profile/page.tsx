@@ -532,8 +532,10 @@ export default function ProfilePage() {
                       title={b.description}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '12px 8px', borderRadius: '10px', background: '#FAFAF8', border: '1px solid #E7E7EC' }}
                     >
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(245,165,36,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px', fontSize: '20px' }}>
-                        {b.icon ?? '🏅'}
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: b.iconUrl ? 'transparent' : 'rgba(245,165,36,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px', fontSize: '20px' }}>
+                        {b.iconUrl ? (
+                          <img src={b.iconUrl} alt={b.name} width={40} height={40} style={{ objectFit: 'contain', display: 'block' }} />
+                        ) : '🏅'}
                       </div>
                       <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0B0B0F', marginBottom: '2px' }}>{b.name}</div>
                       <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9A9AA4' }}>

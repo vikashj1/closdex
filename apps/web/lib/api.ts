@@ -269,7 +269,7 @@ export interface EarnedBadge {
   code: string;
   name: string;
   description: string;
-  icon: string;
+  iconUrl?: string | null;
   awardedAt: string;
 }
 
