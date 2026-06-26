@@ -1007,7 +1007,7 @@ export default function DashboardPage() {
                         flexDirection: 'column',
                         alignItems: 'center',
                         gap: 9,
-                        width: 64,
+                        width: 96,
                       }}
                     >
                       {hasIcon ? (
@@ -1017,16 +1017,16 @@ export default function DashboardPage() {
                         <img
                           src={b.iconUrl!}
                           alt={b.name}
-                          width={60}
-                          height={60}
+                          width={90}
+                          height={90}
                           style={{ objectFit: 'contain', display: 'block' }}
                         />
                       ) : (
                         <span
                           style={{
                             position: 'relative',
-                            width: 54,
-                            height: 60,
+                            width: 81,
+                            height: 90,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1051,8 +1051,8 @@ export default function DashboardPage() {
                           )}
                           {earned ? (
                             <svg
-                              width={22}
-                              height={22}
+                              width={33}
+                              height={33}
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="#FFFFFF"
@@ -1066,8 +1066,8 @@ export default function DashboardPage() {
                             </svg>
                           ) : (
                             <svg
-                              width={20}
-                              height={20}
+                              width={30}
+                              height={30}
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="#C2C2CC"
