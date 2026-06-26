@@ -317,6 +317,7 @@ export default function DashboardPage() {
 
         {/* ===== RANK HERO ===== */}
         <section
+          data-dash-hero
           style={{
             position: 'relative',
             borderRadius: 16,
@@ -342,6 +343,7 @@ export default function DashboardPage() {
           />
           <div style={{ position: 'relative' }}>
           <div
+            data-dash-hero-row
             style={{
               display: 'flex',
               flexWrap: 'wrap',
@@ -351,7 +353,7 @@ export default function DashboardPage() {
             }}
           >
             {/* Tier + points */}
-            <div style={{ flexShrink: 0 }}>
+            <div data-dash-hero-tier style={{ flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span
                   style={{
