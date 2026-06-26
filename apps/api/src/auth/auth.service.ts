@@ -68,9 +68,10 @@ export class AuthService {
       });
 
       if (dto.role === UserRole.SALESPERSON) {
-        await tx.salespersonProfile.create({
+        const profile = await tx.salespersonProfile.create({
           data: { userId: created.id, publicSlug: await this.uniqueSlug(tx, dto.name) },
         });
+        await this.grantEarlyBird(tx, profile.id);
       } else {
         const company = await tx.company.create({ data: { name: dto.companyName! } });
         await tx.companyMembership.create({
@@ -82,6 +83,22 @@ export class AuthService {
     });
 
     return this.issueToken(user.id, user.email, user.role);
+  }
+
+  /** Awards the EARLY_BIRD badge to every new salesperson. Upserts the badge
+   *  definition first so production doesn't depend on the seed having run. */
+  private async grantEarlyBird(tx: Prisma.TransactionClient, salespersonId: string) {
+    const badge = await tx.badge.upsert({
+      where: { code: 'EARLY_BIRD' },
+      update: {},
+      create: {
+        code: 'EARLY_BIRD',
+        name: 'Early Bird',
+        description: 'Joined Closdex in the early days — every new signup gets this.',
+        iconUrl: '/badges/early-bird.png',
+      },
+    });
+    await tx.userBadge.create({ data: { salespersonId, badgeId: badge.id } });
   }
 
   async login(dto: LoginDto) {
@@ -168,9 +185,10 @@ export class AuthService {
       });
 
       if (role === UserRole.SALESPERSON) {
-        await tx.salespersonProfile.create({
+        const profile = await tx.salespersonProfile.create({
           data: { userId: user.id, publicSlug: await this.uniqueSlug(tx, fullName) },
         });
+        await this.grantEarlyBird(tx, profile.id);
       } else {
         const company = await tx.company.create({ data: { name: dto.companyName! } });
         await tx.companyMembership.create({

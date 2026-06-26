@@ -77,7 +77,7 @@ function relativeTime(iso: string): string {
   return `${mo}mo ago`;
 }
 
-/** Build a 26-week × 7-day heatmap from the user's attempts. Each cell's bg is
+/** Build a 16-week × 7-day heatmap from the user's attempts. Each cell's bg is
  *  picked from HEAT_RAMP based on how many attempts started that day. */
 function buildHeatmap(attempts: AttemptDetail[]): { days: { bg: string; count: number }[] }[] {
   const counts = new Map<string, number>();
@@ -92,7 +92,7 @@ function buildHeatmap(attempts: AttemptDetail[]): { days: { bg: string; count: n
   const dow = today.getDay();
   const lastDay = new Date(today.getTime() - dow * MS_DAY);
   const weeks: { days: { bg: string; count: number }[] }[] = [];
-  for (let w = 25; w >= 0; w--) {
+  for (let w = 15; w >= 0; w--) {
     const days: { bg: string; count: number }[] = [];
     for (let d = 0; d < 7; d++) {
       const date = new Date(lastDay.getTime() - (w * 7 + (6 - d)) * MS_DAY);
@@ -881,7 +881,7 @@ export default function DashboardPage() {
                   color: '#9A9AA4',
                 }}
               >
-                Last 26 weeks
+                Last 16 weeks
               </div>
             </div>
             <div className="r-hscroll">

@@ -338,6 +338,7 @@ async function main() {
 
   // ── Demo badges ───────────────────────────────────────────────────────────
   const demoBadges = [
+    { code: 'EARLY_BIRD', name: 'Early Bird', description: 'Joined Closdex in the early days — every new signup gets this.', iconUrl: '/badges/early-bird.png' },
     { code: 'FIRST_WIN', name: 'First Win', description: 'Completed your very first challenge successfully.' },
     { code: 'STREAK_7',  name: '7-Day Streak', description: 'Maintained a 7-day challenge completion streak.' },
     { code: 'SPEED_DEMON', name: 'Speed Demon', description: 'Finished a challenge in under 5 minutes with a perfect score.' },

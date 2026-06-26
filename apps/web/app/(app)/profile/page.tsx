@@ -74,10 +74,10 @@ function timeAgo(iso: string | null | undefined): string {
   return `${Math.floor(months / 12)}y ago`;
 }
 
-// Build a 26-week (Mon-Sun) heatmap from attempt completion timestamps.
+// Build a 16-week (Mon-Sun) heatmap from attempt completion timestamps.
 function buildHeatmapWeeks(attempts: AttemptDetail[]) {
   const ramp = ['#EFEFF3', '#D8D4FB', '#B0A8F6', '#7E72F1', '#5B4BF5'];
-  const totalDays = 26 * 7;
+  const totalDays = 16 * 7;
   const counts = new Array<number>(totalDays).fill(0);
   const now = new Date();
   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -101,7 +101,7 @@ function buildHeatmapWeeks(attempts: AttemptDetail[]) {
     return 4;
   };
   const weeks: { days: { bg: string }[] }[] = [];
-  for (let w = 0; w < 26; w++) {
+  for (let w = 0; w < 16; w++) {
     const days: { bg: string }[] = [];
     for (let d = 0; d < 7; d++) {
       const c = counts[w * 7 + d];
@@ -415,7 +415,7 @@ export default function ProfilePage() {
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '18px' }}>
             <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86' }}>Challenge activity</div>
             <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9A9AA4' }}>
-              {attempts.length} attempts total · last 26 weeks
+              {attempts.length} attempts total · last 16 weeks
             </div>
           </div>
           <div className="r-hscroll" data-r="scrollx">

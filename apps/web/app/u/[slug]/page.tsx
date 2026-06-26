@@ -740,7 +740,7 @@ export default function PublicProfilePage() {
             >
               Challenge activity
             </h3>
-            <ActivityHeatmap weeks={26} showLegend={true} seed={heatSeed} />
+            <ActivityHeatmap weeks={16} showLegend={true} seed={heatSeed} />
           </div>
 
           {/* Right: Specializations + meta + verified */}

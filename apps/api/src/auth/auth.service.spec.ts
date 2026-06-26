@@ -17,6 +17,8 @@ interface TxStubs {
   salespersonProfile?: { create: jest.Mock; findUnique: jest.Mock };
   company?: { create: jest.Mock };
   companyMembership?: { create: jest.Mock };
+  badge?: { upsert: jest.Mock };
+  userBadge?: { create: jest.Mock };
 }
 
 function makePrismaMock(opts: {
@@ -31,13 +33,20 @@ function makePrismaMock(opts: {
         create: jest.fn().mockResolvedValue(opts.txReturn ?? null),
       },
       salespersonProfile: opts.txStubs?.salespersonProfile ?? {
-        create: jest.fn().mockResolvedValue({}),
+        create: jest.fn().mockResolvedValue({ id: 'sp-1' }),
         findUnique: jest.fn().mockResolvedValue(null),
       },
       company: opts.txStubs?.company ?? {
         create: jest.fn().mockResolvedValue({ id: 'co-1' }),
       },
       companyMembership: opts.txStubs?.companyMembership ?? {
+        create: jest.fn().mockResolvedValue({}),
+      },
+      // EARLY_BIRD auto-award lookups on every salesperson signup.
+      badge: opts.txStubs?.badge ?? {
+        upsert: jest.fn().mockResolvedValue({ id: 'badge-early-bird' }),
+      },
+      userBadge: opts.txStubs?.userBadge ?? {
         create: jest.fn().mockResolvedValue({}),
       },
     };
@@ -103,7 +112,7 @@ describe('AuthService', () => {
         email: 'sp@x.com',
         role: UserRole.SALESPERSON,
       });
-      const profileCreate = jest.fn().mockResolvedValue({});
+      const profileCreate = jest.fn().mockResolvedValue({ id: 'sp-x' });
       const profileFind = jest.fn().mockResolvedValue(null);
       const prisma = makePrismaMock({
         txStubs: {
@@ -180,7 +189,7 @@ describe('AuthService', () => {
 
     it('generates a slug derived from name', async () => {
       const profileFind = jest.fn().mockResolvedValue(null);
-      const profileCreate = jest.fn().mockResolvedValue({});
+      const profileCreate = jest.fn().mockResolvedValue({ id: 'sp-x' });
       const userCreate = jest.fn().mockResolvedValue({
         id: 'user-3',
         email: 'slug@x.com',
@@ -212,7 +221,7 @@ describe('AuthService', () => {
         .fn()
         .mockResolvedValueOnce({ publicSlug: 'taken' })
         .mockResolvedValueOnce(null);
-      const profileCreate = jest.fn().mockResolvedValue({});
+      const profileCreate = jest.fn().mockResolvedValue({ id: 'sp-x' });
       const userCreate = jest.fn().mockResolvedValue({
         id: 'user-4',
         email: 'u@x.com',
