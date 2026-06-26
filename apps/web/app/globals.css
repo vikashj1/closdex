@@ -1123,26 +1123,14 @@ a { color: inherit; text-decoration: none; }
     align-items: stretch !important;
     gap: 12px !important;
   }
-  /* Hero card: trim padding so the giant points number doesn't get squeezed,
-     and shrink the orb so it doesn't bleed under content on a narrow phone. */
+  /* Tighten the hero card top padding on phones so the ROOKIE label / points
+     number sit closer to the top edge — Vikash wanted the rank+points block
+     pulled upward, not the layout restructured. */
   [data-resp="dashboard-home"] [data-dash-hero] {
-    padding: 22px 20px !important;
-  }
-  /* Hero row: stack tier+points and inline stats vertically, both hugging
-     the left edge — so the rank/points block sits top-left aligned with the
-     "this week" column below it (per Vikash). Drop the 40px gap to 18px. */
-  [data-resp="dashboard-home"] [data-dash-hero-row] {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 18px !important;
-    margin-bottom: 20px !important;
+    padding: 18px 26px 28px !important;
   }
   [data-resp="dashboard-home"] [data-dash-hero-tier] {
-    width: 100% !important;
-  }
-  /* Giant points number — 78px overwhelms a 360-wide phone; scale down. */
-  [data-resp="dashboard-home"] [data-dash-hero-tier] > div:nth-child(2) > span:first-child {
-    font-size: 56px !important;
+    align-self: flex-start !important;
   }
   /* Rank-hero inline stats: 3-up flex → 2-up grid; dividers (2nd, 4th
      children) hide. */
@@ -1151,7 +1139,6 @@ a { color: inherit; text-decoration: none; }
     grid-template-columns: 1fr 1fr !important;
     gap: 18px 24px !important;
     padding-bottom: 0 !important;
-    width: 100% !important;
   }
   [data-resp="dashboard-home"] [data-dash-hero-stats] > :nth-child(2),
   [data-resp="dashboard-home"] [data-dash-hero-stats] > :nth-child(4) {
