@@ -73,6 +73,42 @@ export class LeaderboardsService {
   }
 
   async list(period: Period, category: string | undefined, limit: number) {
+    // For "all-time" the source of truth is Postgres `totalPoints`. Redis can
+    // drift whenever points are reset / disputed / manually adjusted — the
+    // recordScore path is incremental only and never reconciles. So we
+    // project all-time directly from Postgres to avoid showing stale Redis
+    // values after admin intervention. Time-bounded periods (daily/weekly/
+    // monthly) keep their Redis path because their keys have TTLs and any
+    // drift heals naturally at the next bucket rollover.
+    if (period === 'all-time' && !category) {
+      const profiles = await this.prisma.salespersonProfile.findMany({
+        orderBy: [{ totalPoints: 'desc' }, { id: 'asc' }],
+        take: limit,
+        select: {
+          id: true,
+          publicSlug: true,
+          rank: true,
+          totalPoints: true,
+          user: { select: { name: true, photoUrl: true } },
+        },
+      });
+      return {
+        period,
+        category: null,
+        entries: profiles.map((p, i) => ({
+          position: i + 1,
+          score: p.totalPoints,
+          salesperson: {
+            publicSlug: p.publicSlug,
+            name: p.user.name,
+            photoUrl: p.user.photoUrl,
+            rank: p.rank,
+            totalPoints: p.totalPoints,
+          },
+        })),
+      };
+    }
+
     const scope = category ? `c:${this.normalizeCategory(category)}` : 'g';
     const key = this.keyFor(period, scope, new Date());
 

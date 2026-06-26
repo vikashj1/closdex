@@ -133,9 +133,33 @@ describe('LeaderboardsService', () => {
   describe('list', () => {
     it('6. uses global scope key (ending :g) when category is undefined', async () => {
       mockRedis.zrevrange.mockResolvedValueOnce([]);
-      await service.list('all-time', undefined, 10);
+      // Use a time-bounded period — all-time + no-category now bypasses
+      // Redis entirely and projects from Postgres totalPoints (see test 6b).
+      await service.list('weekly', undefined, 10);
       const calledKey: string = mockRedis.zrevrange.mock.calls[0][0];
       expect(calledKey).toMatch(/:g$/);
+    });
+
+    it('6b. all-time + no category projects from Postgres totalPoints (not Redis)', async () => {
+      mockPrisma.salespersonProfile.findMany.mockResolvedValueOnce([
+        makeProfile('sp-1', { name: 'Top', totalPoints: 9000 }),
+        makeProfile('sp-2', { name: 'Mid', totalPoints: 4500 }),
+      ]);
+
+      const result = await service.list('all-time', undefined, 10);
+
+      // Redis never consulted for all-time global reads.
+      expect(mockRedis.zrevrange).not.toHaveBeenCalled();
+      // findMany ordered by totalPoints desc, ids ascending as tiebreaker.
+      expect(mockPrisma.salespersonProfile.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [{ totalPoints: 'desc' }, { id: 'asc' }],
+          take: 10,
+        }),
+      );
+      expect(result.entries.map((e: any) => e.score)).toEqual([9000, 4500]);
+      expect(result.entries.map((e: any) => e.salesperson.totalPoints)).toEqual([9000, 4500]);
+      expect(result.entries.map((e: any) => e.position)).toEqual([1, 2]);
     });
 
     it('7. uses category scope key (c:xxx) when category is provided', async () => {
@@ -171,7 +195,8 @@ describe('LeaderboardsService', () => {
         makeProfile('sp-b', { totalPoints: 150 }),
       ]);
 
-      const result = await service.list('all-time', undefined, 10);
+      // Time-bounded period exercises the Redis path; all-time would bypass.
+      const result = await service.list('weekly', undefined, 10);
       expect(result.entries).toHaveLength(2);
       expect(result.entries[0].score).toBe(200);
       expect(result.entries[1].score).toBe(150);
@@ -212,7 +237,7 @@ describe('LeaderboardsService', () => {
         // sp-ghost intentionally missing
       ]);
 
-      const result = await service.list('all-time', undefined, 10);
+      const result = await service.list('weekly', undefined, 10);
       expect(result.entries).toHaveLength(2);
       const ids = result.entries.map((e: any) => e.salesperson.publicSlug);
       expect(ids).not.toContain('slug-sp-ghost');
@@ -228,7 +253,7 @@ describe('LeaderboardsService', () => {
         makeProfile('sp-c'),
       ]);
 
-      const result = await service.list('all-time', undefined, 10);
+      const result = await service.list('weekly', undefined, 10);
       expect(result.entries.map((e: any) => e.position)).toEqual([1, 2, 3]);
       expect(result.entries.map((e: any) => e.score)).toEqual([900, 600, 300]);
     });
