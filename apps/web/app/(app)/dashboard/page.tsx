@@ -88,9 +88,12 @@ function buildHeatmap(attempts: AttemptDetail[]): { days: { bg: string; count: n
   }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  // Anchor on the Sunday at or before today so columns align by week.
+  // Anchor the latest column on the next Sunday (or today if today IS Sunday)
+  // so the current calendar week — including today's attempts — sits in the
+  // rightmost column. Anchoring on the previous Sunday cut off Mon..Sat
+  // activity for the current week.
   const dow = today.getDay();
-  const lastDay = new Date(today.getTime() - dow * MS_DAY);
+  const lastDay = new Date(today.getTime() + ((7 - dow) % 7) * MS_DAY);
   const weeks: { days: { bg: string; count: number }[] }[] = [];
   for (let w = 15; w >= 0; w--) {
     const days: { bg: string; count: number }[] = [];
