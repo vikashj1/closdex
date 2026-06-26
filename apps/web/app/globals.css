@@ -1112,9 +1112,11 @@ a { color: inherit; text-decoration: none; }
    - "Take a challenge" CTA: pinned to viewport bottom on phones via
      `.r-sticky-cta` (defined earlier); page wrapper gets 76px bottom pad. */
 @media (max-width: 767px) {
-  /* Page wrapper: extra bottom padding so content clears the sticky CTA. */
+  /* Page wrapper: bottom padding has to clear BOTH the bottom-nav (60px)
+     AND the sticky CTA that sits at bottom:60 above it (~70px tall). 76px
+     left the last ~50px of Recent activity hidden behind the CTA bar. */
   [data-resp="dashboard-home"] [data-dash-page] {
-    padding-bottom: 76px !important;
+    padding-bottom: 160px !important;
   }
   /* Title row: stack so heading wraps cleanly above the CTA wrapper. The CTA
      wrapper itself gets repositioned by .r-sticky-cta. */
