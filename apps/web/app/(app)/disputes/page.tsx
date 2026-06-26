@@ -288,7 +288,7 @@ export default function DisputesPage() {
               type="button"
               data-disputes-empty-cta
               data-r="btnfull"
-              onClick={() => router.push('/app/attempts')}
+              onClick={() => router.push('/attempts')}
               style={{
                 marginTop: '28px',
                 display: 'inline-flex',

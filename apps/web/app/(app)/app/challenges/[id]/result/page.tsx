@@ -229,7 +229,7 @@ function ResultPageInner({ params }: { params: { id: string } }) {
         {/* Back link */}
         <div style={{ marginBottom: 24 }}>
           <button
-            onClick={() => router.push('/app/attempts')}
+            onClick={() => router.push('/attempts')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
