@@ -850,7 +850,7 @@ export default function DashboardPage() {
         {/* ===== HEATMAP + BADGES ===== */}
         <section data-dash-heatbadge style={{ display: 'flex', gap: 48, alignItems: 'stretch', marginBottom: 46 }}>
           {/* Heatmap */}
-          <div style={{ flexShrink: 0 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
                 display: 'flex',
