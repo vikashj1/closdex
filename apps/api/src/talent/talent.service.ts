@@ -10,6 +10,21 @@ const RANK_ORDER: Rank[] = [
   Rank.PLATINUM, Rank.DIAMOND, Rank.MASTER, Rank.GRANDMASTER,
 ];
 
+/** Decay the stored currentStreakDays on read. The streak is only mutated
+ *  by scoring.updateStreak when a challenge completes, so between attempts
+ *  the stored value goes stale. A gap of 2+ calendar days breaks the
+ *  streak; 0–1 day gaps keep it (1 day = at-risk-but-alive). */
+function effectiveStreakDays(stored: number, lastChallengeDate: Date | null): number {
+  if (!lastChallengeDate) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const last = new Date(lastChallengeDate);
+  last.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor((today.getTime() - last.getTime()) / (24 * 3600 * 1000));
+  if (diffDays <= 1) return stored;
+  return 0;
+}
+
 @Injectable()
 export class TalentService {
   constructor(
@@ -98,6 +113,7 @@ export class TalentService {
         openToWork: true,
         currentCompany: true,
         currentStreakDays: true,
+        lastChallengeDate: true,
         resumeUrl: true,
         user: { select: { name: true, photoUrl: true, location: true } },
         attempts: {
@@ -117,9 +133,10 @@ export class TalentService {
     const wins = completed.filter((a) => a.goalAchieved === true);
     const winRate = completed.length > 0 ? Math.round((wins.length / completed.length) * 100) : 0;
 
-    const { attempts, badges, ...rest } = profile;
+    const { attempts, badges, lastChallengeDate, ...rest } = profile;
     return {
       ...rest,
+      currentStreakDays: effectiveStreakDays(rest.currentStreakDays, lastChallengeDate),
       badges: badges.map((ub) => ({ ...ub.badge, awardedAt: ub.awardedAt })),
       _stats: {
         totalAttempts: profile.attempts.length,
@@ -146,6 +163,7 @@ export class TalentService {
         openToWork: true,
         currentCompany: true,
         currentStreakDays: true,
+        lastChallengeDate: true,
         resumeUrl: true,
         user: { select: { name: true, photoUrl: true, location: true } },
         attempts: {
@@ -164,9 +182,10 @@ export class TalentService {
     const wins = completed.filter((a) => a.goalAchieved === true);
     const winRate = completed.length > 0 ? Math.round((wins.length / completed.length) * 100) : 0;
 
-    const { attempts, ...rest } = profile;
+    const { attempts, lastChallengeDate, ...rest } = profile;
     return {
       ...rest,
+      currentStreakDays: effectiveStreakDays(rest.currentStreakDays, lastChallengeDate),
       _stats: {
         totalAttempts: profile.attempts.length,
         completedAttempts: completed.length,

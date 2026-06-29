@@ -15,7 +15,7 @@ const baseUser = {
   name: 'Test User',
   role: 'SALESPERSON',
   passwordHash: 'hashed-secret',
-  salesperson: { id: 'sp-1', userId: 'user-1', bio: 'Sales pro' },
+  salesperson: { id: 'sp-1', userId: 'user-1', bio: 'Sales pro', currentStreakDays: 0, lastChallengeDate: null },
   companyMemberships: [
     { id: 'mem-1', companyId: 'co-1', userId: 'user-1', company: { id: 'co-1', name: 'Acme' } },
   ],
