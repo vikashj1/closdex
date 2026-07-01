@@ -5,6 +5,9 @@
    ============================================================ */
 
 .cmkt {
+  max-width: 100vw;
+  overflow-x: clip;
+
   --ink: #0B0B0F;
   --violet: #5B4BF5;
   --violet-deep: #3A2DC4;
