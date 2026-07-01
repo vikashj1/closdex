@@ -101,7 +101,7 @@ export default function PricingPage() {
       
       <section className="section bg-tint">
         <div className="container">
-          <div className="phero__grid" style={{ gridTemplateColumns: "1fr 1.1fr", alignItems: "center" }}>
+          <div className="phero__grid" style={{ alignItems: "center" }}>
             <div>
               <span className="tag tag--pos">How the placement fee works</span>
               <h2 className="display" style={{ margin: "16px 0 14px" }}>You only pay when you actually hire.</h2>

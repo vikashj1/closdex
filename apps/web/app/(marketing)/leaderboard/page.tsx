@@ -47,7 +47,7 @@ export default function MarketingLeaderboardPage() {
       
       <section className="section bg-tint">
         <div className="container">
-          <div className="phero__grid" style={{ gridTemplateColumns: "0.9fr 1.1fr", alignItems: "center", gap: "clamp(40px,5vw,64px)" }}>
+          <div className="phero__grid" style={{ alignItems: "center", gap: "clamp(40px,5vw,64px)" }}>
             <div>
               <span className="tag tag--violet">Eight ranks · one ladder</span>
               <h2 className="display" style={{ margin: "18px 0 16px" }}>Everyone starts at Rookie. The rest you earn.</h2>

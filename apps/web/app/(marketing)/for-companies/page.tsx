@@ -138,7 +138,7 @@ export default function CompanyPage() {
       
       <section className="section bg-tint">
         <div className="container">
-          <div className="phero__grid" style={{ gridTemplateColumns: "1.2fr 1fr", alignItems: "center" }}>
+          <div className="phero__grid" style={{ alignItems: "center" }}>
             <div>
               <span className="tag tag--cool">Simple, outcome-aligned pricing</span>
               <h2 className="display" style={{ margin: "16px 0 14px" }}>Browse free. Pay on results.</h2>
