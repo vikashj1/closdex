@@ -132,31 +132,7 @@ const NAV: NavItem[] = [
     ),
     authOnly: true,
   },
-  {
-    id: 'jobs',
-    label: 'Jobs',
-    href: '/jobs',
-    icon: (
-      <svg {...stroke}>
-        <rect width="20" height="14" x="2" y="7" rx="2" />
-        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-      </svg>
-    ),
-  },
-  {
-    id: 'applications',
-    label: 'Applications',
-    href: '/applications',
-    icon: (
-      <svg {...stroke}>
-        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z" />
-        <path d="M14 2v6h6" />
-        <path d="M9 13h6" />
-        <path d="M9 17h4" />
-      </svg>
-    ),
-    authOnly: true,
-  },
+  // Jobs + Applications hidden for beta launch (hiring side coming later).
   {
     id: 'notifications',
     label: 'Notifications',
@@ -474,7 +450,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           { href: '/app/challenges', label: 'Challenges', match: (p: string) => p.startsWith('/app/challenges'),
             paths: [{ d: 'M0 0', _: null }] },
           { href: '/app/leaderboard', label: 'Ranks', match: (p: string) => p.startsWith('/app/leaderboard') },
-          { href: '/jobs', label: 'Jobs', match: (p: string) => p === '/jobs' || p.startsWith('/jobs/') },
+          { href: '/app/learn', label: 'Learn', match: (p: string) => p.startsWith('/app/learn') },
           { href: '/profile', label: 'Profile', match: (p: string) => p.startsWith('/profile') },
         ].map((tab) => {
           const active = tab.match(pathname);
@@ -503,10 +479,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
                 </svg>
               )}
-              {tab.label === 'Jobs' && (
+              {tab.label === 'Learn' && (
                 <svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-                  <rect width={20} height={14} x={2} y={7} rx={2} />
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                 </svg>
               )}
               {tab.label === 'Profile' && (

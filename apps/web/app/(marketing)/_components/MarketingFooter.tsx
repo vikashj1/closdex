@@ -38,19 +38,7 @@ export function MarketingFooter() {
             <h5>Companies</h5>
             <ul>
               <li>
-                <Link href="/for-companies">Talent search</Link>
-              </li>
-              <li>
-                <Link href="/pricing">Pricing</Link>
-              </li>
-              <li>
-                <Link href="/for-companies">Book a demo</Link>
-              </li>
-              <li>
-                <Link href="/for-companies">Case studies</Link>
-              </li>
-              <li>
-                <Link href="/for-companies">Placement guarantee</Link>
+                <Link href="/coming-soon">Hiring side — coming soon</Link>
               </li>
             </ul>
           </div>
