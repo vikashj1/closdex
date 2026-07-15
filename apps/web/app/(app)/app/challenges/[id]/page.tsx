@@ -24,6 +24,11 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   const [starting, setStarting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
+  // Attempts consumed against the cap — matches backend which counts every
+  // non-in-progress row (COMPLETED + ABANDONED). Frontend previously counted
+  // only COMPLETED, so the UI would show "N remaining" while the backend
+  // rejected Start with "No attempts remaining".
+  const [usedCount, setUsedCount] = useState(0);
   const [bestAttempt, setBestAttempt] = useState<AttemptDetail | null>(null);
   // Pre-existing in-progress attempt for THIS challenge. The backend rejects a
   // fresh Start with 400 when one exists, so we resume into /play/:id instead.
@@ -44,9 +49,10 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
       if (cRes.status === 'fulfilled') setChallenge(cRes.value as ChallengeSummary);
       if (aRes && aRes.status === 'fulfilled') {
         const mine = aRes.value as AttemptDetail[];
-        const completed = mine.filter(
-          (a) => a.challenge.id === params.id && a.status === 'COMPLETED',
-        );
+        const forThisChallenge = mine.filter((a) => a.challenge.id === params.id);
+        const completed = forThisChallenge.filter((a) => a.status === 'COMPLETED');
+        const used = forThisChallenge.filter((a) => a.status !== 'IN_PROGRESS');
+        setUsedCount(used.length);
         if (completed.length > 0) {
           setIsCompleted(true);
           setCompletedCount(completed.length);
@@ -56,9 +62,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
           );
           setBestAttempt(best);
         }
-        const live = mine.find(
-          (a) => a.challenge.id === params.id && a.status === 'IN_PROGRESS',
-        );
+        const live = forThisChallenge.find((a) => a.status === 'IN_PROGRESS');
         setInProgress(live ?? null);
       }
       setLoading(false);
@@ -72,7 +76,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   }, [authLoading, user, params.id]);
 
   const canRetry = challenge
-    ? !challenge.attemptsAllowed || completedCount < challenge.attemptsAllowed
+    ? !challenge.attemptsAllowed || usedCount < challenge.attemptsAllowed
     : false;
 
   async function onStart() {
@@ -135,7 +139,7 @@ export default function ChallengeDetailPage({ params }: { params: { id: string }
   const attemptsAllowedDisplay: string | number =
     challenge.attemptsAllowed ?? '∞';
   const remaining = challenge.attemptsAllowed != null
-    ? challenge.attemptsAllowed - completedCount
+    ? Math.max(0, challenge.attemptsAllowed - usedCount)
     : null;
   const bestPts = bestAttempt?.pointsAwarded ?? 0;
 
