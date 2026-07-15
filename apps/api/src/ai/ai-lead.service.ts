@@ -136,10 +136,13 @@ export class AiLeadService {
       `"goodbye", "let's part ways", "I'll consider this matter closed". A simple "ok" or short acknowledgement`,
       `is NOT closure on its own — closure requires explicit termination language from either party.`,
       ``,
-      `Output EXACTLY two lines, no extra text:`,
-      `GOAL: YES`,
+      `When in doubt, output NO. The default verdict is NO on both lines. Only`,
+      `flip to YES when the transcript contains explicit, unambiguous evidence.`,
+      ``,
+      `Output EXACTLY two lines, no extra text, in this exact format:`,
+      `GOAL: NO`,
       `CLOSED: NO`,
-      `(replace YES/NO with your verdict per line)`,
+      `(replace NO with YES only if the criteria above are clearly met)`,
     ].join('\n');
 
     const user = [
