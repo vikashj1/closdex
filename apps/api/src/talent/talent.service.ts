@@ -118,7 +118,7 @@ export class TalentService {
         user: { select: { name: true, photoUrl: true, location: true } },
         attempts: {
           where: { status: { in: ['COMPLETED', 'IN_PROGRESS'] } },
-          select: { status: true, goalAchieved: true },
+          select: { status: true, goalAchieved: true, completedAt: true, startedAt: true },
         },
         badges: {
           include: { badge: true },
@@ -133,6 +133,21 @@ export class TalentService {
     const wins = completed.filter((a) => a.goalAchieved === true);
     const winRate = completed.length > 0 ? Math.round((wins.length / completed.length) * 100) : 0;
 
+    // 16-week (112-day) daily activity buckets. Index 0 = 112 days ago,
+    // index 111 = today. Feeds the public-profile activity heatmap so the
+    // grid reflects real attempts, not seeded synthetic data.
+    const now = new Date();
+    const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const activityBuckets = new Array<number>(112).fill(0);
+    for (const a of profile.attempts) {
+      const when = a.completedAt ?? a.startedAt;
+      if (!when) continue;
+      const d = new Date(when);
+      const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const daysAgo = Math.floor((today0 - d0) / 86400000);
+      if (daysAgo >= 0 && daysAgo < 112) activityBuckets[111 - daysAgo]++;
+    }
+
     const { attempts, badges, lastChallengeDate, ...rest } = profile;
     return {
       ...rest,
@@ -143,6 +158,7 @@ export class TalentService {
         completedAttempts: completed.length,
         winRate,
       },
+      _activityBuckets: activityBuckets,
     };
   }
 

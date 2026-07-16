@@ -287,6 +287,8 @@ export interface TalentDetail {
   user: { name: string; photoUrl?: string | null; location?: string | null };
   badges: EarnedBadge[];
   _stats: { totalAttempts: number; completedAttempts: number; winRate: number };
+  /** 112 daily attempt counts, oldest → newest (16 weeks × 7 days). */
+  _activityBuckets?: number[];
 }
 
 export interface CompanyDetail {

@@ -4,7 +4,45 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { api, ApiError, EarnedBadge, TalentDetail } from '@/lib/api';
 import { rankFromEnum } from '@/lib/constants';
-import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
+// Real-data heatmap used inline below. Sourced from /talent/public/:slug's
+// _activityBuckets — 112 daily counts, oldest → newest.
+const HEAT_RAMP = ['#F0F0F5', '#DAD3F5', '#B7A3F0', '#8973E6', '#5B4BF5'];
+function activityBg(count: number): string {
+  if (count <= 0) return HEAT_RAMP[0];
+  if (count === 1) return HEAT_RAMP[1];
+  if (count === 2) return HEAT_RAMP[2];
+  if (count <= 4) return HEAT_RAMP[3];
+  return HEAT_RAMP[4];
+}
+function RealHeatmap({ buckets, totalAttempts }: { buckets: number[]; totalAttempts: number }) {
+  const weeks: number[][] = [];
+  for (let w = 0; w < 16; w++) weeks.push(buckets.slice(w * 7, w * 7 + 7));
+  return (
+    <>
+      <div className="r-hscroll" data-r="scrollx">
+        <div style={{ display: 'flex', gap: 3 }}>
+          {weeks.map((week, wi) => (
+            <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {week.map((c, di) => (
+                <div key={di} title={`${c} attempt${c === 1 ? '' : 's'}`} style={{ width: 13, height: 13, borderRadius: 3, background: activityBg(c) }} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 14 }}>
+        <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>Less</span>
+        {HEAT_RAMP.map((bg) => (
+          <span key={bg} style={{ width: 13, height: 13, borderRadius: 3, background: bg }} />
+        ))}
+        <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9A9AA4' }}>More</span>
+        <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono',monospace", fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9A9AA4' }}>
+          {totalAttempts} attempts · last 16 weeks
+        </span>
+      </div>
+    </>
+  );
+}
 
 const RANK_HEX: Record<string, string> = {
   Bronze: '#F5A524',
@@ -158,7 +196,6 @@ export default function PublicProfilePage() {
 
   const rankName = rankFromEnum(talent.rank);
   const winPct = talent._stats.winRate;
-  const heatSeed = talent.totalPoints % 200;
 
   const tierHex = rankHex(rankName);
   const shieldGradient = rankGradient(rankName);
@@ -253,23 +290,14 @@ export default function PublicProfilePage() {
         </div>
       </header>
 
-      {/* ===== HERO BANNER ===== */}
-      <div
-        style={{
-          height: 120,
-          background: 'linear-gradient(135deg,#FCE8C2,#FAFAF8)',
-        }}
-      />
-
       {/* ===== MAIN CONTENT ===== */}
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 32px 56px' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 32px 56px' }}>
         {/* ===== IDENTITY ROW ===== */}
         <div
           style={{
             display: 'flex',
             gap: 24,
             alignItems: 'flex-end',
-            marginTop: -50,
           }}
         >
           {/* Avatar + rank shield */}
@@ -645,69 +673,61 @@ export default function PublicProfilePage() {
           </div>
         </div>
 
-        {/* ===== ACHIEVEMENTS ===== */}
+        {/* ===== ACHIEVEMENTS — home/private-profile style: bare badges, no card ===== */}
         {talent.badges.length > 0 && (
-          <div
-            style={{
-              marginTop: 18,
-              border: '1px solid #E7E7EC',
-              borderRadius: 14,
-              padding: 22,
-              background: '#FFFFFF',
-            }}
-          >
-            <h3
+          <div style={{ marginTop: 30 }}>
+            <div
               style={{
-                fontFamily: "'Space Grotesk',sans-serif",
-                fontWeight: 600,
-                fontSize: 15,
-                letterSpacing: '-0.01em',
-                color: '#0B0B0F',
-                margin: '0 0 16px',
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                marginBottom: 18,
               }}
             >
-              Achievements
-            </h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86' }}>
+                Badges
+              </div>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9A9AA4' }}>
+                {talent.badges.length} earned
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '26px 30px', alignContent: 'flex-start' }}>
               {talent.badges.map((b: EarnedBadge) => (
                 <div
                   key={b.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 9,
-                    padding: '8px 14px',
-                    borderRadius: 10,
-                    background: '#FFFBF2',
-                    border: '1px solid #F4E4C4',
-                  }}
+                  title={`${b.name}${b.description ? ' — ' + b.description : ''} · ${formatMonthYear(b.awardedAt)}`}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, width: 96 }}
                 >
                   {b.iconUrl ? (
-                    <img src={b.iconUrl} alt={b.name} width={22} height={22} style={{ objectFit: 'contain', display: 'block' }} />
+                    <img src={b.iconUrl} alt={b.name} width={90} height={90} style={{ objectFit: 'contain', display: 'block' }} />
                   ) : (
-                    <span style={{ fontSize: 18, lineHeight: 1 }}>🏅</span>
+                    <span
+                      style={{
+                        position: 'relative',
+                        width: 81,
+                        height: 90,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'linear-gradient(160deg,#2C2256,#14101F)',
+                        clipPath: 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          inset: 2,
+                          background: 'linear-gradient(160deg,#6E5FF7,#4A3AD9)',
+                          clipPath: 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                        }}
+                      />
+                      <svg width={33} height={33} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ position: 'relative' }}>
+                        <circle cx="12" cy="8" r="6" />
+                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                      </svg>
+                    </span>
                   )}
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12.5,
-                        fontWeight: 700,
-                        color: '#F5A524',
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {b.name}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: '#7A7A86',
-                        marginTop: 1,
-                      }}
-                    >
-                      {formatMonthYear(b.awardedAt)}
-                    </div>
-                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#0B0B0F', textAlign: 'center', lineHeight: 1.25 }}>{b.name}</div>
                 </div>
               ))}
             </div>
@@ -723,7 +743,7 @@ export default function PublicProfilePage() {
             marginTop: 18,
           }}
         >
-          {/* Left: Challenge activity heatmap */}
+          {/* Left: Challenge activity heatmap — driven by real _activityBuckets */}
           <div
             style={{
               border: '1px solid #E7E7EC',
@@ -744,7 +764,7 @@ export default function PublicProfilePage() {
             >
               Challenge activity
             </h3>
-            <ActivityHeatmap weeks={16} showLegend={true} seed={heatSeed} />
+            <RealHeatmap buckets={talent._activityBuckets ?? new Array(112).fill(0)} totalAttempts={talent._stats.totalAttempts} />
           </div>
 
           {/* Right: Specializations + meta + verified */}
