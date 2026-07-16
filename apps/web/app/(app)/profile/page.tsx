@@ -414,24 +414,85 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Heatmap ────────────────────────────────────────────────────── */}
-        <section style={{ marginBottom: '46px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '18px' }}>
-            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86' }}>Challenge activity</div>
-            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9A9AA4' }}>
-              {attempts.length} attempts total · last 16 weeks
+        {/* Heatmap + Badges ─────────────────────────────────────────── */}
+        <section data-sp-profile-heatbadge style={{ display: 'flex', gap: '48px', alignItems: 'stretch', marginBottom: '46px' }}>
+          {/* Heatmap */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86' }}>Challenge activity</div>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9A9AA4' }}>
+                {attempts.length} attempts · last 16 weeks
+              </div>
+            </div>
+            <div className="r-hscroll" data-r="scrollx">
+              <div style={{ display: 'flex', gap: '3px' }}>
+                {weeks.map((week, wi) => (
+                  <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {week.days.map((d, di) => (
+                      <div key={di} style={{ width: '13px', height: '13px', borderRadius: '3px', background: d.bg }} />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="r-hscroll" data-r="scrollx">
-            <div style={{ display: 'flex', gap: '3px' }}>
-              {weeks.map((week, wi) => (
-                <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  {week.days.map((d, di) => (
-                    <div key={di} style={{ width: '13px', height: '13px', borderRadius: '3px', background: d.bg }} />
-                  ))}
+
+          {/* Badges — beside heatmap, home-page style (no outer box on each badge) */}
+          <div style={{ flex: 1, minWidth: 0, paddingLeft: '48px', borderLeft: '1px solid #E7E7EC', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86' }}>Badges</div>
+              {badges.length > 0 && (
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9A9AA4' }}>
+                  {badges.length} earned
                 </div>
-              ))}
+              )}
             </div>
+            {badgesLoading ? (
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9A9AA4' }}>Loading…</div>
+            ) : badges.length === 0 ? (
+              <div style={{ fontSize: '13px', color: '#9A9AA4' }}>Complete challenges to earn badges.</div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '26px 30px', alignContent: 'flex-start' }}>
+                {badges.map((b) => (
+                  <div
+                    key={b.id}
+                    title={`${b.name}${b.description ? ' — ' + b.description : ''}`}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '9px', width: '96px' }}
+                  >
+                    {b.iconUrl ? (
+                      <img src={b.iconUrl} alt={b.name} width={90} height={90} style={{ objectFit: 'contain', display: 'block' }} />
+                    ) : (
+                      <span
+                        style={{
+                          position: 'relative',
+                          width: '81px',
+                          height: '90px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'linear-gradient(160deg,#2C2256,#14101F)',
+                          clipPath: 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            inset: 2,
+                            background: 'linear-gradient(160deg,#6E5FF7,#4A3AD9)',
+                            clipPath: 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)',
+                          }}
+                        />
+                        <svg width={33} height={33} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ position: 'relative' }}>
+                          <circle cx="12" cy="8" r="6" />
+                          <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                        </svg>
+                      </span>
+                    )}
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#0B0B0F', textAlign: 'center', lineHeight: 1.25 }}>{b.name}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -507,49 +568,6 @@ export default function ProfilePage() {
 
           {/* Right column ───────────────────────────────────────────── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-
-            {/* Badges ─────────────────────────────────────────────── */}
-            <section>
-              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '11px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7A86', marginBottom: '18px' }}>
-                Badges{badges.length > 0 ? ` · ${badges.length}` : ''}
-              </div>
-              {badgesLoading ? (
-                <div style={{ borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', padding: '24px 16px', fontFamily: "'Space Mono',monospace", fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9A9AA4', textAlign: 'center' }}>
-                  Loading…
-                </div>
-              ) : badges.length === 0 ? (
-                <div style={{ borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', padding: '34px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                  <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#F3F3F6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B6B6C0" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="8" r="6" />
-                      <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                    </svg>
-                  </div>
-                  <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#3A3A44', marginBottom: '4px' }}>No badges yet</div>
-                  <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#9A9AA4', maxWidth: '220px' }}>Complete challenges to earn them.</div>
-                </div>
-              ) : (
-                <div style={{ borderTop: '1px solid #E7E7EC', borderBottom: '1px solid #E7E7EC', padding: '18px 4px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-                  {badges.map((b) => (
-                    <div
-                      key={b.id}
-                      title={b.description}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '12px 8px', borderRadius: '10px', background: '#FAFAF8', border: '1px solid #E7E7EC' }}
-                    >
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: b.iconUrl ? 'transparent' : 'rgba(245,165,36,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px', fontSize: '20px' }}>
-                        {b.iconUrl ? (
-                          <img src={b.iconUrl} alt={b.name} width={40} height={40} style={{ objectFit: 'contain', display: 'block' }} />
-                        ) : '🏅'}
-                      </div>
-                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0B0B0F', marginBottom: '2px' }}>{b.name}</div>
-                      <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9A9AA4' }}>
-                        {new Date(b.awardedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
 
             {/* Career preferences ─────────────────────────────────── */}
             <section>
