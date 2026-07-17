@@ -24,9 +24,9 @@ export default function MarketingJobsPage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // While auth resolves, avoid a flash of hero content for signed-in users.
-  if (loading || user) return null;
-
+  // Render hero on SSR + for all logged-out clients. Logged-in visitors get
+  // bounced by the useEffect above — a tiny flash is fine and gives us the
+  // SEO benefit of the hero being crawlable.
   return (
     <main data-cmkt-jobs style={{ background: '#FFFFFF' }}>
 
