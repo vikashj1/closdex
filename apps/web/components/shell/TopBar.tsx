@@ -17,9 +17,10 @@ const APP_NAV_ITEMS = [
   { label: 'Leaderboard', href: '/app/leaderboard' },
   { label: 'Learn', href: '/app/learn' },
   { label: 'My Disputes', href: '/disputes' },
-  // /jobs is a logged-out marketing hero now — send signed-in users
-  // straight to the beta gate so we don't flash the pitch at them.
-  { label: 'Jobs', href: '/coming-soon' },
+  // Signed-in Jobs surface lives at /app/jobs (dashboard variant with the
+  // rank header + readiness score + sprint card). Logged-out marketing pitch
+  // is at /jobs, served from the (marketing) group.
+  { label: 'Jobs', href: '/app/jobs' },
   { label: 'Applications', href: '/applications' },
   { label: 'Notifications', href: '/notifications' },
   { label: 'Profile', href: '/profile' },
