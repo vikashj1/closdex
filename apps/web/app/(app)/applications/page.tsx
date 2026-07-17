@@ -167,9 +167,9 @@ export default function ApplicationsPage() {
           <a
             onClick={(e) => {
               e.preventDefault();
-              router.push('/jobs');
+              router.push('/coming-soon');
             }}
-            href="/jobs"
+            href="/coming-soon"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -280,9 +280,9 @@ export default function ApplicationsPage() {
                   <a
                     onClick={(e) => {
                       e.preventDefault();
-                      router.push('/jobs');
+                      router.push('/coming-soon');
                     }}
-                    href="/jobs"
+                    href="/coming-soon"
                     style={{ color: '#3A2DC4', cursor: 'pointer', fontWeight: 600 }}
                   >
                     Browse open jobs →

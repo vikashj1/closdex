@@ -6,11 +6,14 @@ import { NextRequest, NextResponse } from 'next/server';
 // future launch without a rebuild.
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // /jobs itself is no longer gated — it now serves the logged-out hiring
+  // pitch (marketing group) and redirects logged-in users to /coming-soon
+  // client-side. Nested /jobs/:id detail pages stay gated until the board
+  // ships.
   const gated =
     pathname === '/company' ||
     pathname.startsWith('/company/') ||
     pathname === '/for-companies' ||
-    pathname === '/jobs' ||
     pathname.startsWith('/jobs/') ||
     pathname === '/applications' ||
     pathname.startsWith('/applications/');
@@ -22,5 +25,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/company/:path*', '/for-companies', '/jobs/:path*', '/applications/:path*'],
+  matcher: ['/company/:path*', '/for-companies', '/jobs/:path+', '/applications/:path*'],
 };
