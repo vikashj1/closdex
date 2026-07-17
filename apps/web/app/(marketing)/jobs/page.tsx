@@ -1,21 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth';
 
-// Marketing "Jobs" landing shown to logged-out visitors. Logged-in users
-// bounce to /coming-soon (the hiring side ships after beta).
-// Content spec + responsive layout provided by Vikash. All copy exact.
+// Marketing "Jobs" landing — 7-section hiring pitch, content spec + responsive
+// layout provided by Vikash. Kept visible for everyone (signed-in or not) so
+// the page renders during QA and the CTAs still work for logged-out visitors.
 export default function MarketingJobsPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    if (loading) return;
-    if (user) router.replace('/coming-soon');
-  }, [user, loading, router]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 400);
