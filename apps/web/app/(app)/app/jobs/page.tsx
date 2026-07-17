@@ -12,19 +12,6 @@ import { useAuth, useRequireAuth } from '@/lib/auth';
 const RANK_ORDER = ['Rookie', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster'] as const;
 type Rank = (typeof RANK_ORDER)[number];
 
-// Approximate point thresholds for each rank. Kept local because backend
-// currently keeps the ladder in seed/config only.
-const RANK_THRESHOLDS: Record<Rank, number> = {
-  Rookie: 0,
-  Bronze: 100,
-  Silver: 500,
-  Gold: 1500,
-  Platinum: 3500,
-  Diamond: 7000,
-  Master: 15000,
-  Grandmaster: 30000,
-};
-
 function normalizeRank(raw: string | undefined | null): Rank {
   if (!raw) return 'Rookie';
   const cap = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
@@ -44,6 +31,7 @@ export default function AppJobsPage() {
   const [attempts, setAttempts] = useState<AttemptDetail[] | null>(null);
   const [position, setPosition] = useState<number | null>(null);
   const [totalRanked, setTotalRanked] = useState<number | null>(null);
+  const [rankLadder, setRankLadder] = useState<Record<Rank, number> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -55,18 +43,26 @@ export default function AppJobsPage() {
       api.users.me(),
       api.attempts.listMine(),
       api.leaderboards.list({ period: 'all-time', limit: 500 }),
+      api.config.ranks(),
     ]).then((results) => {
       if (results[0].status === 'fulfilled') setMe(results[0].value);
       if (results[1].status === 'fulfilled') setAttempts(results[1].value);
       if (results[2].status === 'fulfilled') {
         const entries = results[2].value.entries;
         setTotalRanked(entries.length);
-        // Find user's row by publicSlug once we have `me`; fall back to name.
         const meRes = results[0].status === 'fulfilled' ? results[0].value : null;
         if (meRes?.salesperson?.publicSlug) {
           const row = entries.find((e) => e.salesperson.publicSlug === meRes.salesperson!.publicSlug);
           setPosition(row?.position ?? null);
         }
+      }
+      if (results[3].status === 'fulfilled') {
+        const map = {} as Record<Rank, number>;
+        for (const r of results[3].value) {
+          const key = normalizeRank(r.rank);
+          map[key] = r.minPoints;
+        }
+        setRankLadder(map);
       }
       const firstErr = results.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
       if (firstErr) setError(firstErr.reason instanceof ApiError ? firstErr.reason.message : 'Could not load your Jobs data.');
@@ -77,7 +73,8 @@ export default function AppJobsPage() {
   const rank: Rank = normalizeRank(me?.salesperson?.rank);
   const totalPoints = me?.salesperson?.totalPoints ?? 0;
   const nextRank = nextRankOf(rank);
-  const pointsToNextRank = nextRank ? Math.max(0, RANK_THRESHOLDS[nextRank] - totalPoints) : 0;
+  const nextRankThreshold = nextRank ? rankLadder?.[nextRank] : undefined;
+  const pointsToNextRank = nextRankThreshold != null ? Math.max(0, nextRankThreshold - totalPoints) : null;
   const percentile = position && totalRanked ? Math.max(1, Math.round((position / totalRanked) * 100)) : null;
   const streakDays = me?.salesperson?.currentStreakDays ?? 0;
 
@@ -126,7 +123,9 @@ export default function AppJobsPage() {
 
   const eligible = RANK_ORDER.indexOf(rank) >= RANK_ORDER.indexOf('Bronze');
 
-  const showLoading = !me && !error;
+  // Keep the header in loading state until the rank ladder is in — otherwise
+  // Rookie-variant copy shows a hardcoded placeholder gap before ranks arrive.
+  const showLoading = (!me || (rank === 'Rookie' && !rankLadder)) && !error;
   return (
     <main
       data-sp-jobs
@@ -200,7 +199,7 @@ function StatusHeader({
 }: {
   firstName: string;
   rank: Rank;
-  pointsToNextRank: number;
+  pointsToNextRank: number | null;
   percentile: number | null;
 }) {
   const rookie = rank === 'Rookie';
@@ -215,7 +214,12 @@ function StatusHeader({
     heading = <>Hey {firstName}, your job feed unlocks at Bronze rank.</>;
     body = (
       <>
-        You're <strong style={{ fontWeight: 600 }}>{pointsToNextRank}</strong> points away from Bronze. Once you rank up, companies can find your profile and reach out directly. Keep competing — the top 100 salespersons get first access when hiring opens.
+        {pointsToNextRank != null ? (
+          <>You're <strong style={{ fontWeight: 600 }}>{pointsToNextRank}</strong> points away from Bronze. </>
+        ) : (
+          <>Bronze is your next unlock. </>
+        )}
+        Once you rank up, companies can find your profile and reach out directly. Keep competing — the top 100 salespersons get first access when hiring opens.
       </>
     );
     ctaLabel = 'Take a Challenge';

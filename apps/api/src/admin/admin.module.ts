@@ -8,6 +8,7 @@ import { VerificationService } from './verification.service';
 import { VerificationController } from './verification.controller';
 import { ConfigService } from './config.service';
 import { ConfigController } from './config.controller';
+import { PublicConfigController } from './public-config.controller';
 import { StatsService } from './stats.service';
 import { StatsController } from './stats.controller';
 import { QuarantineService } from './quarantine.service';
@@ -27,6 +28,7 @@ import { QuarantineController } from './quarantine.controller';
     DisputesController,
     VerificationController,
     ConfigController,
+    PublicConfigController,
     AuditController,
     StatsController,
     QuarantineController,

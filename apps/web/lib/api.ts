@@ -670,6 +670,16 @@ export const api = {
       }),
   },
 
+  config: {
+    /** Public rank ladder — used by the signed-in Jobs page to compute the
+     *  next-rank gap without hardcoding point thresholds on the client. */
+    ranks: () =>
+      request<Array<{ rank: string; minPoints: number; maxPoints: number | null; privileges?: string | null }>>(
+        'GET',
+        '/config/ranks',
+      ),
+  },
+
   learning: {
     listTracks: () => request<LearningTrackSummary[]>('GET', '/learning/tracks'),
     getTrack: (id: string) => request<LearningTrackSummary & { tutorials: TutorialDetail[] }>('GET', `/learning/tracks/${id}`),
