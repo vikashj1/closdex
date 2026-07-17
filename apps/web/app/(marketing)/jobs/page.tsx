@@ -1,19 +1,7 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-
 // Marketing "Jobs" landing — 7-section hiring pitch, content spec + responsive
 // layout provided by Vikash. Kept visible for everyone (signed-in or not) so
 // the page renders during QA and the CTAs still work for logged-out visitors.
 export default function MarketingJobsPage() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 400);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // Render hero on SSR + for all logged-out clients. Logged-in visitors get
   // bounced by the useEffect above — a tiny flash is fine and gives us the
@@ -95,9 +83,9 @@ export default function MarketingJobsPage() {
             gap: 24,
           }}
         >
-          <StatCard icon="👥" number="247" label="Salespersons Competing" note="Live count of active ranked players" />
-          <StatCard icon="🏢" number="—" label="Companies Onboarding" note="Founding partners joining every week" />
-          <StatCard icon="🎯" number="Q4" label="Sales Hiring Sprint 2026" note="Coming soon. First cohort in early access." />
+          <StatCard icon="👥" label="Salespersons Competing" note="Live count of active ranked players" />
+          <StatCard icon="🏢" label="Companies Onboarding" note="Founding partners joining every week" />
+          <StatCard icon="🎯" label="Sales Hiring Sprint 2026" note="Coming soon. First cohort in early access." />
         </div>
       </section>
 
@@ -299,58 +287,10 @@ export default function MarketingJobsPage() {
       </section>
 
       {/* ============================================================
-          MOBILE STICKY BOTTOM BAR
-      ============================================================ */}
-      <div
-        data-jobs-sticky-cta
-        style={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 64,
-          padding: '12px 16px calc(12px + env(safe-area-inset-bottom))',
-          background: 'rgba(110, 95, 247, 0.94)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transform: scrolled ? 'translateY(0)' : 'translateY(120%)',
-          transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
-          zIndex: 60,
-          borderTop: '1px solid rgba(255,255,255,0.14)',
-        }}
-      >
-        <a
-          href="/signup"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: 40,
-            background: '#FFFFFF',
-            color: '#6E5FF7',
-            fontWeight: 700,
-            fontSize: 14,
-            borderRadius: 10,
-            textDecoration: 'none',
-            gap: 8,
-          }}
-        >
-          🎯 Take a Challenge
-        </a>
-      </div>
-
-      {/* ============================================================
           RESPONSIVE OVERRIDES
       ============================================================ */}
       <style>{`
-        [data-jobs-sticky-cta] { display: none; }
         @media (max-width: 768px) {
-          [data-jobs-sticky-cta] { display: flex; }
-          [data-cmkt-jobs] { padding-bottom: 76px; }
           [data-jobs-hero-ctas] { width: 100%; flex-direction: column; }
           [data-jobs-hero-ctas] > a { width: 100%; justify-content: center; }
           [data-jobs-status-grid] { grid-template-columns: 1fr !important; gap: 16px !important; }
@@ -396,7 +336,7 @@ const ctaSecondary: React.CSSProperties = {
   border: '1.5px solid #0B0B0F',
 };
 
-function StatCard({ icon, number, label, note }: { icon: string; number: string; label: string; note: string }) {
+function StatCard({ icon, label, note }: { icon: string; label: string; note: string }) {
   return (
     <div
       style={{
@@ -404,18 +344,17 @@ function StatCard({ icon, number, label, note }: { icon: string; number: string;
         border: '1px solid #F0F0F5',
         borderRadius: 14,
         padding: 'clamp(24px, 2.6vw, 32px)',
-        minHeight: 180,
+        minHeight: 160,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         boxShadow: '0 4px 24px -12px rgba(11, 11, 15, 0.08)',
       }}
     >
-      <span style={{ fontSize: 48, lineHeight: 1 }}>{icon}</span>
+      <span style={{ fontSize: 44, lineHeight: 1 }}>{icon}</span>
       <div>
-        <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(28px, 3vw, 40px)', fontWeight: 700, letterSpacing: '-0.02em', color: '#0B0B0F' }}>{number}</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#0B0B0F', marginTop: 6 }}>{label}</div>
-        <div style={{ fontSize: 13, color: '#7A7A86', marginTop: 6 }}>{note}</div>
+        <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(17px, 1.5vw, 20px)', fontWeight: 700, letterSpacing: '-0.01em', color: '#0B0B0F' }}>{label}</div>
+        <div style={{ fontSize: 13, color: '#7A7A86', marginTop: 6, lineHeight: 1.5 }}>{note}</div>
       </div>
     </div>
   );
