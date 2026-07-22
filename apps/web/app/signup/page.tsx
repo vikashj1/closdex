@@ -77,6 +77,7 @@ export default function SignupPage() {
     <div data-resp="auth" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh' }}>
       {/* Left: pitch */}
       <div
+        data-auth-marketing
         style={{
           background: 'var(--bg-2)',
           padding: '56px 56px',
@@ -114,6 +115,7 @@ export default function SignupPage() {
       {/* Right: form */}
       <form
         onSubmit={onSubmit}
+        data-auth-form
         style={{
           padding: '56px 56px',
           display: 'flex',

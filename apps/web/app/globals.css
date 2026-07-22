@@ -498,47 +498,43 @@ body { min-height: 100vh; }
 }
 
 /* ─── Auth pages (login + signup + onboarding) responsive ─────────────────
-   Both login/signup wrap content in a 2-col grid (`1fr 1fr` + `100vh`).
-   On phones we collapse to a single column, drop the marketing aside, and
-   tighten padding so the form is one screen tall on most devices. */
+   Login + signup wrap content in a 2-col grid; the left column is a
+   marketing aside, the right is the form. On phones we collapse to a
+   single column, drop the marketing aside entirely, and tighten padding.
+
+   We key off explicit data-attributes ([data-auth-marketing],
+   [data-auth-form]) instead of `[style*="…"]` matches because React SSR
+   serializes inline styles without spaces around colons — so `[style*=
+   "grid-template-columns: 1fr 1fr"]` never matches server-rendered HTML
+   and the mobile hide silently no-ops before hydration. */
 @media (max-width: 767px) {
-  body > div [style*="grid-template-columns: 1fr 1fr"][style*="100vh"],
-  body > div > div [style*="grid-template-columns: 1fr 1fr"][style*="100vh"] {
-    grid-template-columns: 1fr !important;
-    min-height: auto !important;
-  }
-  /* data-resp="auth" root: collapse any inline grid, soften padding, shrink
-     headings, and wrap flex rows. Reaches login/signup/onboarding. */
+  /* Collapse the outer 2-col grid to a single column (targets the auth
+     root directly, not descendants). */
   [data-resp="auth"] {
-    padding-left: clamp(14px, 5vw, 32px) !important;
-    padding-right: clamp(14px, 5vw, 32px) !important;
-  }
-  [data-resp="auth"] [style*="grid-template-columns"] {
     grid-template-columns: 1fr !important;
-    gap: 14px !important;
+    gap: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    min-height: 100dvh !important;
+    overflow-x: hidden;
   }
-  /* Login / signup: hide the left marketing column entirely on phones. */
-  [data-resp="auth"][style*="grid-template-columns: 1fr 1fr"] > div:first-child {
-    display: none !important;
-  }
-  /* Login / signup / onboarding form column padding (was 56px); chip / stat
-     rows wrap. Matches both <div> (onboarding) and <form> (login, signup). */
-  [data-resp="auth"] > div[style*="padding: '56px"],
-  [data-resp="auth"] > div[style*="padding: 56px"],
-  [data-resp="auth"] > form[style*="padding: '56px"],
-  [data-resp="auth"] > form[style*="padding: 56px"] {
+  /* Drop the marketing aside (welcome copy + benefits) — the form only. */
+  [data-auth-marketing] { display: none !important; }
+  /* Form column: tighten padding, stop centering vertically so tall forms
+     flow top-down, and let it fill the viewport. */
+  [data-auth-form] {
     padding: 24px 18px !important;
     justify-content: flex-start !important;
     max-width: 100% !important;
   }
-  [data-resp="auth"] [style*="display: flex"] {
-    flex-wrap: wrap !important;
+  /* Onboarding still uses the old 56px-padding <div>s — keep that path. */
+  [data-resp="auth"] > div[style*="padding: '56px"],
+  [data-resp="auth"] > div[style*="padding: 56px"] {
+    padding: 24px 18px !important;
   }
-  /* Kill stray horizontal scroll on tall phones — some inline widths (Google
-     button, error banner) round up past 100% at very narrow widths. */
-  [data-resp="auth"] { overflow-x: hidden; }
-  /* Mobile-only Closdex logo above the form. Hidden on desktop because the
-     left marketing column already carries the brand. */
+  [data-resp="auth"] [style*="display: flex"] { flex-wrap: wrap !important; }
+  /* Mobile-only Closdex logo above the form; desktop hides it because the
+     marketing column already brands the page. */
   [data-auth-mobile-logo] { display: block !important; margin: 0 0 18px !important; }
   [data-resp="auth"] h1 { font-size: clamp(1.5rem, 6vw, 2rem) !important; line-height: 1.15 !important; }
   [data-resp="auth"] h2 { font-size: clamp(1.2rem, 4.5vw, 1.5rem) !important; line-height: 1.2  !important; }

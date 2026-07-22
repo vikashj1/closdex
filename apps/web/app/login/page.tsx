@@ -59,6 +59,7 @@ export default function LoginPage() {
   return (
     <div data-resp="auth" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh' }}>
       <div
+        data-auth-marketing
         style={{
           background: 'var(--bg-2)',
           padding: '56px 56px',
@@ -84,6 +85,7 @@ export default function LoginPage() {
 
       <form
         onSubmit={onSubmit}
+        data-auth-form
         style={{
           padding: '56px 56px',
           display: 'flex',
