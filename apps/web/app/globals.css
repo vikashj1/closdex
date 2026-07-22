@@ -521,17 +521,29 @@ body { min-height: 100vh; }
   [data-resp="auth"][style*="grid-template-columns: 1fr 1fr"] > div:first-child {
     display: none !important;
   }
-  /* Onboarding form column padding (was 56px); chip / stat rows wrap. */
+  /* Login / signup / onboarding form column padding (was 56px); chip / stat
+     rows wrap. Matches both <div> (onboarding) and <form> (login, signup). */
   [data-resp="auth"] > div[style*="padding: '56px"],
-  [data-resp="auth"] > div[style*="padding: 56px"] {
-    padding: 28px 18px !important;
+  [data-resp="auth"] > div[style*="padding: 56px"],
+  [data-resp="auth"] > form[style*="padding: '56px"],
+  [data-resp="auth"] > form[style*="padding: 56px"] {
+    padding: 24px 18px !important;
+    justify-content: flex-start !important;
+    max-width: 100% !important;
   }
   [data-resp="auth"] [style*="display: flex"] {
     flex-wrap: wrap !important;
   }
+  /* Kill stray horizontal scroll on tall phones — some inline widths (Google
+     button, error banner) round up past 100% at very narrow widths. */
+  [data-resp="auth"] { overflow-x: hidden; }
+  /* Mobile-only Closdex logo above the form. Hidden on desktop because the
+     left marketing column already carries the brand. */
+  [data-auth-mobile-logo] { display: block !important; margin: 0 0 18px !important; }
   [data-resp="auth"] h1 { font-size: clamp(1.5rem, 6vw, 2rem) !important; line-height: 1.15 !important; }
   [data-resp="auth"] h2 { font-size: clamp(1.2rem, 4.5vw, 1.5rem) !important; line-height: 1.2  !important; }
 }
+[data-auth-mobile-logo] { display: none; }
 
 /* ─── Public profile (/u/[slug]) responsive ────────────────────────────────
    Stats strip is `repeat(5, 1fr)`, sections are `1.55fr 1fr`. Collapse both

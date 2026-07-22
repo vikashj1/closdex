@@ -92,6 +92,9 @@ export default function LoginPage() {
           maxWidth: 540,
         }}
       >
+        <div data-auth-mobile-logo>
+          <Logo size={22} />
+        </div>
         <h2 className="display" style={{ fontSize: 28, margin: '0 0 24px', fontWeight: 700 }}>Log in</h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22, alignItems: 'stretch' }}>

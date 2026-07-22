@@ -122,6 +122,9 @@ export default function SignupPage() {
           maxWidth: 540,
         }}
       >
+        <div data-auth-mobile-logo>
+          <Logo size={22} />
+        </div>
         <div
           style={{
             display: 'inline-flex',
