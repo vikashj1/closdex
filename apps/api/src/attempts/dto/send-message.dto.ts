@@ -27,6 +27,15 @@ export class ClientMetaDto {
   @IsInt()
   @Min(0)
   charCount?: number;
+
+  /** Chars in this message that arrived via Web Speech API or native
+   *  OS/keyboard dictation. Speech input necessarily lands in the field
+   *  faster than a human types; reporting this lets the suspicion service
+   *  skip the superhuman-speed and instant-typing flags on this message. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  dictationChars?: number;
 }
 
 export class SendMessageDto {

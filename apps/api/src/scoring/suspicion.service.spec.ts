@@ -49,6 +49,27 @@ describe('SuspicionService', () => {
     expect(result.quarantined).toBe(true);
   });
 
+  it('exempts a message from superhuman-speed / instant-typing when the majority arrived via dictation', () => {
+    // 80 chars in 500ms would normally flag superhuman + instant. With
+    // dictationChars=70 (>=50% of charCount) both flags should stay clean.
+    const result = svc.compute([
+      { clientMeta: { pasteCount: 0, pastedChars: 0, totalTypingMs: 500, charCount: 80, dictationChars: 70 } },
+    ]);
+    expect(result.flags.superhumanSpeed).toBe(false);
+    expect(result.flags.instantTyping).toBe(false);
+    expect(result.quarantined).toBe(false);
+  });
+
+  it('still flags superhuman-speed when only a small share of the message was dictated', () => {
+    // 100 chars in 500ms with dictationChars=10 → dictation share <50%,
+    // so the normal check still fires.
+    const result = svc.compute([
+      { clientMeta: { pasteCount: 0, pastedChars: 0, totalTypingMs: 500, charCount: 100, dictationChars: 10 } },
+    ]);
+    expect(result.flags.superhumanSpeed).toBe(true);
+    expect(result.quarantined).toBe(true);
+  });
+
   it('flags pasteBurst (>=3 paste events) but does not alone quarantine', () => {
     // Typing pace: 200 chars in 18s = ~11 cps, comfortably human.
     const result = svc.compute([

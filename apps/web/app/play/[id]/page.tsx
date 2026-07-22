@@ -41,6 +41,11 @@ export default function ConversationPage({ params }: { params: { id: string } })
   // Anti-cheat telemetry — reset each time a message ships.
   const firstKeystrokeRef = useRef<number | null>(null);
   const pasteCountRef = useRef(0);
+  // Characters that arrived via speech-to-text (Web Speech API mic button OR
+  // native OS/mobile keyboard dictation). Voice input dumps text all at once,
+  // which the suspicion service reads as superhuman typing speed. Reporting
+  // this lets the backend exempt legit dictation.
+  const dictationCharsRef = useRef(0);
   const pastedCharsRef = useRef(0);
 
   useEffect(() => {
@@ -76,11 +81,22 @@ export default function ConversationPage({ params }: { params: { id: string } })
     r.onresult = (e: any) => {
       let finalTxt = '';
       let interimTxt = '';
+      let newlyFinalChars = 0;
       for (let i = 0; i < e.results.length; i++) {
         const txt = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalTxt += txt;
-        else interimTxt += txt;
+        if (e.results[i].isFinal) {
+          finalTxt += txt;
+          // Only count characters as dictated the first time they turn final
+          // (avoids double-counting across successive onresult events).
+          if (i >= (r._finalCount ?? 0)) {
+            newlyFinalChars += txt.length;
+            r._finalCount = i + 1;
+          }
+        } else {
+          interimTxt += txt;
+        }
       }
+      if (newlyFinalChars > 0) dictationCharsRef.current += newlyFinalChars;
       const base = inputBaseRef.current;
       const sep = base && !base.endsWith(' ') ? ' ' : '';
       setInput((base + sep + finalTxt + interimTxt).trimStart());
@@ -112,6 +128,11 @@ export default function ConversationPage({ params }: { params: { id: string } })
     firstKeystrokeRef.current = null;
     pasteCountRef.current = 0;
     pastedCharsRef.current = 0;
+    dictationCharsRef.current = 0;
+    // Reset the Web Speech API "final result" cursor so the next message
+    // starts counting dictated chars from index 0 again.
+    const r: any = recognitionRef.current;
+    if (r) r._finalCount = 0;
   }
 
   async function send() {
@@ -127,6 +148,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
         ? Math.max(0, Date.now() - firstKeystrokeRef.current)
         : 0,
       charCount: text.length,
+      dictationChars: Math.min(dictationCharsRef.current, text.length),
     };
     setInput('');
     inputBaseRef.current = '';
@@ -1115,6 +1137,16 @@ export default function ConversationPage({ params }: { params: { id: string } })
               </span>
               <textarea
                 value={input}
+                onBeforeInput={(e) => {
+                  // Native OS / mobile keyboard dictation fires an InputEvent
+                  // with inputType === "insertFromDictation". Count those
+                  // chars so the backend can exempt them from the superhuman
+                  // typing check.
+                  const ne = e.nativeEvent as InputEvent;
+                  if (ne.inputType === 'insertFromDictation' && typeof ne.data === 'string') {
+                    dictationCharsRef.current += ne.data.length;
+                  }
+                }}
                 onChange={(e) => {
                   // Backend caps content at 500 chars (slice 125) — enforce client
                   // side too so the count + colour states match reality.

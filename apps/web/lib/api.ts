@@ -165,6 +165,11 @@ export interface AttemptClientMeta {
   pastedChars?: number;
   totalTypingMs?: number;
   charCount?: number;
+  /** Chars in this message that arrived via Web Speech API or native
+   *  OS/keyboard dictation. Suspicion service exempts messages whose
+   *  majority is dictated from the superhuman-speed and instant-typing
+   *  heuristics — voice input dumps text all at once by design. */
+  dictationChars?: number;
 }
 
 export interface SuspicionFlagsShape {

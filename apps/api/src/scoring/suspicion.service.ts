@@ -7,6 +7,11 @@ export interface MessageClientMeta {
   pastedChars?: number;
   totalTypingMs?: number;
   charCount?: number;
+  /** Chars in this message that came from Web Speech API or native OS
+   *  dictation. Voice input necessarily lands in the field faster than a
+   *  human types, so we treat majority-dictated messages as exempt from the
+   *  superhuman-speed and instant-typing heuristics. */
+  dictationChars?: number;
 }
 
 /** One salesperson message as it enters the suspicion compute. */
@@ -100,16 +105,29 @@ export class SuspicionService {
       const charCount = meta.charCount ?? 0;
       const totalTypingMs = meta.totalTypingMs ?? 0;
       const pasteCount = meta.pasteCount ?? 0;
+      const dictationChars = meta.dictationChars ?? 0;
 
       totalPasted += pastedChars;
       totalChars += charCount;
       totalPasteCount += pasteCount;
 
-      if (charCount >= INSTANT_TYPING_MIN_CHARS && totalTypingMs > 0 && totalTypingMs < INSTANT_TYPING_MAX_MS) {
+      // Majority-dictated messages are exempt from timing-based flags —
+      // voice input necessarily arrives instantly / at superhuman speeds.
+      // Threshold at 50% so a mostly-dictated message with a couple typed
+      // corrections still exempts, while a mostly-typed message with a
+      // one-word dictated fix still gets checked normally.
+      const dictationMajority = charCount > 0 && dictationChars * 2 >= charCount;
+
+      if (
+        !dictationMajority &&
+        charCount >= INSTANT_TYPING_MIN_CHARS &&
+        totalTypingMs > 0 &&
+        totalTypingMs < INSTANT_TYPING_MAX_MS
+      ) {
         instantTyping = true;
       }
 
-      if (totalTypingMs > 0) {
+      if (!dictationMajority && totalTypingMs > 0) {
         const cps = charCount / (totalTypingMs / 1000);
         if (cps > SUPERHUMAN_CHARS_PER_SEC) superhumanSpeed = true;
       }
