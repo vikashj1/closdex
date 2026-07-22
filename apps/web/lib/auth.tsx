@@ -40,7 +40,7 @@ interface AuthContextValue extends AuthState {
     idToken: string;
     role?: 'SALESPERSON' | 'COMPANY';
     companyName?: string;
-  }) => Promise<MeResponse>;
+  }) => Promise<{ user: MeResponse; isNewUser: boolean }>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenStore.set(res.accessToken);
       const user = await api.users.me();
       setState({ user, loading: false, error: null });
-      return user;
+      return { user, isNewUser: res.isNewUser === true };
     },
     [],
   );

@@ -215,6 +215,24 @@ describe('AuthService', () => {
       expect(slug).toBe('karan-mehta');
     });
 
+    it('lowercases the email so mixed-case duplicates are caught + stored consistently', async () => {
+      // Prior bug: findUnique is case-sensitive, so "Vikash@X.com" would slip
+      // past an existing "vikash@x.com" row and create a phantom duplicate.
+      const prisma = makePrismaMock({ findUniqueResult: { id: 'existing' } });
+      const svc = new AuthService(prisma, makeJwtMock(), makeConfigMock());
+      await expect(
+        svc.register({
+          email: 'Vikash@X.COM',
+          password: 'longenoughpw',
+          name: 'V',
+          role: UserRole.SALESPERSON,
+        } as any),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect((prisma.user.findUnique as jest.Mock)).toHaveBeenCalledWith({
+        where: { email: 'vikash@x.com' },
+      });
+    });
+
     it('uniqifies slug when the base one is taken', async () => {
       // First lookup: slug exists. Second: free.
       const profileFind = jest

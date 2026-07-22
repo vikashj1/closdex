@@ -9,7 +9,7 @@ import { TextInput } from '@/components/ui/TextInput';
 import { Icon } from '@/components/ui/Icon';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { ApiError } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
+import { landingPathFor, useAuth } from '@/lib/auth';
 
 type Side = 'salesperson' | 'company';
 
@@ -61,12 +61,18 @@ export default function SignupPage() {
     }
     setSubmitting(true);
     try {
-      const user = await loginWithGoogle({
+      const { user, isNewUser } = await loginWithGoogle({
         idToken,
         role: tab === 'salesperson' ? 'SALESPERSON' : 'COMPANY',
         companyName: tab === 'company' ? companyName.trim() : undefined,
       });
-      router.replace(tab === 'salesperson' ? '/onboarding' : '/company/onboarding');
+      // Returning users signed up before — jump them straight to their
+      // dashboard instead of dumping them back into onboarding.
+      if (!isNewUser) {
+        router.replace(landingPathFor(user.role));
+        return;
+      }
+      router.replace(user.role === 'SALESPERSON' ? '/onboarding' : '/company/onboarding');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Google sign-up failed. Please try again.');
       setSubmitting(false);

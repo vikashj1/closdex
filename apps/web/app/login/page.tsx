@@ -23,7 +23,7 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const user = await loginWithGoogle({ idToken });
+      const { user } = await loginWithGoogle({ idToken });
       router.replace(landingPathFor(user.role));
     } catch (err) {
       setError(

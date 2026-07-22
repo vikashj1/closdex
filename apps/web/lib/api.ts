@@ -101,6 +101,10 @@ export type UserRole = 'SALESPERSON' | 'COMPANY' | 'ADMIN';
 export interface AuthResponse {
   accessToken: string;
   user: { id: string; email: string; role: UserRole };
+  /** Only set by /auth/google — true when Google verification created a
+   *  fresh user, false when it matched an existing OAuth or email row.
+   *  /signup uses this to skip sending returning users into onboarding. */
+  isNewUser?: boolean;
 }
 
 export interface MeResponse {

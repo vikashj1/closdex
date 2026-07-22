@@ -49,7 +49,13 @@ export class AuthService {
       throw new BadRequestException('companyName is required for company sign-ups.');
     }
 
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    // Normalize email before uniqueness check + write. Postgres findUnique is
+    // case-sensitive, so without this a "Vikash@X.com" register would sail
+    // past an existing "vikash@x.com" row and create a duplicate account
+    // that could then never be reached via Google auth (which lowercases).
+    const email = dto.email.trim().toLowerCase();
+
+    const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) throw new ConflictException('Email already registered.');
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -57,12 +63,12 @@ export class AuthService {
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {
-          email: dto.email,
+          email,
           passwordHash,
           name: dto.name,
           role: dto.role,
           oauthAccounts: {
-            create: { provider: 'EMAIL', providerAccountId: dto.email },
+            create: { provider: 'EMAIL', providerAccountId: email },
           },
         },
       });
@@ -102,7 +108,8 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user?.passwordHash) throw new UnauthorizedException('Invalid credentials.');
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
@@ -142,22 +149,22 @@ export class AuthService {
     const email = payload.email.toLowerCase();
     const fullName = payload.name?.trim() || email.split('@')[0];
 
-    // 1. Existing OAuth account match → straight login.
+    // 1. Existing OAuth account match → straight login (not a new signup).
     const oauthMatch = await this.prisma.oAuthAccount.findUnique({
       where: { provider_providerAccountId: { provider: 'GOOGLE', providerAccountId: googleSub } },
       include: { user: true },
     });
     if (oauthMatch) {
-      return this.issueToken(oauthMatch.user.id, oauthMatch.user.email, oauthMatch.user.role);
+      return this.issueToken(oauthMatch.user.id, oauthMatch.user.email, oauthMatch.user.role, false);
     }
 
-    // 2. Same email registered via password → link Google to that user, log in.
+    // 2. Same email registered via password → link Google, log in (not new).
     const byEmail = await this.prisma.user.findUnique({ where: { email } });
     if (byEmail) {
       await this.prisma.oAuthAccount.create({
         data: { userId: byEmail.id, provider: 'GOOGLE', providerAccountId: googleSub },
       });
-      return this.issueToken(byEmail.id, byEmail.email, byEmail.role);
+      return this.issueToken(byEmail.id, byEmail.email, byEmail.role, false);
     }
 
     // 3. Fresh signup — caller must pass a role.
@@ -199,13 +206,19 @@ export class AuthService {
       return user;
     });
 
-    return this.issueToken(created.id, created.email, created.role);
+    return this.issueToken(created.id, created.email, created.role, true);
   }
 
-  private issueToken(sub: string, email: string, role: UserRole) {
+  /** Signs a JWT + returns the auth envelope. `isNewUser` is undefined for
+   *  password register/login (frontend routes purely by role there) and set
+   *  explicitly by googleAuth so /signup can distinguish "linked existing"
+   *  from "actually just created", and stop sending returning users into
+   *  the onboarding flow. */
+  private issueToken(sub: string, email: string, role: UserRole, isNewUser?: boolean) {
     return {
       accessToken: this.jwt.sign({ sub, email, role }),
       user: { id: sub, email, role },
+      ...(isNewUser !== undefined ? { isNewUser } : {}),
     };
   }
 
