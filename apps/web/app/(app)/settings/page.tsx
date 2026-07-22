@@ -107,8 +107,7 @@ export default function SettingsPage() {
   }
 
   function handleSignOut() {
-    logout();
-    router.replace('/login');
+    logout('/login');
   }
 
   // Inline style atoms reused across both tabs.

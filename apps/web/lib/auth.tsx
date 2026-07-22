@@ -41,7 +41,7 @@ interface AuthContextValue extends AuthState {
     role?: 'SALESPERSON' | 'COMPANY';
     companyName?: string;
   }) => Promise<{ user: MeResponse; isNewUser: boolean }>;
-  logout: () => void;
+  logout: (redirectTo?: string) => void;
   refresh: () => Promise<void>;
 }
 
@@ -69,6 +69,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  // bfcache defence — when the browser restores a page from back/forward
+  // cache (Chrome, Safari), all JS state is restored as-is. Without this
+  // handler, a user who logged out and then hit Back would see the prior
+  // page rendered with the *old* AuthProvider state (user populated) until
+  // some other effect happened to re-run. Re-verifying on pageshow with
+  // `persisted` clears any stale user + lets useRequireAuth redirect.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPageShow = (e: PageTransitionEvent) => { if (e.persisted) void refresh(); };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, [refresh]);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.auth.login({ email, password });
@@ -100,9 +113,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback((redirectTo: string = '/login') => {
     tokenStore.clear();
     setState({ user: null, loading: false, error: null });
+    // Full-page navigation (not router.replace) — this nukes the Next.js
+    // client cache + React tree so the browser back button can't restore a
+    // stale logged-in page. Without this, the previous route's RSC payload
+    // + prior AuthProvider snapshot could re-render with the old user
+    // object before useRequireAuth had a chance to redirect.
+    if (typeof window !== 'undefined') window.location.replace(redirectTo);
   }, []);
 
   return (

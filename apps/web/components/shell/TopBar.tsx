@@ -126,7 +126,7 @@ export function TopBar() {
           secondaryCtaLabel={!user ? 'Log in' : undefined}
           secondaryCtaHref={!user ? '/login' : undefined}
           go={(href) => router.push(href)}
-          onLogout={user ? () => { logout(); router.push('/login'); } : undefined}
+          onLogout={user ? () => logout('/login') : undefined}
         />
         {!user ? (
           <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

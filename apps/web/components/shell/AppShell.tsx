@@ -625,10 +625,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
           {user ? (
             <HoverButton
-              onClick={() => {
-                logout();
-                router.push('/');
-              }}
+              onClick={() => logout('/')}
               style={{
                 display: 'flex',
                 alignItems: 'center',

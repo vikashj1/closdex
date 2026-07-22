@@ -174,7 +174,7 @@ export function CompanyShell({ children }: { children: ReactNode }) {
           <a style={{ color: 'var(--cool)', fontSize: 11.5, marginTop: 4, display: 'inline-block', cursor: 'pointer' }}>Upgrade to Scale →</a>
         </div>
         <button
-          onClick={() => { logout(); router.push('/login'); }}
+          onClick={() => logout('/login')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -243,7 +243,7 @@ export function CompanyShell({ children }: { children: ReactNode }) {
             <MobileNav
               items={NAV.map((n) => ({ label: n.label, href: n.path, active: isActive(n) }))}
               go={(href) => router.push(href)}
-              onLogout={() => { logout(); router.push('/login'); }}
+              onLogout={() => logout('/login')}
             />
             <button
               onClick={() => router.push('/company/notifications')}
