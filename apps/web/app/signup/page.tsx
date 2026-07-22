@@ -13,6 +13,12 @@ import { landingPathFor, useAuth } from '@/lib/auth';
 
 type Side = 'salesperson' | 'company';
 
+/** Company signup hidden 2026-07-22 per Vikash — Phase 1 is salesperson-only.
+ *  Flip to `true` when we start onboarding hiring companies. All company
+ *  branch code below (tab state, `companyName`, register role toggle) stays
+ *  wired so re-enabling is a one-line change. */
+const SHOW_COMPANY_TAB = false;
+
 export default function SignupPage() {
   const router = useRouter();
   const { register, loginWithGoogle } = useAuth();
@@ -133,42 +139,44 @@ export default function SignupPage() {
         <div data-auth-mobile-logo>
           <Logo size={22} />
         </div>
-        <div
-          style={{
-            display: 'inline-flex',
-            background: 'var(--bg-2)',
-            padding: 4,
-            borderRadius: 10,
-            gap: 4,
-            marginBottom: 28,
-            border: '1px solid var(--border)',
-            width: 'fit-content',
-          }}
-        >
-          {(['salesperson', 'company'] as Side[]).map((t) => (
-            <button
-              type="button"
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 7,
-                fontSize: 13,
-                fontWeight: 600,
-                background: tab === t ? '#5B4BF5' : 'transparent',
-                color: tab === t ? '#fff' : 'var(--text-dim)',
-                border: 'none',
-                textTransform: 'capitalize',
-                cursor: 'pointer',
-              }}
-            >
-              I&apos;m a {t}
-            </button>
-          ))}
-        </div>
+        {SHOW_COMPANY_TAB && (
+          <div
+            style={{
+              display: 'inline-flex',
+              background: 'var(--bg-2)',
+              padding: 4,
+              borderRadius: 10,
+              gap: 4,
+              marginBottom: 28,
+              border: '1px solid var(--border)',
+              width: 'fit-content',
+            }}
+          >
+            {(['salesperson', 'company'] as Side[]).map((t) => (
+              <button
+                type="button"
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 7,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: tab === t ? '#5B4BF5' : 'transparent',
+                  color: tab === t ? '#fff' : 'var(--text-dim)',
+                  border: 'none',
+                  textTransform: 'capitalize',
+                  cursor: 'pointer',
+                }}
+              >
+                I&apos;m a {t}
+              </button>
+            ))}
+          </div>
+        )}
 
         <h2 className="display" style={{ fontSize: 28, margin: '0 0 24px', fontWeight: 700 }}>
-          Create your {tab} account
+          {SHOW_COMPANY_TAB ? `Create your ${tab} account` : 'Create your account'}
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22, alignItems: 'stretch' }}>
