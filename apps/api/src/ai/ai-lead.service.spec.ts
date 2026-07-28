@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { AiLeadService } from './ai-lead.service';
+import { AiLeadService, parseSummarizeReply } from './ai-lead.service';
 import { LLM_PROVIDER } from './llm-provider.interface';
 import { MessageSender } from '@closdex/db';
 
@@ -118,9 +118,11 @@ describe('AiLeadService', () => {
     expect(systemMsg?.content).toContain('analytics tool');
   });
 
-  // 9. summarize returns the LLM reply for a fresh first run
-  it('summarize returns the LLM-generated paragraph on a first run', async () => {
-    mockLlm.complete.mockResolvedValue('  Salesperson pitched X, Alice asked about ROI.  ');
+  // 9. summarize returns structured { summary, resolvedTopics } from the two-part LLM reply
+  it('summarize parses the two-part LLM reply into summary + resolvedTopics', async () => {
+    mockLlm.complete.mockResolvedValue(
+      `SUMMARY:\nSalesperson pitched X, Alice asked about ROI.\n\nRESOLVED_TOPICS:\nroi|integration_cost|pilot_scope`,
+    );
 
     const result = await service.summarize({
       personaName: 'Alice',
@@ -131,9 +133,10 @@ describe('AiLeadService', () => {
       ],
     });
 
-    expect(result).toBe('Salesperson pitched X, Alice asked about ROI.');
+    expect(result.summary).toBe('Salesperson pitched X, Alice asked about ROI.');
+    expect(result.resolvedTopics).toEqual(['roi', 'integration_cost', 'pilot_scope']);
     const callArgs = mockLlm.complete.mock.calls[0];
-    expect(callArgs[1]).toEqual({ maxTokens: 350, temperature: 0.3 });
+    expect(callArgs[1]).toEqual({ maxTokens: 450, temperature: 0.3 });
   });
 
   // 10. summarize folds new messages into an existing summary
@@ -156,14 +159,68 @@ describe('AiLeadService', () => {
   });
 
   // 11. summarize is a no-op when there are no new messages
-  it('summarize returns the existing summary unchanged when newMessages is empty', async () => {
+  it('summarize returns the existing summary + topics unchanged when newMessages is empty', async () => {
     const result = await service.summarize({
       personaName: 'Alice',
       existingSummary: 'Existing context.',
+      existingResolvedTopics: ['pricing', 'sla'],
       newMessages: [],
     });
 
-    expect(result).toBe('Existing context.');
+    expect(result.summary).toBe('Existing context.');
+    expect(result.resolvedTopics).toEqual(['pricing', 'sla']);
     expect(mockLlm.complete).not.toHaveBeenCalled();
+  });
+
+  // 12. resolvedTopics → respond system prompt injects the anti-loop block
+  it('injects resolvedTopics into the system prompt as OFF-LIMITS topics', async () => {
+    mockLlm.complete.mockResolvedValue('ok');
+
+    await service.respond({
+      ...BASE_INPUT,
+      resolvedTopics: ['exit_clause', 'notice_period', 'onboarding_timeline'],
+    });
+
+    const messages = mockLlm.complete.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const systemMsg = messages.find((m) => m.role === 'system');
+    expect(systemMsg?.content).toContain('ALREADY ADDRESSED');
+    expect(systemMsg?.content).toContain('exit_clause');
+    expect(systemMsg?.content).toContain('notice_period');
+    expect(systemMsg?.content).toContain('onboarding_timeline');
+  });
+
+  // 13. turnCount >= 8 → respond injects convergence-bias block
+  it('injects convergence bias after turn 8', async () => {
+    mockLlm.complete.mockResolvedValue('ok');
+
+    await service.respond({ ...BASE_INPUT, turnCount: 10 });
+
+    const messages = mockLlm.complete.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const systemMsg = messages.find((m) => m.role === 'system');
+    expect(systemMsg?.content).toContain('CONVERGENCE BIAS');
+    expect(systemMsg?.content).toContain('turn 10');
+  });
+
+  // 14. Below the threshold, no convergence block leaks through
+  it('does NOT inject convergence bias before turn 8', async () => {
+    mockLlm.complete.mockResolvedValue('ok');
+
+    await service.respond({ ...BASE_INPUT, turnCount: 4 });
+
+    const messages = mockLlm.complete.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const systemMsg = messages.find((m) => m.role === 'system');
+    expect(systemMsg?.content).not.toContain('CONVERGENCE BIAS');
+  });
+
+  // 15. parseSummarizeReply falls back to previous values on malformed output
+  it('parseSummarizeReply falls back cleanly on malformed LLM output', () => {
+    const result = parseSummarizeReply(
+      'garbage without headers',
+      'PREVIOUS SUMMARY',
+      ['prev_topic'],
+    );
+    // The whole reply becomes summary if no SUMMARY: header, topics fallback.
+    expect(result.summary).toBe('garbage without headers');
+    expect(result.resolvedTopics).toEqual(['prev_topic']);
   });
 });

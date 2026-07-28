@@ -12,6 +12,11 @@ import { AuthUser } from '../auth/jwt.strategy';
 import { AiLeadService } from '../ai/ai-lead.service';
 import { ScoringQueueService } from '../scoring/scoring-queue.service';
 
+function parseTopics(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return Array.from(new Set(raw.split('|').map((t) => t.trim()).filter(Boolean)));
+}
+
 @Injectable()
 export class AttemptsService {
   private readonly logger = new Logger(AttemptsService.name);
@@ -97,6 +102,12 @@ export class AttemptsService {
 
     let priorSummary: string | null = conversation.summary ?? null;
     let summaryUpToCount: number = conversation.summaryUpToCount ?? 0;
+    // resolvedTopics is stored pipe-delimited on the Conversation so we don't
+    // need a new Prisma type for a small text list. Parsed back into an array
+    // for injection into the lead's system prompt.
+    let resolvedTopics: string[] = parseTopics(
+      (conversation as { resolvedTopics?: string | null }).resolvedTopics,
+    );
     const summarizableCount = Math.max(0, fullHistory.length - RECENT_WINDOW);
     const needsRefresh =
       summarizableCount > 0 &&
@@ -105,11 +116,14 @@ export class AttemptsService {
     if (needsRefresh) {
       const newToFold = fullHistory.slice(summaryUpToCount, summarizableCount);
       try {
-        priorSummary = await this.aiLead.summarize({
+        const result = await this.aiLead.summarize({
           personaName: attempt.challenge.persona.name,
           existingSummary: priorSummary,
+          existingResolvedTopics: resolvedTopics,
           newMessages: newToFold,
         });
+        priorSummary = result.summary;
+        resolvedTopics = result.resolvedTopics;
         summaryUpToCount = summarizableCount;
       } catch (err) {
         // Summarize failure is non-fatal — we just send a slightly longer
@@ -129,6 +143,11 @@ export class AttemptsService {
         personaPrompt: attempt.challenge.persona.personalityPrompt,
         history: trimmedHistory,
         priorSummary: priorSummary ?? undefined,
+        resolvedTopics,
+        // fullHistory includes the message we're about to store plus every
+        // prior turn from BOTH sides — accurate turn count for the
+        // convergence bias in respond().
+        turnCount: fullHistory.length,
         // No goalDescription here — the lead model must stay blind to the
         // salesperson's target so it can't cooperatively cave.
       });
@@ -179,7 +198,11 @@ export class AttemptsService {
       if (needsRefresh) {
         await tx.conversation.update({
           where: { id: conversationId },
-          data: { summary: priorSummary, summaryUpToCount },
+          data: {
+            summary: priorSummary,
+            summaryUpToCount,
+            resolvedTopics: resolvedTopics.length > 0 ? resolvedTopics.join('|') : null,
+          },
         });
       }
       return tx.challengeAttempt.update({

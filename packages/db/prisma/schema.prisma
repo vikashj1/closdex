@@ -370,6 +370,11 @@ model Conversation {
   /// conversation on every chat-turn call to the lead LLM (~50% input savings).
   summary           String?  @db.Text
   summaryUpToCount  Int      @default(0)
+  /// Pipe-delimited list of concerns the salesperson has already addressed
+  /// with substance (facts, examples, commitments). Injected into the lead's
+  /// system prompt each turn as OFF-LIMITS topics so the persona stops
+  /// looping on already-resolved objections. Populated by summarize().
+  resolvedTopics    String?  @db.Text
   createdAt DateTime         @default(now())
 }
 
