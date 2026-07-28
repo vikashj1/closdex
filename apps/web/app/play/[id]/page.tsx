@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ApiError, AttemptDetail, api } from '@/lib/api';
+import { ApiError, AttemptDetail, CoachingNudge, api } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
 
 function fmtTime(iso: string): string {
@@ -35,6 +35,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
   // The user can dismiss it to keep scrolling through the chat, or click
   // through to the result page.
   const [closeModalOpen, setCloseModalOpen] = useState(false);
+  const [coaching, setCoaching] = useState<CoachingNudge | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const inputBaseRef = useRef('');
@@ -178,6 +179,9 @@ export default function ConversationPage({ params }: { params: { id: string } })
     try {
       const res = await api.attempts.send(attempt.id, text, clientMeta);
       setAttempt(res.attempt);
+      // Only surface a coaching nudge while the attempt is still live —
+      // once completed, the reflection card on the result page takes over.
+      setCoaching(res.attempt.status === 'IN_PROGRESS' ? res.coaching : null);
       // Don't auto-redirect — surface a dismissible modal so the salesperson
       // can still scroll back through the conversation before viewing the
       // result page.
@@ -1101,6 +1105,60 @@ export default function ConversationPage({ params }: { params: { id: string } })
           }}
         >
           <div style={{ maxWidth: 760, margin: '0 auto' }}>
+            {/* Mid-attempt coaching nudge — surfaces above the composer when
+                the backend detects an antipattern (defer-loop, repetition,
+                no-discovery, monologue). Dismissible per turn; auto-clears
+                on next send. Slice: 2026-07-28. */}
+            {coaching && (
+              <div
+                data-play-coaching
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  padding: '10px 12px',
+                  marginBottom: 10,
+                  background: 'rgba(91,75,245,0.06)',
+                  border: '1px solid rgba(91,75,245,0.25)',
+                  borderRadius: 10,
+                  fontSize: 13,
+                  color: '#3A2DC4',
+                  lineHeight: 1.5,
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+                  <path d="M12 2v4" />
+                  <path d="M12 18v4" />
+                  <path d="M4.93 4.93l2.83 2.83" />
+                  <path d="M16.24 16.24l2.83 2.83" />
+                  <path d="M2 12h4" />
+                  <path d="M18 12h4" />
+                  <path d="M4.93 19.07l2.83-2.83" />
+                  <path d="M16.24 7.76l2.83-2.83" />
+                </svg>
+                <div style={{ flex: 1 }}>{coaching.tip}</div>
+                <button
+                  type="button"
+                  onClick={() => setCoaching(null)}
+                  aria-label="Dismiss coaching tip"
+                  style={{
+                    flexShrink: 0,
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#3A2DC4',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
             <div
               style={{
                 position: 'relative',

@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
 import { AiLeadService } from '../ai/ai-lead.service';
 import { ScoringQueueService } from '../scoring/scoring-queue.service';
+import { CoachingService } from '../coaching/coaching.service';
 
 function parseTopics(raw: string | null | undefined): string[] {
   if (!raw) return [];
@@ -25,6 +26,7 @@ export class AttemptsService {
     private readonly prisma: PrismaService,
     private readonly aiLead: AiLeadService,
     private readonly scoringQueue: ScoringQueueService,
+    private readonly coaching: CoachingService,
   ) {}
 
   async start(user: AuthUser, challengeId: string) {
@@ -229,7 +231,19 @@ export class AttemptsService {
       await this.scoringQueue.enqueue(updated.id);
     }
 
-    return { attempt: this.shape(updated), leadReply };
+    // Mid-attempt coaching nudge. Detected from just the SALESPERSON messages
+    // (never the lead's turns) and only surfaced while IN_PROGRESS — nothing
+    // to coach once the attempt is done. Rules-based, no LLM, safe to run
+    // on every message. See CoachingService for the antipattern catalogue.
+    const coaching = shouldComplete
+      ? null
+      : this.coaching.detect(
+          fullHistory
+            .filter((m) => m.sender === MessageSender.SALESPERSON)
+            .map((m) => m.content),
+        );
+
+    return { attempt: this.shape(updated), leadReply, coaching };
   }
 
   async end(user: AuthUser, attemptId: string) {

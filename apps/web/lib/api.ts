@@ -216,6 +216,17 @@ export interface QuarantineDetail extends QuarantineItem {
   }>;
 }
 
+export interface CoachingNudge {
+  /** Antipattern category — used by the frontend for icon/color + analytics. */
+  category:
+    | 'defer_to_proposal_loop'
+    | 'repetition'
+    | 'no_discovery_questions'
+    | 'monologue';
+  /** Short actionable hint shown as a dismissible chip near the input. */
+  tip: string;
+}
+
 export interface AttemptDetail {
   id: string;
   status: 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
@@ -543,7 +554,7 @@ export const api = {
     listMine: () => request<AttemptDetail[]>('GET', '/attempts/me'),
     get: (id: string) => request<AttemptDetail>('GET', `/attempts/${id}`),
     send: (id: string, content: string, clientMeta?: AttemptClientMeta) =>
-      request<{ attempt: AttemptDetail; leadReply: string }>(
+      request<{ attempt: AttemptDetail; leadReply: string; coaching: CoachingNudge | null }>(
         'POST',
         `/attempts/${id}/messages`,
         { body: { content, ...(clientMeta ? { clientMeta } : {}) } },

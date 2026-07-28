@@ -94,17 +94,22 @@ function makeQueue(): ScoringQueueService & { enqueue: jest.Mock } {
   return { enqueue: jest.fn().mockResolvedValue(undefined) } as any;
 }
 
+/** Coaching returns null by default so pre-coaching-slice specs stay valid. */
+function makeCoaching(nudge: any = null) {
+  return { detect: jest.fn().mockReturnValue(nudge) } as any;
+}
+
 describe('AttemptsService', () => {
   describe('start', () => {
     it('rejects non-salesperson with ForbiddenException', async () => {
       const { prisma } = makePrismaMock();
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.start(CO_USER, 'ch-1')).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it('rejects when salesperson profile is missing', async () => {
       const { prisma } = makePrismaMock({ profile: null });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.start(SP_USER, 'ch-1')).rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -113,7 +118,7 @@ describe('AttemptsService', () => {
         profile: { id: 'sp-prof-1', userId: SP_USER.id },
         challenge: null,
       });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.start(SP_USER, 'ch-1')).rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -122,7 +127,7 @@ describe('AttemptsService', () => {
         profile: { id: 'sp-prof-1', userId: SP_USER.id },
         challenge: makeChallenge({ status: ChallengeStatus.DRAFT }),
       });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.start(SP_USER, 'ch-1')).rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -132,7 +137,7 @@ describe('AttemptsService', () => {
         challenge: makeChallenge(),
         inProgress: { id: 'att-existing' },
       });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.start(SP_USER, 'ch-1')).rejects.toBeInstanceOf(BadRequestException);
     });
 
@@ -142,7 +147,7 @@ describe('AttemptsService', () => {
         challenge: makeChallenge({ attemptsAllowed: 3 }),
         attemptCount: 3,
       });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.start(SP_USER, 'ch-1')).rejects.toBeInstanceOf(ForbiddenException);
     });
 
@@ -154,7 +159,7 @@ describe('AttemptsService', () => {
         attemptCount: 98,
         createAttempt: created,
       });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       const result = await svc.start(SP_USER, 'ch-1');
       expect(result.attemptNumber).toBe(99);
     });
@@ -167,7 +172,7 @@ describe('AttemptsService', () => {
         attemptCount: 1,
         createAttempt: created,
       });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       const result = await svc.start(SP_USER, 'ch-1');
 
       expect(prisma.challengeAttempt.create).toHaveBeenCalledWith({
@@ -189,14 +194,14 @@ describe('AttemptsService', () => {
     it('rejects when attempt is not in progress', async () => {
       const completed = makeAttempt({ status: AttemptStatus.COMPLETED });
       const { prisma } = makePrismaMock({ loadAttempt: completed });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.sendMessage(SP_USER, 'att-1', 'hi')).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('rejects when caller does not own the attempt', async () => {
       const otherUsers = makeAttempt({ salesperson: { id: 'sp-prof-1', userId: 'other-user' } });
       const { prisma } = makePrismaMock({ loadAttempt: otherUsers });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.sendMessage(SP_USER, 'att-1', 'hi')).rejects.toBeInstanceOf(ForbiddenException);
     });
 
@@ -206,7 +211,7 @@ describe('AttemptsService', () => {
       const { prisma, txStubs } = makePrismaMock({ loadAttempt: loaded, txReturn: updated });
       const ai = makeAi('What about pricing?');
       const queue = makeQueue();
-      const svc = new AttemptsService(prisma, ai, queue);
+      const svc = new AttemptsService(prisma, ai, queue, makeCoaching());
 
       const result = await svc.sendMessage(SP_USER, 'att-1', 'Tell me more.');
 
@@ -239,7 +244,7 @@ describe('AttemptsService', () => {
       const updated = makeAttempt({ messagesUsed: 5, status: AttemptStatus.COMPLETED });
       const { prisma, txStubs } = makePrismaMock({ loadAttempt: loaded, txReturn: updated });
       const queue = makeQueue();
-      const svc = new AttemptsService(prisma, makeAi(), queue);
+      const svc = new AttemptsService(prisma, makeAi(), queue, makeCoaching());
 
       const result = await svc.sendMessage(SP_USER, 'att-1', 'Final word.');
 
@@ -257,7 +262,7 @@ describe('AttemptsService', () => {
       const completed = makeAttempt({ status: AttemptStatus.COMPLETED });
       const { prisma } = makePrismaMock({ loadAttempt: completed });
       const queue = makeQueue();
-      const svc = new AttemptsService(prisma, makeAi(), queue);
+      const svc = new AttemptsService(prisma, makeAi(), queue, makeCoaching());
       const result = await svc.end(SP_USER, 'att-1');
       expect(result.status).toBe(AttemptStatus.COMPLETED);
       expect(queue.enqueue).not.toHaveBeenCalled();
@@ -271,7 +276,7 @@ describe('AttemptsService', () => {
       const { prisma } = makePrismaMock({ loadAttempt: loaded });
       (prisma.challengeAttempt.update as any) = prismaUpdate;
       const queue = makeQueue();
-      const svc = new AttemptsService(prisma, makeAi(), queue);
+      const svc = new AttemptsService(prisma, makeAi(), queue, makeCoaching());
 
       const result = await svc.end(SP_USER, 'att-1');
 
@@ -290,20 +295,20 @@ describe('AttemptsService', () => {
     it('get rejects when caller does not own the attempt', async () => {
       const stolen = makeAttempt({ salesperson: { id: 'sp-prof-1', userId: 'other-user' } });
       const { prisma } = makePrismaMock({ loadAttempt: stolen });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.get(SP_USER, 'att-1')).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it('get throws NotFoundException when attempt does not exist', async () => {
       const { prisma } = makePrismaMock({ loadAttempt: null });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await expect(svc.get(SP_USER, 'att-1')).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('get returns the attempt with personality prompt stripped', async () => {
       const loaded = makeAttempt();
       const { prisma } = makePrismaMock({ loadAttempt: loaded });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       const result = await svc.get(SP_USER, 'att-1');
       expect(result.id).toBe('att-1');
       expect(result.challenge.persona).not.toHaveProperty('personalityPrompt');
@@ -312,7 +317,7 @@ describe('AttemptsService', () => {
 
     it('listMine returns [] when the user has no salesperson profile', async () => {
       const { prisma } = makePrismaMock({ profile: null });
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       const result = await svc.listMine(SP_USER);
       expect(result).toEqual([]);
       expect(prisma.challengeAttempt.findMany).not.toHaveBeenCalled();
@@ -323,7 +328,7 @@ describe('AttemptsService', () => {
         profile: { id: 'sp-prof-1', userId: SP_USER.id },
       });
       (prisma.challengeAttempt.findMany as jest.Mock).mockResolvedValue([{ id: 'a', challenge: {} }]);
-      const svc = new AttemptsService(prisma, makeAi(), makeQueue());
+      const svc = new AttemptsService(prisma, makeAi(), makeQueue(), makeCoaching());
       await svc.listMine(SP_USER);
       expect(prisma.challengeAttempt.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
