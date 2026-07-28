@@ -498,6 +498,57 @@ function ResultPageInner({ params }: { params: { id: string } }) {
           </div>
         </section>
 
+        {/* ===== POST-ATTEMPT REFLECTION ===== */}
+        {attempt.reflection && (
+          <section
+            data-result-reflection
+            style={{
+              background: '#fff',
+              border: '1px solid #EAEAEF',
+              borderRadius: 14,
+              padding: '22px 24px',
+              marginTop: 16,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(31,138,91,0.1)', color: '#1F8A5B' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </span>
+              <h3 style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: '#0B0B0F', letterSpacing: '-0.01em' }}>Reflection</h3>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 600, color: '#1F8A5B', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 5 }}>
+                  What worked
+                </div>
+                <div style={{ fontSize: 13.5, color: '#3A3A44', lineHeight: 1.6 }}>
+                  {attempt.reflection.whatWorked}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 600, color: '#5B4BF5', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 5 }}>
+                  What to try next
+                </div>
+                <div style={{ fontSize: 13.5, color: '#3A3A44', lineHeight: 1.6 }}>
+                  {attempt.reflection.whatToTry}
+                </div>
+              </div>
+              <div style={{ background: '#FAFAF8', border: '1px solid #EAEAEF', borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 600, color: '#7A5E10', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  Try this instead
+                </div>
+                <div style={{ fontSize: 13, color: '#3A3A44', lineHeight: 1.55, fontFamily: "'Space Mono', monospace" }}>
+                  {attempt.reflection.betterMove}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ===== ACTIONS ===== */}
         <section style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 8 }} data-result-actions>
           <button

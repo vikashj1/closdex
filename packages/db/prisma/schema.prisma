@@ -349,6 +349,12 @@ model ChallengeAttempt {
   /// Breakdown of which heuristics fired (paste ratio, instant-typing,
   /// typing-speed, paste-burst). Stored for admin review.
   suspicionFlags     Json?
+  /// LLM-generated post-attempt reflection card. Shape:
+  /// { whatWorked: string, whatToTry: string, betterMove: string }.
+  /// Non-blocking side-effect of scoring; null if generation failed.
+  /// Shown on the attempt detail page so users learn from failure the way
+  /// CodeChef editorials teach after a wrong-answer verdict.
+  reflection         Json?
   startedAt          DateTime            @default(now())
   completedAt        DateTime?
 

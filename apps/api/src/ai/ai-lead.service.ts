@@ -45,6 +45,24 @@ export interface GoalVerdict {
   closed: boolean;
 }
 
+interface ReflectionInput {
+  personaName: string;
+  goalDescription: string;
+  goalAchieved: boolean;
+  /** Full transcript of the completed attempt. */
+  messages: Array<{ sender: MessageSender; content: string }>;
+}
+
+export interface AttemptReflection {
+  /** One concrete thing the salesperson did well. */
+  whatWorked: string;
+  /** One concrete thing to try differently next attempt. */
+  whatToTry: string;
+  /** One rewritten line from the transcript showing a stronger move —
+   *  quotes the salesperson's original message + offers a punchier version. */
+  betterMove: string;
+}
+
 interface SummarizeInput {
   personaName: string;
   /** Existing summary covering anything older than `newMessages` (null on first run). */
@@ -235,6 +253,21 @@ export class AiLeadService {
     return { goalAchieved, closed };
   }
 
+  /** Instance wrapper around the module-scope generateReflection(). Wires
+   *  the injected LLM provider so ScoringService can call this without
+   *  knowing about LlmProvider directly. Never throws — returns null if
+   *  the LLM call fails so reflection generation is a soft feature. */
+  async reflect(input: ReflectionInput): Promise<AttemptReflection | null> {
+    try {
+      return await generateReflection(
+        (msgs, opts) => this.llm.complete(msgs, opts),
+        input,
+      );
+    } catch {
+      return null;
+    }
+  }
+
   /** Compresses the conversation history into a rolling summary AND extracts
    *  the concrete concerns the salesperson has definitively addressed.
    *  Both are computed in one LLM call — no extra roundtrip — and persisted
@@ -295,6 +328,80 @@ export class AiLeadService {
     );
     return parseSummarizeReply(reply, existingSummary ?? '', existingResolvedTopics ?? []);
   }
+}
+
+/** Generates a post-attempt reflection card: 3 concrete bullets that turn
+ *  a raw score into a learning moment. Called from the ScoringWorker after
+ *  the final score persists. Fire-and-forget from the worker's perspective;
+ *  if the LLM fails we log and leave reflection=null. Never throws upward.
+ *
+ *  Extracted out of AiLeadService.respond flow because the shape + prompt
+ *  are wildly different — this one wants coaching quality, not persona
+ *  continuity. */
+export async function generateReflection(
+  llmComplete: (messages: LlmMessage[], opts: { maxTokens: number; temperature: number }) => Promise<string>,
+  input: ReflectionInput,
+): Promise<AttemptReflection | null> {
+  const { personaName, goalDescription, goalAchieved, messages } = input;
+  if (messages.length === 0) return null;
+
+  const transcript = messages
+    .map((m) => `${m.sender === MessageSender.SALESPERSON ? 'You' : personaName}: ${m.content}`)
+    .join('\n');
+
+  const system = [
+    `You are a sales coach reviewing a completed roleplay attempt. Give the salesperson`,
+    `three concrete, honest observations. Terse and specific — no fluff, no encouragement`,
+    `theatre. Do NOT restate the whole conversation. Do NOT reference AI/LLM/roleplay.`,
+    ``,
+    `Output EXACTLY three parts in this order, nothing else:`,
+    ``,
+    `WHAT_WORKED:`,
+    `<one sentence naming a specific move the salesperson made well — cite the exact`,
+    `topic or moment. If nothing worked, say so plainly and skip praise.>`,
+    ``,
+    `WHAT_TO_TRY:`,
+    `<one sentence naming a specific move to try differently next attempt. Pick the`,
+    `single highest-leverage change, not a laundry list.>`,
+    ``,
+    `BETTER_MOVE:`,
+    `<one line the salesperson actually sent, quoted verbatim, followed by " → " and`,
+    `a rewritten version that would have landed better. Format: "Original text" → "Stronger version".`,
+    `Pick the weakest line in the transcript, not a random one.>`,
+  ].join('\n');
+
+  const user = [
+    `Goal the salesperson was trying to achieve: ${goalDescription}`,
+    `Goal achieved: ${goalAchieved ? 'YES' : 'NO'}`,
+    ``,
+    `Transcript:`,
+    transcript,
+    ``,
+    `Return the three-part reflection.`,
+  ].join('\n');
+
+  const reply = await llmComplete(
+    [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+    { maxTokens: 350, temperature: 0.4 },
+  );
+
+  return parseReflectionReply(reply);
+}
+
+export function parseReflectionReply(reply: string): AttemptReflection | null {
+  const text = reply.trim();
+  const worked = /WHAT_WORKED:\s*([\s\S]*?)(?:\n\s*WHAT_TO_TRY:|$)/i.exec(text);
+  const toTry = /WHAT_TO_TRY:\s*([\s\S]*?)(?:\n\s*BETTER_MOVE:|$)/i.exec(text);
+  const better = /BETTER_MOVE:\s*([\s\S]*?)$/i.exec(text);
+  if (!worked || !toTry || !better) return null;
+  return {
+    whatWorked: worked[1].trim(),
+    whatToTry: toTry[1].trim(),
+    betterMove: better[1].trim(),
+  };
 }
 
 /** Splits the two-part summarize reply into summary + resolvedTopics.

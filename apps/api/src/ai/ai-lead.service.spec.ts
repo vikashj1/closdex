@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { AiLeadService, parseSummarizeReply } from './ai-lead.service';
+import { AiLeadService, parseSummarizeReply, parseReflectionReply } from './ai-lead.service';
 import { LLM_PROVIDER } from './llm-provider.interface';
 import { MessageSender } from '@closdex/db';
 
@@ -222,5 +222,60 @@ describe('AiLeadService', () => {
     // The whole reply becomes summary if no SUMMARY: header, topics fallback.
     expect(result.summary).toBe('garbage without headers');
     expect(result.resolvedTopics).toEqual(['prev_topic']);
+  });
+
+  // 16. reflect() parses the three-part LLM reply
+  it('reflect returns { whatWorked, whatToTry, betterMove } on a well-formed reply', async () => {
+    mockLlm.complete.mockResolvedValue(
+      `WHAT_WORKED:\nYou opened with a clear discovery question.\n\n` +
+      `WHAT_TO_TRY:\nAsk one hard-priced question earlier.\n\n` +
+      `BETTER_MOVE:\n"Would this be a fit?" → "What would make this a no-brainer for you?"`,
+    );
+
+    const result = await service.reflect({
+      personaName: 'Alice',
+      goalDescription: 'Book a follow-up call.',
+      goalAchieved: false,
+      messages: [
+        { sender: MessageSender.SALESPERSON, content: 'Hi.' },
+        { sender: MessageSender.LEAD, content: 'Hi back.' },
+      ],
+    });
+
+    expect(result).toEqual({
+      whatWorked: 'You opened with a clear discovery question.',
+      whatToTry: 'Ask one hard-priced question earlier.',
+      betterMove: '"Would this be a fit?" → "What would make this a no-brainer for you?"',
+    });
+  });
+
+  // 17. reflect returns null on empty transcript (no LLM call)
+  it('reflect returns null immediately when messages array is empty', async () => {
+    const result = await service.reflect({
+      personaName: 'Alice',
+      goalDescription: 'x',
+      goalAchieved: false,
+      messages: [],
+    });
+    expect(result).toBeNull();
+    expect(mockLlm.complete).not.toHaveBeenCalled();
+  });
+
+  // 18. reflect swallows LLM errors and returns null so scoring never crashes
+  it('reflect returns null when the LLM throws', async () => {
+    mockLlm.complete.mockRejectedValue(new Error('LLM 500'));
+    const result = await service.reflect({
+      personaName: 'Alice',
+      goalDescription: 'x',
+      goalAchieved: false,
+      messages: [{ sender: MessageSender.SALESPERSON, content: 'Hi.' }],
+    });
+    expect(result).toBeNull();
+  });
+
+  // 19. parseReflectionReply rejects malformed replies (returns null)
+  it('parseReflectionReply returns null when a section is missing', () => {
+    const result = parseReflectionReply('WHAT_WORKED: only worked, no other sections');
+    expect(result).toBeNull();
   });
 });

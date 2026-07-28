@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LeaderboardsService } from '../leaderboards/leaderboards.service';
 import { RubricService, QualityDims, ScoreBreakdown, ScoringRules } from './rubric.service';
 import { AiEvaluatorService, AiEvaluation } from './ai-evaluator.service';
+import { AiLeadService } from '../ai/ai-lead.service';
 import { MessageClientMeta, SuspicionService } from './suspicion.service';
 
 const DIFFICULTY_ORDER: DifficultyTier[] = [
@@ -36,6 +37,7 @@ export class ScoringService {
     private readonly aiEvaluator: AiEvaluatorService,
     private readonly leaderboards: LeaderboardsService,
     private readonly suspicion: SuspicionService,
+    private readonly aiLead: AiLeadService,
   ) {}
 
   /** Idempotent. Skips if attempt is still in progress or already scored. */
@@ -129,6 +131,27 @@ export class ScoringService {
       evaluation?.qualityDims ?? null,
       suspicion,
     );
+
+    // Post-attempt reflection card. Runs BEFORE the quarantine short-
+    // circuit because reflection is a learning aid, not a reward — even
+    // quarantined users benefit from the feedback. aiLead.reflect never
+    // throws (soft feature); if the LLM call fails we leave reflection=null
+    // and the frontend just doesn't render the card.
+    const reflection = await this.aiLead.reflect({
+      personaName: attempt.challenge.persona.name,
+      goalDescription: attempt.challenge.goalDescription,
+      goalAchieved: evaluation?.goalAchieved ?? false,
+      messages: (attempt.conversation?.messages ?? []).map((m) => ({
+        sender: m.sender,
+        content: m.content,
+      })),
+    });
+    if (reflection) {
+      await this.prisma.challengeAttempt.update({
+        where: { id: attempt.id },
+        data: { reflection: reflection as unknown as Prisma.InputJsonValue },
+      });
+    }
 
     if (suspicion.quarantined) {
       this.logger.warn(

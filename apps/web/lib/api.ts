@@ -231,6 +231,13 @@ export interface AttemptDetail {
   /** True when the attempt was held back by the anti-cheat heuristics.
    *  Salesperson can still see their breakdown but no points credit. */
   quarantined?: boolean;
+  /** Post-attempt coaching card generated after scoring. Null while
+   *  IN_PROGRESS and on the rare cases where the LLM reflection call fails. */
+  reflection?: {
+    whatWorked: string;
+    whatToTry: string;
+    betterMove: string;
+  } | null;
   challenge: ChallengeSummary;
   conversation: { id: string; messages: ChallengeMessage[] };
 }

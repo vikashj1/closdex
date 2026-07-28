@@ -114,12 +114,16 @@ function makeProfile(overrides: Record<string, unknown> = {}) {
 function makeSvc() {
   const { SuspicionService } = require('./suspicion.service');
   const { AiContentDetectorService } = require('./ai-content-detector.service');
+  // Reflection is a soft, post-score LLM call — mock it to null so scoring
+  // specs stay focused on rubric/leaderboard behaviour, not LLM output.
+  const mockAiLead = { reflect: jest.fn().mockResolvedValue(null) };
   return new ScoringService(
     mockPrisma as any,
     mockRubric as any,
     mockAiEvaluator as any,
     mockLeaderboards as any,
     new SuspicionService(new AiContentDetectorService()),
+    mockAiLead as any,
   );
 }
 
