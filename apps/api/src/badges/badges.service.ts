@@ -36,6 +36,43 @@ export class BadgesService {
     return this.prisma.badge.create({ data: dto });
   }
 
+  /** Edit a badge definition. `code` is immutable (it's the stable slug the
+   *  scoring engine looks up by). Only name / description / iconUrl are
+   *  updatable so we don't accidentally rewrite awards' meaning. */
+  async updateDefinition(
+    _actor: AuthUser,
+    badgeId: string,
+    patch: { name?: string; description?: string; iconUrl?: string | null },
+  ) {
+    const existing = await this.prisma.badge.findUnique({ where: { id: badgeId } });
+    if (!existing) throw new NotFoundException('Badge not found.');
+    return this.prisma.badge.update({
+      where: { id: badgeId },
+      data: {
+        ...(patch.name != null ? { name: patch.name } : {}),
+        ...(patch.description != null ? { description: patch.description } : {}),
+        ...(patch.iconUrl !== undefined ? { iconUrl: patch.iconUrl } : {}),
+      },
+    });
+  }
+
+  /** Delete a badge definition. Refuses if any UserBadge references it so
+   *  we don't wipe earned-history when someone typos a code. Admin must
+   *  explicitly revoke every award first (or we could add a cascade flag
+   *  later; keep the safer default for now). */
+  async deleteDefinition(_actor: AuthUser, badgeId: string) {
+    const badge = await this.prisma.badge.findUnique({ where: { id: badgeId } });
+    if (!badge) throw new NotFoundException('Badge not found.');
+    const awardedCount = await this.prisma.userBadge.count({ where: { badgeId } });
+    if (awardedCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete — ${awardedCount} user(s) have this badge. Revoke all awards first.`,
+      );
+    }
+    await this.prisma.badge.delete({ where: { id: badgeId } });
+    return { success: true };
+  }
+
   async award(_actor: AuthUser, badgeId: string, userId: string) {
     const [badge, profile] = await Promise.all([
       this.prisma.badge.findUnique({ where: { id: badgeId } }),

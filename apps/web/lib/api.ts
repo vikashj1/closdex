@@ -947,6 +947,12 @@ export const api = {
     listEarnedForUser: (userId: string) => request<EarnedBadge[]>('GET', `/badges/user/${userId}`),
     createDefinition: (dto: { code: string; name: string; description: string; iconUrl?: string }) =>
       request<BadgeDefinition>('POST', '/badges/admin', { body: dto }),
+    updateDefinition: (
+      badgeId: string,
+      dto: { name?: string; description?: string; iconUrl?: string | null },
+    ) => request<BadgeDefinition>('PATCH', `/badges/admin/${badgeId}`, { body: dto }),
+    deleteDefinition: (badgeId: string) =>
+      request<{ success: boolean }>('DELETE', `/badges/admin/${badgeId}`),
     award: (badgeId: string, userId: string) =>
       request<EarnedBadge>('POST', `/badges/admin/${badgeId}/award`, { body: { userId } }),
     revoke: (badgeId: string, userId: string) =>

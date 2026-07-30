@@ -238,7 +238,36 @@ export default function AdminBadgesPage() {
                       {b.description}
                     </td>
                     <td style={{ ...S.td, whiteSpace: 'nowrap' }}>
-                      <Btn kind="ghost" size="sm" onClick={() => setAwardTarget(b)}>Award</Btn>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <Btn kind="ghost" size="sm" onClick={() => setAwardTarget(b)}>Award</Btn>
+                        <Btn kind="ghost" size="sm" onClick={async () => {
+                          const name = window.prompt('New name:', b.name);
+                          if (name == null) return;
+                          const description = window.prompt('New description:', b.description) ?? b.description;
+                          const iconUrl = window.prompt('Icon URL (empty for none):', b.iconUrl ?? '') ?? '';
+                          try {
+                            await api.badges.updateDefinition(b.id, {
+                              name,
+                              description,
+                              iconUrl: iconUrl || null,
+                            });
+                            const defs = await api.badges.listDefinitions();
+                            setBadges(defs);
+                          } catch (err) {
+                            window.alert((err as Error).message ?? 'Update failed.');
+                          }
+                        }}>Edit</Btn>
+                        <Btn kind="ghost" size="sm" onClick={async () => {
+                          if (!window.confirm(`Delete "${b.name}"? Blocked if any users have earned it.`)) return;
+                          try {
+                            await api.badges.deleteDefinition(b.id);
+                            const defs = await api.badges.listDefinitions();
+                            setBadges(defs);
+                          } catch (err) {
+                            window.alert((err as Error).message ?? 'Delete failed.');
+                          }
+                        }}>Delete</Btn>
+                      </div>
                     </td>
                   </tr>
                 ))}

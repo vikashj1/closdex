@@ -12,6 +12,8 @@ const mockPrisma = {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
   },
   salespersonProfile: {
     findUnique: jest.fn(),
@@ -21,6 +23,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
     create: jest.fn(),
     delete: jest.fn(),
+    count: jest.fn(),
   },
 };
 
@@ -209,6 +212,52 @@ describe('BadgesService', () => {
         where: { salespersonId_badgeId: { salespersonId: 'sp-1', badgeId: 'b1' } },
       });
       expect(mockPrisma.userBadge.delete).toHaveBeenCalledWith({ where: { id: 'ub-1' } });
+      expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('updateDefinition', () => {
+    it('throws NotFound when badge does not exist', async () => {
+      mockPrisma.badge.findUnique.mockResolvedValue(null);
+      await expect(
+        service.updateDefinition({} as any, 'ghost', { name: 'x' }),
+      ).rejects.toThrow('Badge not found.');
+    });
+
+    it('applies only defined fields; leaves code untouched', async () => {
+      mockPrisma.badge.findUnique.mockResolvedValue({ id: 'b1', code: 'EARLY_BIRD', name: 'Early' });
+      mockPrisma.badge.update.mockResolvedValue({ id: 'b1', code: 'EARLY_BIRD', name: 'Early Bird v2' });
+      await service.updateDefinition({} as any, 'b1', { name: 'Early Bird v2' });
+      expect(mockPrisma.badge.update).toHaveBeenCalledWith({
+        where: { id: 'b1' },
+        data: { name: 'Early Bird v2' },
+      });
+    });
+  });
+
+  describe('deleteDefinition', () => {
+    it('throws NotFound when badge does not exist', async () => {
+      mockPrisma.badge.findUnique.mockResolvedValue(null);
+      await expect(
+        service.deleteDefinition({} as any, 'ghost'),
+      ).rejects.toThrow('Badge not found.');
+    });
+
+    it('refuses to delete a badge that has been awarded', async () => {
+      mockPrisma.badge.findUnique.mockResolvedValue({ id: 'b1' });
+      mockPrisma.userBadge.count.mockResolvedValue(3);
+      await expect(
+        service.deleteDefinition({} as any, 'b1'),
+      ).rejects.toThrow(/3 user\(s\) have this badge/);
+      expect(mockPrisma.badge.delete).not.toHaveBeenCalled();
+    });
+
+    it('deletes when no awards reference the badge', async () => {
+      mockPrisma.badge.findUnique.mockResolvedValue({ id: 'b1' });
+      mockPrisma.userBadge.count.mockResolvedValue(0);
+      mockPrisma.badge.delete.mockResolvedValue({ id: 'b1' });
+      const result = await service.deleteDefinition({} as any, 'b1');
+      expect(mockPrisma.badge.delete).toHaveBeenCalledWith({ where: { id: 'b1' } });
       expect(result).toEqual({ success: true });
     });
   });

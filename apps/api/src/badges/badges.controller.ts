@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserRole } from '@closdex/db';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -41,6 +41,27 @@ export class BadgesController {
   @Roles(UserRole.ADMIN)
   createDefinition(@CurrentUser() user: AuthUser, @Body() dto: CreateBadgeDto) {
     return this.badges.createDefinition(user, dto);
+  }
+
+  /** Edit badge definition (name / description / iconUrl) — admin only.
+   *  `code` is immutable to preserve award history integrity. */
+  @Patch('admin/:badgeId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateDefinition(
+    @CurrentUser() user: AuthUser,
+    @Param('badgeId') badgeId: string,
+    @Body() dto: { name?: string; description?: string; iconUrl?: string | null },
+  ) {
+    return this.badges.updateDefinition(user, badgeId, dto);
+  }
+
+  /** Delete badge definition — admin only. Blocks if any awards exist. */
+  @Delete('admin/:badgeId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteDefinition(@CurrentUser() user: AuthUser, @Param('badgeId') badgeId: string) {
+    return this.badges.deleteDefinition(user, badgeId);
   }
 
   /** Award badge to a salesperson by userId — admin only */
