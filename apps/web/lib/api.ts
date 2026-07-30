@@ -464,6 +464,45 @@ export interface AdminUser {
   role: 'SALESPERSON' | 'COMPANY' | 'ADMIN';
   createdAt: string;
   salesperson?: { totalPoints: number; rank: string } | null;
+  bannedAt?: string | null;
+  deletedAt?: string | null;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  updatedAt: string;
+  photoUrl?: string | null;
+  location?: string | null;
+  bannedReason?: string | null;
+  attemptsCount: number;
+  salesperson?: {
+    id: string;
+    publicSlug: string;
+    totalPoints: number;
+    rank: string;
+    currentStreakDays: number;
+    experienceYears: number;
+    openToWork: boolean;
+    specializationTags: string[];
+    currentCompany?: string | null;
+  } | null;
+  companyMemberships?: Array<{
+    id: string;
+    companyRole: string;
+    company: { id: string; name: string };
+  }>;
+  oauthAccounts?: Array<{ provider: string; createdAt: string }>;
+}
+
+export interface AdminUserAttemptRow {
+  id: string;
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
+  goalAchieved: boolean;
+  finalScore: number | null;
+  quarantined: boolean;
+  messagesUsed: number;
+  startedAt: string;
+  completedAt: string | null;
+  challenge: { id: string; title: string; difficulty: string };
 }
 
 export interface AuditLogEntry {
@@ -832,6 +871,29 @@ export const api = {
       ),
     updateUserRole: (id: string, role: string) =>
       request<{ id: string; role: string }>('PATCH', `/admin/users/${id}/role`, { body: { role } }),
+    userDetail: (id: string) => request<AdminUserDetail>('GET', `/admin/users/${id}`),
+    userAttempts: (id: string, page = 1, perPage = 20) =>
+      request<{ items: AdminUserAttemptRow[]; total: number; page: number; perPage: number }>(
+        'GET', `/admin/users/${id}/attempts`, { query: { page, perPage } },
+      ),
+    banUser: (id: string, reason?: string) =>
+      request<{ id: string; bannedAt: string; bannedReason: string | null }>(
+        'POST', `/admin/users/${id}/ban`, { body: { reason } },
+      ),
+    unbanUser: (id: string) =>
+      request<{ id: string; bannedAt: string | null; bannedReason: string | null }>(
+        'POST', `/admin/users/${id}/unban`,
+      ),
+    softDeleteUser: (id: string) =>
+      request<{ id: string; deletedAt: string }>('DELETE', `/admin/users/${id}`),
+    adjustUserPoints: (id: string, delta: number, reason?: string) =>
+      request<{ id: string; delta: number; newTotal: number }>(
+        'POST', `/admin/users/${id}/points-adjust`, { body: { delta, reason } },
+      ),
+    impersonateUser: (id: string) =>
+      request<{ accessToken: string; user: { id: string; email: string; role: UserRole }; impersonatedBy: string }>(
+        'POST', `/admin/users/${id}/impersonate`,
+      ),
   },
 
   notifications: {

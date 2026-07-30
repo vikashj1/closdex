@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Btn } from '@/components/ui/Btn';
 import { api, AdminUser } from '@/lib/api';
@@ -139,8 +140,20 @@ export default function AdminUsersPage() {
               background: 'transparent',
             }}
           >
-            <div style={{ fontSize: 13.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {u.name}
+            <div style={{ fontSize: 13.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Link href={`/admin/users/${u.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                {u.name}
+              </Link>
+              {u.bannedAt && (
+                <span style={{ fontSize: 9.5, padding: '2px 6px', borderRadius: 4, background: 'var(--d-expert)', color: '#fff', fontWeight: 700, letterSpacing: '0.05em' }}>
+                  BANNED
+                </span>
+              )}
+              {u.deletedAt && (
+                <span style={{ fontSize: 9.5, padding: '2px 6px', borderRadius: 4, background: '#666', color: '#fff', fontWeight: 700, letterSpacing: '0.05em' }}>
+                  DELETED
+                </span>
+              )}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {u.email}
