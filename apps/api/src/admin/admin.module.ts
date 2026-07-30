@@ -17,6 +17,8 @@ import { QuarantineService } from './quarantine.service';
 import { QuarantineController } from './quarantine.controller';
 import { UsersAdminService } from './users-admin.service';
 import { UsersAdminController } from './users-admin.controller';
+import { FeatureFlagsService } from './feature-flags.service';
+import { FeatureFlagsAdminController, FeatureFlagsPublicController } from './feature-flags.controller';
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import { UsersAdminController } from './users-admin.controller';
     StatsService,
     QuarantineService,
     UsersAdminService,
+    FeatureFlagsService,
   ],
   controllers: [
     DisputesController,
@@ -50,7 +53,9 @@ import { UsersAdminController } from './users-admin.controller';
     StatsController,
     QuarantineController,
     UsersAdminController,
+    FeatureFlagsAdminController,
+    FeatureFlagsPublicController,
   ],
-  exports: [AuditService],
+  exports: [AuditService, FeatureFlagsService],
 })
 export class AdminModule {}

@@ -23,6 +23,7 @@ const NAV: NavItem[] = [
   { id: 'learning',     label: 'Learning',     path: '/admin/learning',         prefix: '/admin/learning' },
   { id: 'audit',        label: 'Audit Log',    path: '/admin/audit',            prefix: '/admin/audit' },
   { id: 'config',       label: 'Config',       path: '/admin/config',           prefix: '/admin/config' },
+  { id: 'flags',        label: 'Feature flags',path: '/admin/feature-flags',    prefix: '/admin/feature-flags' },
   { id: 'users',        label: 'Users',        path: '/admin/users',            prefix: '/admin/users' },
 ];
 

@@ -552,6 +552,14 @@ export const api = {
       request<AuthResponse>('POST', '/auth/google', { body: dto }),
   },
 
+  /** Public projection of feature flags — only ones the admin marked
+   *  publicRead=true. Used by unauthenticated pages (signup, marketing) to
+   *  gate UI without a login. Rollout is applied server-side so the frontend
+   *  never sees percentage values. */
+  featureFlags: {
+    listPublic: () => request<Array<{ key: string; enabled: boolean }>>('GET', '/feature-flags'),
+  },
+
   users: {
     me: () => request<MeResponse>('GET', '/users/me'),
     updateMe: (dto: Partial<Pick<MeResponse, 'name' | 'location'>>) =>
@@ -813,6 +821,25 @@ export const api = {
         history: Array<{ sender: 'SALESPERSON' | 'LEAD'; content: string }>,
         message: string,
       ) => request<{ reply: string }>('POST', `/personas/${id}/test-chat`, { body: { history, message } }),
+    },
+    featureFlags: {
+      list: () =>
+        request<Array<{
+          key: string;
+          label: string;
+          description: string;
+          enabled: boolean;
+          rollout: number;
+          publicRead: boolean;
+          updatedBy: string | null;
+          updatedAt: string;
+        }>>('GET', '/admin/feature-flags'),
+      upsert: (
+        key: string,
+        dto: { label: string; description: string; enabled?: boolean; rollout?: number; publicRead?: boolean },
+      ) => request<{ key: string; enabled: boolean; rollout: number }>(
+        'PUT', `/admin/feature-flags/${key}`, { body: dto },
+      ),
     },
     audit: {
       list: (query: { entity?: string; actorId?: string; action?: string; page?: number; perPage?: number } = {}) =>

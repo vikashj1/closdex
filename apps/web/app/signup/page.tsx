@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { Btn } from '@/components/ui/Btn';
@@ -8,18 +8,28 @@ import { Field } from '@/components/ui/Field';
 import { TextInput } from '@/components/ui/TextInput';
 import { Icon } from '@/components/ui/Icon';
 import { GoogleButton } from '@/components/auth/GoogleButton';
-import { ApiError } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { landingPathFor, useAuth } from '@/lib/auth';
 
 type Side = 'salesperson' | 'company';
 
-/** Company signup hidden 2026-07-22 per Vikash — Phase 1 is salesperson-only.
- *  Flip to `true` when we start onboarding hiring companies. All company
- *  branch code below (tab state, `companyName`, register role toggle) stays
- *  wired so re-enabling is a one-line change. */
-const SHOW_COMPANY_TAB = false;
+/** Company signup hidden by default (Vikash 2026-07-22, Phase 1 = salesperson-
+ *  only). Now driven by the `show_company_tab` public feature flag so admin
+ *  can flip it live without a deploy. See /admin/feature-flags. */
+const COMPANY_TAB_FLAG = 'show_company_tab';
 
 export default function SignupPage() {
+  const [showCompanyTab, setShowCompanyTab] = useState(false);
+
+  useEffect(() => {
+    void api.featureFlags.listPublic().then((flags) => {
+      const flag = flags.find((f) => f.key === COMPANY_TAB_FLAG);
+      setShowCompanyTab(!!flag?.enabled);
+    }).catch(() => {
+      // Fallback: leave company tab hidden if the endpoint fails.
+    });
+  }, []);
+
   const router = useRouter();
   const { register, loginWithGoogle } = useAuth();
   const [tab, setTab] = useState<Side>('salesperson');
@@ -139,7 +149,7 @@ export default function SignupPage() {
         <div data-auth-mobile-logo>
           <Logo size={22} />
         </div>
-        {SHOW_COMPANY_TAB && (
+        {showCompanyTab && (
           <div
             style={{
               display: 'inline-flex',
@@ -176,7 +186,7 @@ export default function SignupPage() {
         )}
 
         <h2 className="display" style={{ fontSize: 28, margin: '0 0 24px', fontWeight: 700 }}>
-          {SHOW_COMPANY_TAB ? `Create your ${tab} account` : 'Create your account'}
+          {showCompanyTab ? `Create your ${tab} account` : 'Create your account'}
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22, alignItems: 'stretch' }}>

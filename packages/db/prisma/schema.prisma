@@ -702,3 +702,25 @@ model AdminAuditLog {
   metadata  Json?
   createdAt DateTime @default(now())
 }
+
+model FeatureFlag {
+  key         String   @id
+  /// Human-readable label for the admin toggle UI.
+  label       String
+  /// Longer explanation of what the flag controls and where it's read.
+  description String   @db.Text
+  /// Master on/off. False overrides rollout to 0.
+  enabled     Boolean  @default(false)
+  /// 0-100 percent rollout when enabled. 100 = everyone, 0 = nobody.
+  /// Bucketing uses hash(userId + key) so a given user stays in a stable
+  /// group across sessions.
+  rollout     Int      @default(100)
+  /// Whether the flag's key + enabled state is safe to expose to the
+  /// public /feature-flags endpoint (no auth). Rollout is never leaked
+  /// publicly. Use `false` for flags that gate anti-cheat or scoring
+  /// behavior we don't want cheaters to know is toggleable.
+  publicRead  Boolean  @default(false)
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
