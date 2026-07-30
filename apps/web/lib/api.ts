@@ -800,10 +800,19 @@ export const api = {
     },
     personas: {
       list: () => request<Array<{ id: string; name: string; role: string; company: string; contextSnippet: string }>>('GET', '/personas'),
+      get: (id: string) =>
+        request<{ id: string; name: string; role: string; company: string; contextSnippet: string; personalityPrompt: string }>(
+          'GET', `/personas/${id}`,
+        ),
       create: (dto: { name: string; role: string; company: string; contextSnippet: string; personalityPrompt: string }) =>
         request<{ id: string; name: string; role: string; company: string; contextSnippet: string }>('POST', '/personas', { body: dto }),
       update: (id: string, dto: Partial<{ name: string; role: string; company: string; contextSnippet: string; personalityPrompt: string }>) =>
         request<{ id: string; name: string; role: string; company: string; contextSnippet: string }>('PATCH', `/personas/${id}`, { body: dto }),
+      testChat: (
+        id: string,
+        history: Array<{ sender: 'SALESPERSON' | 'LEAD'; content: string }>,
+        message: string,
+      ) => request<{ reply: string }>('POST', `/personas/${id}/test-chat`, { body: { history, message } }),
     },
     audit: {
       list: (query: { entity?: string; actorId?: string; action?: string; page?: number; perPage?: number } = {}) =>

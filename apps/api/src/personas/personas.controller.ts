@@ -34,4 +34,16 @@ export class PersonasController {
   update(@Param('id') id: string, @Body() dto: UpdatePersonaDto) {
     return this.personas.update(id, dto);
   }
+
+  /** Admin-only sandbox — send a message to the persona and get a reply
+   *  without creating an attempt or affecting scoring. History is client-
+   *  owned; we don't persist anything. */
+  @Post(':id/test-chat')
+  testChat(
+    @Param('id') id: string,
+    @Body('history') history: Array<{ sender: 'SALESPERSON' | 'LEAD'; content: string }> = [],
+    @Body('message') message: string,
+  ) {
+    return this.personas.testChat(id, history, message);
+  }
 }

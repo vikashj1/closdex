@@ -359,9 +359,14 @@ export default function PersonasPage() {
                         : <span style={{ color: 'var(--text-mute)' }}>—</span>}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <Btn size="sm" kind="ghost" onClick={() => openEdit(p)}>
-                        Edit
-                      </Btn>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <Btn size="sm" kind="ghost" onClick={() => openEdit(p)}>
+                          Edit
+                        </Btn>
+                        <a href={`/admin/personas/${p.id}/test-chat`} style={{ textDecoration: 'none' }}>
+                          <Btn size="sm" kind="ghost">Test</Btn>
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 ))}

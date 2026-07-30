@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PersonasService } from './personas.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AiLeadService } from '../ai/ai-lead.service';
 
 const mockPrisma = {
   leadPersona: {
@@ -11,6 +12,8 @@ const mockPrisma = {
     update: jest.fn(),
   },
 };
+
+const mockAiLead = { respond: jest.fn() };
 
 describe('PersonasService', () => {
   let service: PersonasService;
@@ -22,6 +25,7 @@ describe('PersonasService', () => {
       providers: [
         PersonasService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AiLeadService, useValue: mockAiLead },
       ],
     }).compile();
 
@@ -91,6 +95,44 @@ describe('PersonasService', () => {
     it('8. NotFoundException message is "Persona not found."', async () => {
       mockPrisma.leadPersona.update.mockRejectedValue(new Error('record not found'));
       await expect(service.update('ghost', {})).rejects.toThrow('Persona not found.');
+    });
+  });
+
+  describe('testChat', () => {
+    it('sends the persona prompt + new message + history to AiLeadService.respond', async () => {
+      mockPrisma.leadPersona.findUnique.mockResolvedValue({
+        id: 'p-1',
+        name: 'Rajesh',
+        personalityPrompt: 'You are a procurement lead.',
+      });
+      mockAiLead.respond.mockResolvedValue('Interesting, tell me more.');
+
+      const result = await service.testChat(
+        'p-1',
+        [
+          { sender: 'SALESPERSON', content: 'Hi Rajesh.' },
+          { sender: 'LEAD', content: 'What is this about?' },
+        ],
+        'Quick question — how do you evaluate vendors today?',
+      );
+
+      expect(result).toEqual({ reply: 'Interesting, tell me more.' });
+      expect(mockAiLead.respond).toHaveBeenCalledTimes(1);
+      const args = mockAiLead.respond.mock.calls[0][0];
+      expect(args.personaName).toBe('Rajesh');
+      expect(args.personaPrompt).toBe('You are a procurement lead.');
+      expect(args.history).toHaveLength(3);
+      expect(args.history[2]).toEqual({
+        sender: 'SALESPERSON',
+        content: 'Quick question — how do you evaluate vendors today?',
+      });
+      expect(args.turnCount).toBe(3);
+    });
+
+    it('throws NotFound when the persona does not exist', async () => {
+      mockPrisma.leadPersona.findUnique.mockResolvedValue(null);
+      await expect(service.testChat('ghost', [], 'Hi')).rejects.toBeInstanceOf(NotFoundException);
+      expect(mockAiLead.respond).not.toHaveBeenCalled();
     });
   });
 });
