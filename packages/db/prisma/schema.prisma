@@ -187,6 +187,15 @@ model User {
   location           String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  /// Set when an admin bans the user. Non-null blocks all logins + hides
+  /// the profile from public lookups. Unban by setting back to null.
+  bannedAt           DateTime?
+  /// Free-text reason attached to the ban (surfaced in admin UI, never
+  /// shown to the user themselves).
+  bannedReason       String?
+  /// Soft-delete timestamp. Non-null anonymizes email + blocks logins,
+  /// but the row + its content (attempts, transactions) survives for audit.
+  deletedAt          DateTime?
 
   oauthAccounts      OAuthAccount[]
   salesperson        SalespersonProfile?

@@ -115,6 +115,13 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Invalid credentials.');
 
+    // Admin-controlled lockouts. We use the same UnauthorizedException as
+    // "invalid credentials" for deleted accounts so an outsider can't
+    // enumerate which emails were once real. Banned users get a distinct
+    // message so support can tell them why they're locked out.
+    if (user.deletedAt) throw new UnauthorizedException('Invalid credentials.');
+    if (user.bannedAt) throw new UnauthorizedException('This account has been suspended. Contact support.');
+
     return this.issueToken(user.id, user.email, user.role);
   }
 
@@ -155,12 +162,14 @@ export class AuthService {
       include: { user: true },
     });
     if (oauthMatch) {
+      this.rejectIfLocked(oauthMatch.user);
       return this.issueToken(oauthMatch.user.id, oauthMatch.user.email, oauthMatch.user.role, false);
     }
 
     // 2. Same email registered via password → link Google, log in (not new).
     const byEmail = await this.prisma.user.findUnique({ where: { email } });
     if (byEmail) {
+      this.rejectIfLocked(byEmail);
       await this.prisma.oAuthAccount.create({
         data: { userId: byEmail.id, provider: 'GOOGLE', providerAccountId: googleSub },
       });
@@ -207,6 +216,13 @@ export class AuthService {
     });
 
     return this.issueToken(created.id, created.email, created.role, true);
+  }
+
+  /** Shared lockout gate for both password + Google flows. Same-shape
+   *  UnauthorizedException so error paths stay identical. */
+  private rejectIfLocked(user: { bannedAt: Date | null; deletedAt: Date | null }) {
+    if (user.deletedAt) throw new UnauthorizedException('Invalid credentials.');
+    if (user.bannedAt) throw new UnauthorizedException('This account has been suspended. Contact support.');
   }
 
   /** Signs a JWT + returns the auth envelope. `isNewUser` is undefined for

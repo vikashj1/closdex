@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService as NestConfigService } from '@nestjs/config';
 import { LeaderboardsModule } from '../leaderboards/leaderboards.module';
 import { AuditService } from './audit.service';
 import { AuditController } from './audit.controller';
@@ -13,9 +15,23 @@ import { StatsService } from './stats.service';
 import { StatsController } from './stats.controller';
 import { QuarantineService } from './quarantine.service';
 import { QuarantineController } from './quarantine.controller';
+import { UsersAdminService } from './users-admin.service';
+import { UsersAdminController } from './users-admin.controller';
 
 @Module({
-  imports: [LeaderboardsModule],
+  imports: [
+    LeaderboardsModule,
+    // JwtModule so UsersAdminService can mint impersonation tokens. Reuses
+    // the same JWT_SECRET as AuthModule so tokens are cross-verifiable.
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [NestConfigService],
+      useFactory: (cfg: NestConfigService) => ({
+        secret: cfg.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: cfg.get<string>('JWT_EXPIRES_IN') ?? '7d' },
+      }),
+    }),
+  ],
   providers: [
     AuditService,
     DisputesService,
@@ -23,6 +39,7 @@ import { QuarantineController } from './quarantine.controller';
     ConfigService,
     StatsService,
     QuarantineService,
+    UsersAdminService,
   ],
   controllers: [
     DisputesController,
@@ -32,6 +49,7 @@ import { QuarantineController } from './quarantine.controller';
     AuditController,
     StatsController,
     QuarantineController,
+    UsersAdminController,
   ],
   exports: [AuditService],
 })
