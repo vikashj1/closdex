@@ -822,6 +822,22 @@ export const api = {
         message: string,
       ) => request<{ reply: string }>('POST', `/personas/${id}/test-chat`, { body: { history, message } }),
     },
+    moderation: {
+      recent: (query: { since?: string; limit?: number; suspiciousOnly?: boolean } = {}) =>
+        request<{
+          items: Array<{
+            id: string;
+            content: string;
+            createdAt: string;
+            hasClientMeta: boolean;
+            pasteCount: number;
+            pastedChars: number;
+            attempt: { id: string; status: string; quarantined: boolean; suspicionScore: number | null };
+            challenge: { id: string; title: string; difficulty: string };
+            user: { id: string; name: string; email: string };
+          }>;
+        }>('GET', '/admin/moderation/messages', { query }),
+    },
     llmUsage: {
       summary: (days = 7) =>
         request<{

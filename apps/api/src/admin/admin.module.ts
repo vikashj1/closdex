@@ -20,6 +20,8 @@ import { UsersAdminController } from './users-admin.controller';
 import { FeatureFlagsService } from './feature-flags.service';
 import { FeatureFlagsAdminController, FeatureFlagsPublicController } from './feature-flags.controller';
 import { LlmUsageAdminController } from './llm-usage.controller';
+import { ModerationService } from './moderation.service';
+import { ModerationController } from './moderation.controller';
 import { AiModule } from '../ai/ai.module';
 
 @Module({
@@ -46,6 +48,7 @@ import { AiModule } from '../ai/ai.module';
     QuarantineService,
     UsersAdminService,
     FeatureFlagsService,
+    ModerationService,
   ],
   controllers: [
     DisputesController,
@@ -59,6 +62,7 @@ import { AiModule } from '../ai/ai.module';
     FeatureFlagsAdminController,
     FeatureFlagsPublicController,
     LlmUsageAdminController,
+    ModerationController,
   ],
   exports: [AuditService, FeatureFlagsService],
 })
