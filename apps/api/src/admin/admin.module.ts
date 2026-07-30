@@ -19,10 +19,13 @@ import { UsersAdminService } from './users-admin.service';
 import { UsersAdminController } from './users-admin.controller';
 import { FeatureFlagsService } from './feature-flags.service';
 import { FeatureFlagsAdminController, FeatureFlagsPublicController } from './feature-flags.controller';
+import { LlmUsageAdminController } from './llm-usage.controller';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
   imports: [
     LeaderboardsModule,
+    AiModule,
     // JwtModule so UsersAdminService can mint impersonation tokens. Reuses
     // the same JWT_SECRET as AuthModule so tokens are cross-verifiable.
     JwtModule.registerAsync({
@@ -55,6 +58,7 @@ import { FeatureFlagsAdminController, FeatureFlagsPublicController } from './fea
     UsersAdminController,
     FeatureFlagsAdminController,
     FeatureFlagsPublicController,
+    LlmUsageAdminController,
   ],
   exports: [AuditService, FeatureFlagsService],
 })

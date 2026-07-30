@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
   { id: 'audit',        label: 'Audit Log',    path: '/admin/audit',            prefix: '/admin/audit' },
   { id: 'config',       label: 'Config',       path: '/admin/config',           prefix: '/admin/config' },
   { id: 'flags',        label: 'Feature flags',path: '/admin/feature-flags',    prefix: '/admin/feature-flags' },
+  { id: 'llm-usage',    label: 'LLM usage',    path: '/admin/llm-usage',        prefix: '/admin/llm-usage' },
   { id: 'users',        label: 'Users',        path: '/admin/users',            prefix: '/admin/users' },
 ];
 

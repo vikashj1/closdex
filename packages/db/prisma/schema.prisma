@@ -724,3 +724,20 @@ model FeatureFlag {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+/// Per-call LLM usage log. Written fire-and-forget from every provider
+/// complete() so admins can see cost + latency trends without threading
+/// context through every AiLead / AiEvaluator caller. Kept intentionally
+/// minimal — no attempt/user id here; correlation can be added later
+/// once we thread request context through the providers.
+model LlmUsageLog {
+  id            String   @id @default(cuid())
+  provider      String
+  model         String
+  inputTokens   Int
+  outputTokens  Int
+  latencyMs     Int
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+}

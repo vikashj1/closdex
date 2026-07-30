@@ -822,6 +822,15 @@ export const api = {
         message: string,
       ) => request<{ reply: string }>('POST', `/personas/${id}/test-chat`, { body: { history, message } }),
     },
+    llmUsage: {
+      summary: (days = 7) =>
+        request<{
+          windowDays: number;
+          totals: { calls: number; inputTokens: number; outputTokens: number; totalLatencyMs: number; avgLatencyMs: number };
+          byModel: Array<{ model: string; calls: number; inputTokens: number; outputTokens: number; avgLatencyMs: number }>;
+          byDay: Array<{ day: string; calls: number; inputTokens: number; outputTokens: number }>;
+        }>('GET', '/admin/llm-usage/summary', { query: { days } }),
+    },
     featureFlags: {
       list: () =>
         request<Array<{

@@ -4,10 +4,12 @@ import { LLM_PROVIDER, LlmProvider } from './llm-provider.interface';
 import { OpenAiProvider } from './openai.provider';
 import { AnthropicProvider } from './anthropic.provider';
 import { AiLeadService } from './ai-lead.service';
+import { LlmUsageService } from './llm-usage.service';
 
 @Module({
   imports: [ConfigModule],
   providers: [
+    LlmUsageService,
     OpenAiProvider,
     AnthropicProvider,
     {
@@ -24,6 +26,6 @@ import { AiLeadService } from './ai-lead.service';
     },
     AiLeadService,
   ],
-  exports: [AiLeadService, LLM_PROVIDER],
+  exports: [AiLeadService, LLM_PROVIDER, LlmUsageService],
 })
 export class AiModule {}

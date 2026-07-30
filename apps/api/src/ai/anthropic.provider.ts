@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { LlmCompleteOpts, LlmMessage, LlmProvider } from './llm-provider.interface';
+import { LlmUsageService } from './llm-usage.service';
 
 @Injectable()
 export class AnthropicProvider implements LlmProvider {
@@ -9,7 +10,10 @@ export class AnthropicProvider implements LlmProvider {
   private readonly client: Anthropic;
   private readonly model: string;
 
-  constructor(config: ConfigService) {
+  constructor(
+    config: ConfigService,
+    @Optional() private readonly usage?: LlmUsageService,
+  ) {
     const apiKey = config.get<string>('ANTHROPIC_API_KEY');
     if (!apiKey) {
       this.logger.warn('ANTHROPIC_API_KEY not set — provider will fail at call time.');
@@ -20,6 +24,7 @@ export class AnthropicProvider implements LlmProvider {
   }
 
   async complete(messages: LlmMessage[], opts: LlmCompleteOpts = {}): Promise<string> {
+    const t0 = Date.now();
     // Anthropic takes `system` as a separate field; the conversation must alternate user/assistant.
     const systemText = messages
       .filter((m) => m.role === 'system')
@@ -47,6 +52,14 @@ export class AnthropicProvider implements LlmProvider {
             ? [{ type: 'text' as const, text: m.content, cache_control: { type: 'ephemeral' as const } }]
             : m.content,
       })),
+    });
+
+    this.usage?.log({
+      provider: 'anthropic',
+      model: this.model,
+      inputTokens: (res.usage?.input_tokens ?? 0) + (res.usage?.cache_read_input_tokens ?? 0),
+      outputTokens: res.usage?.output_tokens ?? 0,
+      latencyMs: Date.now() - t0,
     });
 
     const block = res.content[0];
