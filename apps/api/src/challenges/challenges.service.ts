@@ -1,7 +1,13 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ChallengeStatus, Prisma, UserRole } from '@closdex/db';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { ChallengeStatus, DifficultyTier, Prisma, UserRole } from '@closdex/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/jwt.strategy';
+import { DISPOSITION, deriveTurns } from '../ai/ai-lead.service';
 import { ListChallengesDto } from './dto/list-challenges.dto';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
@@ -67,15 +73,47 @@ export class ChallengesService {
 
   async create(dto: CreateChallengeDto) {
     await this.assertPersonaExists(dto.personaId);
+    this.assertWinnableWindow(dto.difficulty, dto.maxMessages);
     return this.prisma.challenge.create({ data: dto });
   }
 
   async update(id: string, dto: UpdateChallengeDto) {
     if (dto.personaId) await this.assertPersonaExists(dto.personaId);
+    // difficulty and maxMessages jointly determine the winnable window, so a
+    // partial update of either must be validated against the effective pair.
+    if (dto.difficulty != null || dto.maxMessages != null) {
+      const existing = await this.prisma.challenge.findUnique({
+        where: { id },
+        select: { difficulty: true, maxMessages: true },
+      });
+      if (!existing) throw new NotFoundException('Challenge not found.');
+      this.assertWinnableWindow(
+        dto.difficulty ?? existing.difficulty,
+        dto.maxMessages ?? existing.maxMessages,
+      );
+    }
     try {
       return await this.prisma.challenge.update({ where: { id }, data: dto });
     } catch {
       throw new NotFoundException('Challenge not found.');
+    }
+  }
+
+  /** Rejects message caps that leave a lead no room to be won over. The lead's
+   *  commit floor and convergence point are derived from difficulty + cap
+   *  (see ai-lead.service DISPOSITION); if convergence lands too close to the
+   *  floor — or the cap barely clears convergence — the challenge is
+   *  mathematically unwinnable and would just loop to the cap. */
+  private assertWinnableWindow(difficulty: DifficultyTier, maxMessages: number) {
+    const derived = deriveTurns(DISPOSITION[difficulty], maxMessages);
+    const window = derived.convergence - derived.commitFloor;
+    if (window < 3 || maxMessages < derived.convergence + 2) {
+      throw new BadRequestException(
+        `maxMessages (${maxMessages}) is too low for ${difficulty}: the lead's commit floor is turn ` +
+          `${derived.commitFloor} and it must decide by turn ${derived.convergence}, leaving a ` +
+          `winnable window of ${window} (need ≥ 3) and only ${maxMessages - derived.convergence} turns ` +
+          `after convergence (need ≥ 2). Raise maxMessages to at least ${derived.convergence + 2}.`,
+      );
     }
   }
 

@@ -110,6 +110,11 @@ export class AttemptsService {
     let resolvedTopics: string[] = parseTopics(
       (conversation as { resolvedTopics?: string | null }).resolvedTopics,
     );
+    // LEAD_DISPOSITION_V2 refreshes resolvedTopics from the per-turn goal judge
+    // (not just the lazy summarize()). Track whether the list moved this turn so
+    // we persist it even when no summary refresh is due.
+    const dispositionV2 = process.env.LEAD_DISPOSITION_V2 === 'true';
+    let topicsChanged = false;
     const summarizableCount = Math.max(0, fullHistory.length - RECENT_WINDOW);
     const needsRefresh =
       summarizableCount > 0 &&
@@ -150,6 +155,10 @@ export class AttemptsService {
         // prior turn from BOTH sides — accurate turn count for the
         // convergence bias in respond().
         turnCount: fullHistory.length,
+        // Consumed only by the LEAD_DISPOSITION_V2 assembly (per-tier objection
+        // budget + derived convergence). Harmless when the flag is off.
+        difficulty: attempt.challenge.difficulty,
+        maxMessages: attempt.challenge.maxMessages,
         // No goalDescription here — the lead model must stay blind to the
         // salesperson's target so it can't cooperatively cave.
       });
@@ -168,17 +177,35 @@ export class AttemptsService {
     // conversation. If the judge fails we fall back to {no, no}.
     let goalAchievedSignal = false;
     let conversationClosed = false;
+    let newlyAddressedTopics: string[] = [];
     try {
       const verdict = await this.aiLead.evaluateGoal({
         personaName: attempt.challenge.persona.name,
         goalDescription: attempt.challenge.goalDescription,
         history: [...trimmedHistory, { sender: MessageSender.LEAD, content: leadReply }],
         priorSummary: priorSummary ?? undefined,
+        extractTopics: dispositionV2,
       });
       goalAchievedSignal = verdict.goalAchieved;
       conversationClosed = verdict.closed;
+      newlyAddressedTopics = verdict.newlyAddressedTopics ?? [];
     } catch (err) {
       this.logger.warn(`Goal evaluator failed for attempt ${attempt.id}: ${(err as Error).message}`);
+    }
+
+    // Merge the judge's freshly-resolved concerns into the running list so the
+    // lead's NEGOTIATION STATE reflects them next turn. Case-insensitive dedupe;
+    // topics addressed at turn N surface in the lead's prompt at turn N+1.
+    if (dispositionV2 && newlyAddressedTopics.length > 0) {
+      const seen = new Set(resolvedTopics.map((t) => t.toLowerCase()));
+      for (const topic of newlyAddressedTopics) {
+        const trimmed = topic.trim();
+        if (trimmed && !seen.has(trimmed.toLowerCase())) {
+          resolvedTopics.push(trimmed);
+          seen.add(trimmed.toLowerCase());
+          topicsChanged = true;
+        }
+      }
     }
 
     const messagesUsed = attempt.messagesUsed + 1;
@@ -197,7 +224,7 @@ export class AttemptsService {
       await tx.message.create({
         data: { conversationId, sender: MessageSender.LEAD, content: leadReply },
       });
-      if (needsRefresh) {
+      if (needsRefresh || topicsChanged) {
         await tx.conversation.update({
           where: { id: conversationId },
           data: {

@@ -1,6 +1,45 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { MessageSender } from '@closdex/db';
+import { DifficultyTier, MessageSender } from '@closdex/db';
 import { LLM_PROVIDER, LlmMessage, LlmProvider } from './llm-provider.interface';
+
+/** Per-tier negotiation knobs for the LEAD_DISPOSITION_V2 assembly.
+ *  objectionBudget  — distinct genuine concerns the lead may raise, total.
+ *  commitFloorPct   — fraction of maxMessages before the lead prefers to commit.
+ *  convergencePct   — fraction of maxMessages at which the lead must close/walk.
+ *  Everything is derived from difficulty + maxMessages so the guardrails scale
+ *  with the challenge instead of a flat turn constant (the old CONVERGENCE_TURN
+ *  = 8 broke for both 10- and 20-message challenges). */
+export interface DispositionConfig {
+  objectionBudget: number;
+  commitFloorPct: number;
+  convergencePct: number;
+}
+
+export const DISPOSITION: Record<DifficultyTier, DispositionConfig> = {
+  ROOKIE: { objectionBudget: 1, commitFloorPct: 0.15, convergencePct: 0.5 },
+  EASY: { objectionBudget: 1, commitFloorPct: 0.2, convergencePct: 0.5 },
+  MEDIUM: { objectionBudget: 2, commitFloorPct: 0.3, convergencePct: 0.6 },
+  HARD: { objectionBudget: 3, commitFloorPct: 0.4, convergencePct: 0.65 },
+  EXPERT: { objectionBudget: 4, commitFloorPct: 0.45, convergencePct: 0.7 },
+};
+
+/** Turn thresholds for a challenge. turnCount counts BOTH sides, matching the
+ *  existing convention (attempts.service passes fullHistory.length). convergence
+ *  is floored to at least commitFloor + 1 so a tiny maxMessages can never invert
+ *  the two. */
+export function deriveTurns(cfg: DispositionConfig, maxMessages: number) {
+  const commitFloor = Math.max(2, Math.floor(maxMessages * cfg.commitFloorPct));
+  const convergence = Math.floor(maxMessages * cfg.convergencePct);
+  return { commitFloor, convergence: Math.max(commitFloor + 1, convergence) };
+}
+
+/** The number of turns between "may commit" and "must decide" — the room a
+ *  salesperson actually has to win. Used by challenge validation to reject caps
+ *  that leave no winnable window. */
+export function winnableWindow(difficulty: DifficultyTier, maxMessages: number): number {
+  const derived = deriveTurns(DISPOSITION[difficulty], maxMessages);
+  return derived.convergence - derived.commitFloor;
+}
 
 interface RespondInput {
   personaName: string;
@@ -21,6 +60,12 @@ interface RespondInput {
    *  the persona is biased toward closing (commit or decline) rather than
    *  manufacturing indefinite objections. */
   turnCount?: number;
+  /** Challenge difficulty + message cap. Only consumed by the
+   *  LEAD_DISPOSITION_V2 assembly, which derives per-tier objection budgets and
+   *  commit/convergence thresholds from them. When the flag is off (or either is
+   *  absent) the legacy flat-constant assembly runs unchanged. */
+  difficulty?: DifficultyTier;
+  maxMessages?: number;
 }
 
 interface EvaluateGoalInput {
@@ -33,6 +78,11 @@ interface EvaluateGoalInput {
    *  commitment. */
   history: Array<{ sender: MessageSender; content: string }>;
   priorSummary?: string;
+  /** LEAD_DISPOSITION_V2: when true the judge also extracts the concerns the
+   *  salesperson addressed this exchange, so resolvedTopics refreshes EVERY turn
+   *  instead of only on the lazy summarize() schedule. Off keeps the legacy
+   *  two-line verdict byte-identical for the A/B control group. */
+  extractTopics?: boolean;
 }
 
 export interface GoalVerdict {
@@ -43,6 +93,11 @@ export interface GoalVerdict {
    *  to continue. Used to short-circuit IN_PROGRESS so the user can't keep
    *  spamming messages into a closed conversation. */
   closed: boolean;
+  /** Concerns the salesperson substantively addressed in THIS exchange (0-3
+   *  short noun phrases). Only populated when `extractTopics` is set; empty
+   *  otherwise. Merged into the attempt's resolvedTopics so the lead stops
+   *  re-raising them next turn. */
+  newlyAddressedTopics: string[];
 }
 
 interface ReflectionInput {
@@ -96,6 +151,8 @@ export class AiLeadService {
     priorSummary,
     resolvedTopics,
     turnCount,
+    difficulty,
+    maxMessages,
   }: RespondInput): Promise<string> {
     const summaryLine = priorSummary && priorSummary.trim().length > 0
       ? [
@@ -105,6 +162,60 @@ export class AiLeadService {
           `(End of summary — the most recent turns continue below.)`,
         ]
       : [];
+
+    // LEAD_DISPOSITION_V2: parametric, per-turn-numeric assembly. Gated so the
+    // old flat-constant prose stays the A/B control (see spec §8). Requires
+    // difficulty + maxMessages; falls back to legacy if either is missing.
+    const useV2 =
+      process.env.LEAD_DISPOSITION_V2 === 'true' &&
+      difficulty != null &&
+      maxMessages != null;
+
+    const system = useV2
+      ? this.buildSystemV2({
+          personaName,
+          personaPrompt,
+          summaryLine,
+          resolvedTopics: resolvedTopics ?? [],
+          turnCount: turnCount ?? 0,
+          difficulty: difficulty!,
+          maxMessages: maxMessages!,
+        })
+      : this.buildSystemV1({
+          personaName,
+          personaPrompt,
+          summaryLine,
+          resolvedTopics,
+          turnCount,
+        });
+
+    const messages: LlmMessage[] = [
+      { role: 'system', content: system },
+      ...history.map<LlmMessage>((m) => ({
+        role: m.sender === MessageSender.SALESPERSON ? 'user' : 'assistant',
+        content: m.content,
+      })),
+    ];
+
+    const reply = await this.llm.complete(messages, { maxTokens: 300, temperature: 0.85 });
+    return reply.trim();
+  }
+
+  /** Legacy prompt assembly (flat CONVERGENCE_TURN + absolute disposition
+   *  prose). Kept byte-identical as the A/B control for LEAD_DISPOSITION_V2. */
+  private buildSystemV1({
+    personaName,
+    personaPrompt,
+    summaryLine,
+    resolvedTopics,
+    turnCount,
+  }: {
+    personaName: string;
+    personaPrompt: string;
+    summaryLine: string[];
+    resolvedTopics?: string[];
+    turnCount?: number;
+  }): string {
 
     // Anti-loop injection. If the salesperson has addressed a concern with
     // real substance (facts, examples, commitments), the persona re-asking
@@ -143,7 +254,7 @@ export class AiLeadService {
         ]
       : [];
 
-    const system = [
+    return [
       `You are ${personaName}, a sales lead being contacted by a salesperson.`,
       `Stay strictly in character. Never break role, never mention you are an AI.`,
       `Reply naturally — usually 1-3 short sentences, the way a real lead would on a chat.`,
@@ -172,17 +283,83 @@ export class AiLeadService {
       ...resolvedBlock,
       ...convergenceBlock,
     ].join('\n');
+  }
 
-    const messages: LlmMessage[] = [
-      { role: 'system', content: system },
-      ...history.map<LlmMessage>((m) => ({
-        role: m.sender === MessageSender.SALESPERSON ? 'user' : 'assistant',
-        content: m.content,
-      })),
+  /** LEAD_DISPOSITION_V2 assembly. Replaces absolute prose with a NEGOTIATION
+   *  STATE block rendered fresh each turn with live numbers (objection budget,
+   *  remaining concerns, resolved list) and a derived, unconditional convergence
+   *  point. gpt-4o-mini ignores "track internally…" but follows explicit
+   *  counters + lists, which is the whole point of the rewrite. */
+  private buildSystemV2({
+    personaName,
+    personaPrompt,
+    summaryLine,
+    resolvedTopics,
+    turnCount,
+    difficulty,
+    maxMessages,
+  }: {
+    personaName: string;
+    personaPrompt: string;
+    summaryLine: string[];
+    resolvedTopics: string[];
+    turnCount: number;
+    difficulty: DifficultyTier;
+    maxMessages: number;
+  }): string {
+    const cfg = DISPOSITION[difficulty];
+    const derived = deriveTurns(cfg, maxMessages);
+    // Computed in code, not left to the model — the failure mode we're fixing is
+    // the model mis-counting its own concerns.
+    const objectionsRemaining = Math.max(0, cfg.objectionBudget - resolvedTopics.length);
+    const resolvedList = resolvedTopics.length > 0
+      ? resolvedTopics.map((t) => `    - ${t}`)
+      : [`    (none yet)`];
+
+    const negotiationState = [
+      ``,
+      `NEGOTIATION STATE (this overrides nothing in your persona — it bounds it):`,
+      `- You are a real, busy prospect: skeptical but rational. You do not cave to`,
+      `  pressure, and you do not invent objections.`,
+      `- You have a total of ${cfg.objectionBudget} genuine concern(s) for this conversation,`,
+      `  drawn from your persona. You have ${objectionsRemaining} remaining.`,
+      `- CONCERNS ALREADY ADDRESSED (never re-raise these, treat them as settled):`,
+      ...resolvedList,
+      `- Raising a concern spends it. Once a concern is addressed, it is settled`,
+      `  permanently.`,
+      `- If the salesperson proposes a concrete next step (a call, a time, a demo)`,
+      `  AND your remaining concerns are 0, accept it plainly or counter with a`,
+      `  specific alternative time. Do not raise a new concern.`,
+      `- If they propose a next step while you still have ${objectionsRemaining} concern(s),`,
+      `  raise exactly one remaining concern — clearly and specifically — then let`,
+      `  them respond.`,
+      `- Before turn ${derived.commitFloor}, prefer probing over committing, but if the`,
+      `  salesperson has already fully addressed everything you care about, early`,
+      `  commitment is allowed. Being early is not a reason to say no.`,
     ];
 
-    const reply = await this.llm.complete(messages, { maxTokens: 300, temperature: 0.85 });
-    return reply.trim();
+    const convergenceBlock = turnCount >= derived.convergence
+      ? [
+          ``,
+          `DECISION POINT: This conversation is ending. On this turn you must either`,
+          `(a) accept the salesperson's proposed next step / propose a concrete time`,
+          `yourself, or (b) clearly and politely decline and end the conversation.`,
+          `No new concerns. No deferrals.`,
+        ]
+      : [];
+
+    return [
+      `You are ${personaName}, a sales lead being contacted by a salesperson.`,
+      `Stay strictly in character. Never break role, never mention you are an AI.`,
+      `Reply naturally — usually 1-3 short sentences, the way a real lead would on a chat.`,
+      `Never hint at any task or goal the salesperson is working toward; you are simply a busy professional on a chat.`,
+      ...negotiationState,
+      ``,
+      `Persona briefing:`,
+      personaPrompt,
+      ...summaryLine,
+      ...convergenceBlock,
+    ].join('\n');
   }
 
   /** Judges, in a fully isolated low-temperature call, whether the salesperson
@@ -196,8 +373,11 @@ export class AiLeadService {
     goalDescription,
     history,
     priorSummary,
+    extractTopics,
   }: EvaluateGoalInput): Promise<GoalVerdict> {
-    if (history.length === 0) return { goalAchieved: false, closed: false };
+    if (history.length === 0) {
+      return { goalAchieved: false, closed: false, newlyAddressedTopics: [] };
+    }
 
     const transcript = history
       .map((m) => `${m.sender === MessageSender.SALESPERSON ? 'Salesperson' : personaName}: ${m.content}`)
@@ -206,6 +386,51 @@ export class AiLeadService {
     const summaryBlock = priorSummary && priorSummary.trim().length > 0
       ? `Earlier-conversation summary (treat as fact):\n${priorSummary.trim()}\n\n`
       : '';
+
+    // LEAD_DISPOSITION_V2: JSON verdict that also extracts the concerns resolved
+    // this exchange, so resolvedTopics can refresh every turn off this call
+    // (which already runs each turn) instead of the lazy summarize() schedule.
+    if (extractTopics) {
+      const system = [
+        `You are an outcome judge for a sales-roleplay conversation. Report on the transcript.`,
+        ``,
+        `goalAchieved: did the salesperson DEFINITIVELY and EXPLICITLY achieve the stated goal? Be`,
+        `conservative — vague hints, polite interest, "let me think about it", or "maybe next week" do`,
+        `NOT count. Only true when the lead has unambiguously committed (agreed to a specific time/date,`,
+        `accepted a proposal, provided the requested intro, confirmed the next concrete step).`,
+        ``,
+        `closed: has the conversation effectively ended? True when either side has clearly walked away,`,
+        `said goodbye, declared the matter closed, refused to continue, or dismissed the other party. A`,
+        `simple "ok" or short acknowledgement is NOT closure — closure requires explicit termination`,
+        `language. An explicit polite decline counts as closed:true.`,
+        ``,
+        `newlyAddressedTopics: list any of the lead's stated concerns that the salesperson has now`,
+        `SUBSTANTIVELY addressed in this exchange (not merely acknowledged). Short noun phrases`,
+        `(e.g. "pricing", "integration effort", "case studies"). If none, return [].`,
+        ``,
+        `When in doubt, output false for goalAchieved and closed. Respond ONLY with JSON, no other text:`,
+        `{"goalAchieved": false, "closed": false, "newlyAddressedTopics": []}`,
+      ].join('\n');
+
+      const user = [
+        summaryBlock + 'Conversation transcript:',
+        transcript,
+        ``,
+        `Stated goal: ${goalDescription}`,
+        ``,
+        `Output the JSON verdict.`,
+      ].join('\n');
+
+      const reply = await this.llm.complete(
+        [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+        { maxTokens: 96, temperature: 0 },
+      );
+
+      return parseGoalJson(reply);
+    }
 
     const system = [
       `You are an outcome judge for a sales-roleplay conversation. Answer two questions about the transcript.`,
@@ -250,7 +475,7 @@ export class AiLeadService {
     const text = reply.trim();
     const goalAchieved = /goal\s*:\s*yes\b/i.test(text);
     const closed = /closed\s*:\s*yes\b/i.test(text);
-    return { goalAchieved, closed };
+    return { goalAchieved, closed, newlyAddressedTopics: [] };
   }
 
   /** Instance wrapper around the module-scope generateReflection(). Wires
@@ -389,6 +614,56 @@ export async function generateReflection(
   );
 
   return parseReflectionReply(reply);
+}
+
+/** Parses the LEAD_DISPOSITION_V2 JSON judge verdict, tolerating the usual
+ *  small-model noise (prose around the object, ```json fences, YES/NO instead of
+ *  booleans). Defaults to a conservative {false,false,[]} so a malformed reply
+ *  under-detects rather than over-credits — matching the non-JSON path's bias.
+ *  Topics are trimmed, de-duplicated case-insensitively, and capped at 3. */
+export function parseGoalJson(reply: string): GoalVerdict {
+  const text = (reply ?? '').trim();
+  const fallback: GoalVerdict = { goalAchieved: false, closed: false, newlyAddressedTopics: [] };
+
+  const match = /\{[\s\S]*\}/.exec(text);
+  if (match) {
+    try {
+      const obj = JSON.parse(match[0]) as {
+        goalAchieved?: unknown;
+        closed?: unknown;
+        newlyAddressedTopics?: unknown;
+      };
+      const topics = Array.isArray(obj.newlyAddressedTopics)
+        ? obj.newlyAddressedTopics
+            .map((t) => (typeof t === 'string' ? t.trim() : ''))
+            .filter(Boolean)
+        : [];
+      const deduped: string[] = [];
+      const seen = new Set<string>();
+      for (const t of topics) {
+        const key = t.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          deduped.push(t);
+        }
+        if (deduped.length >= 3) break;
+      }
+      return {
+        goalAchieved: obj.goalAchieved === true,
+        closed: obj.closed === true,
+        newlyAddressedTopics: deduped,
+      };
+    } catch {
+      // fall through to regex salvage
+    }
+  }
+
+  // Salvage booleans from prose if JSON.parse failed entirely.
+  return {
+    goalAchieved: /"?goalAchieved"?\s*[:=]\s*(true|yes)\b/i.test(text),
+    closed: /"?closed"?\s*[:=]\s*(true|yes)\b/i.test(text),
+    newlyAddressedTopics: fallback.newlyAddressedTopics,
+  };
 }
 
 export function parseReflectionReply(reply: string): AttemptReflection | null {

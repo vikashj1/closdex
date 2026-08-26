@@ -1,7 +1,15 @@
 import { Test } from '@nestjs/testing';
-import { AiLeadService, parseSummarizeReply, parseReflectionReply } from './ai-lead.service';
+import {
+  AiLeadService,
+  parseSummarizeReply,
+  parseReflectionReply,
+  parseGoalJson,
+  deriveTurns,
+  winnableWindow,
+  DISPOSITION,
+} from './ai-lead.service';
 import { LLM_PROVIDER } from './llm-provider.interface';
-import { MessageSender } from '@closdex/db';
+import { DifficultyTier, MessageSender } from '@closdex/db';
 
 const mockLlm = { complete: jest.fn() };
 
@@ -277,5 +285,159 @@ describe('AiLeadService', () => {
   it('parseReflectionReply returns null when a section is missing', () => {
     const result = parseReflectionReply('WHAT_WORKED: only worked, no other sections');
     expect(result).toBeNull();
+  });
+
+  // --- LEAD_DISPOSITION_V2 -------------------------------------------------
+
+  describe('LEAD_DISPOSITION_V2 respond assembly', () => {
+    const OLD_ENV = process.env.LEAD_DISPOSITION_V2;
+    beforeEach(() => {
+      process.env.LEAD_DISPOSITION_V2 = 'true';
+    });
+    afterEach(() => {
+      if (OLD_ENV === undefined) delete process.env.LEAD_DISPOSITION_V2;
+      else process.env.LEAD_DISPOSITION_V2 = OLD_ENV;
+    });
+
+    const sys = () => {
+      const messages = mockLlm.complete.mock.calls[0][0] as Array<{ role: string; content: string }>;
+      return messages.find((m) => m.role === 'system')!.content;
+    };
+
+    it('renders NEGOTIATION STATE with the per-tier objection budget', async () => {
+      mockLlm.complete.mockResolvedValue('ok');
+      await service.respond({
+        ...BASE_INPUT,
+        difficulty: DifficultyTier.EXPERT,
+        maxMessages: 20,
+        turnCount: 2,
+      });
+      expect(sys()).toContain('NEGOTIATION STATE');
+      // EXPERT budget is 4, nothing resolved yet → 4 remaining.
+      expect(sys()).toContain('total of 4 genuine concern(s)');
+      expect(sys()).toContain('You have 4 remaining');
+      expect(sys()).toContain('(none yet)');
+    });
+
+    it('decrements remaining concerns by resolvedTopics and lists them', async () => {
+      mockLlm.complete.mockResolvedValue('ok');
+      await service.respond({
+        ...BASE_INPUT,
+        difficulty: DifficultyTier.HARD, // budget 3
+        maxMessages: 15,
+        turnCount: 2,
+        resolvedTopics: ['pricing', 'integration effort'],
+      });
+      expect(sys()).toContain('You have 1 remaining');
+      expect(sys()).toContain('- pricing');
+      expect(sys()).toContain('- integration effort');
+    });
+
+    it('does NOT leak the legacy DEFAULT DISPOSITION / ANTI-LOOP prose', async () => {
+      mockLlm.complete.mockResolvedValue('ok');
+      await service.respond({
+        ...BASE_INPUT,
+        difficulty: DifficultyTier.MEDIUM,
+        maxMessages: 20,
+        turnCount: 2,
+      });
+      expect(sys()).not.toContain('DEFAULT DISPOSITION');
+      expect(sys()).not.toContain('ANTI-LOOP RULE');
+      expect(sys()).not.toContain('CONVERGENCE BIAS');
+    });
+
+    it('injects the derived DECISION POINT only at/after convergence', async () => {
+      mockLlm.complete.mockResolvedValue('ok');
+      // MEDIUM @20: commitFloor 6, convergence 12.
+      await service.respond({
+        ...BASE_INPUT,
+        difficulty: DifficultyTier.MEDIUM,
+        maxMessages: 20,
+        turnCount: 11,
+      });
+      expect(sys()).not.toContain('DECISION POINT');
+
+      jest.clearAllMocks();
+      mockLlm.complete.mockResolvedValue('ok');
+      await service.respond({
+        ...BASE_INPUT,
+        difficulty: DifficultyTier.MEDIUM,
+        maxMessages: 20,
+        turnCount: 12,
+      });
+      expect(sys()).toContain('DECISION POINT');
+    });
+
+    it('falls back to the legacy assembly when difficulty/maxMessages are absent', async () => {
+      mockLlm.complete.mockResolvedValue('ok');
+      await service.respond({ ...BASE_INPUT, turnCount: 2 });
+      // No difficulty/maxMessages → v1 even with the flag on.
+      expect(sys()).toContain('DEFAULT DISPOSITION');
+    });
+  });
+
+  describe('deriveTurns / winnableWindow', () => {
+    it('every seed difficulty/cap pair clears a winnable window of at least 3', () => {
+      const seed: Array<[DifficultyTier, number]> = [
+        [DifficultyTier.ROOKIE, 10],
+        [DifficultyTier.EASY, 15],
+        [DifficultyTier.MEDIUM, 20],
+        [DifficultyTier.HARD, 15],
+        [DifficultyTier.EXPERT, 20],
+      ];
+      for (const [difficulty, cap] of seed) {
+        expect(winnableWindow(difficulty, cap)).toBeGreaterThanOrEqual(3);
+      }
+    });
+
+    it('never lets convergence fall at or below the commit floor', () => {
+      // Tiny cap where the raw percentages would collide.
+      const derived = deriveTurns(DISPOSITION.EXPERT, 3);
+      expect(derived.convergence).toBeGreaterThan(derived.commitFloor);
+    });
+  });
+
+  describe('evaluateGoal extractTopics + parseGoalJson', () => {
+    it('parseGoalJson extracts booleans + deduped, capped topics', () => {
+      const v = parseGoalJson(
+        'noise {"goalAchieved": true, "closed": false, "newlyAddressedTopics": ["Pricing","pricing","sla","onboarding","extra"]} trailing',
+      );
+      expect(v.goalAchieved).toBe(true);
+      expect(v.closed).toBe(false);
+      expect(v.newlyAddressedTopics).toEqual(['Pricing', 'sla', 'onboarding']);
+    });
+
+    it('parseGoalJson defaults conservatively on garbage', () => {
+      expect(parseGoalJson('totally not json')).toEqual({
+        goalAchieved: false,
+        closed: false,
+        newlyAddressedTopics: [],
+      });
+    });
+
+    it('evaluateGoal(extractTopics) requests JSON and returns parsed topics', async () => {
+      mockLlm.complete.mockResolvedValue(
+        '{"goalAchieved": false, "closed": false, "newlyAddressedTopics": ["pricing"]}',
+      );
+      const verdict = await service.evaluateGoal({
+        personaName: 'Alice',
+        goalDescription: 'Book a call.',
+        history: [{ sender: MessageSender.SALESPERSON, content: 'We cut cost 40%.' }],
+        extractTopics: true,
+      });
+      expect(verdict.newlyAddressedTopics).toEqual(['pricing']);
+      expect(mockLlm.complete.mock.calls[0][1]).toEqual({ maxTokens: 96, temperature: 0 });
+    });
+
+    it('evaluateGoal without extractTopics keeps the two-line format + empty topics', async () => {
+      mockLlm.complete.mockResolvedValue('GOAL: NO\nCLOSED: NO');
+      const verdict = await service.evaluateGoal({
+        personaName: 'Alice',
+        goalDescription: 'Book a call.',
+        history: [{ sender: MessageSender.SALESPERSON, content: 'Hi.' }],
+      });
+      expect(verdict.newlyAddressedTopics).toEqual([]);
+      expect(mockLlm.complete.mock.calls[0][1]).toEqual({ maxTokens: 16, temperature: 0 });
+    });
   });
 });

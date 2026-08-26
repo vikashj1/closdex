@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChallengeStatus, DifficultyTier, GoalType, UserRole } from '@closdex/db';
 import { ChallengesService } from './challenges.service';
@@ -198,11 +198,50 @@ describe('ChallengesService', () => {
       const created = { id: 'c1', personaId: 'p1' };
       mockPrisma.challenge.create.mockResolvedValue(created);
 
-      const dto = { personaId: 'p1', title: 'Test Challenge' } as any;
+      const dto = {
+        personaId: 'p1',
+        title: 'Test Challenge',
+        difficulty: DifficultyTier.MEDIUM,
+        maxMessages: 20,
+      } as any;
       const result = await service.create(dto);
 
       expect(mockPrisma.challenge.create).toHaveBeenCalledWith({ data: dto });
       expect(result).toEqual(created);
+    });
+
+    it('rejects a maxMessages cap too low for the difficulty (unwinnable window)', async () => {
+      mockPrisma.leadPersona.findUnique.mockResolvedValue({ id: 'p1' });
+
+      await expect(
+        service.create({
+          personaId: 'p1',
+          title: 'Too tight',
+          difficulty: DifficultyTier.EXPERT,
+          maxMessages: 5,
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockPrisma.challenge.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts all five seed difficulty/cap pairs', async () => {
+      mockPrisma.leadPersona.findUnique.mockResolvedValue({ id: 'p1' });
+      mockPrisma.challenge.create.mockResolvedValue({ id: 'c1' });
+
+      const seed: Array<[DifficultyTier, number]> = [
+        [DifficultyTier.ROOKIE, 10],
+        [DifficultyTier.EASY, 15],
+        [DifficultyTier.MEDIUM, 20],
+        [DifficultyTier.HARD, 15],
+        [DifficultyTier.EXPERT, 20],
+      ];
+
+      for (const [difficulty, maxMessages] of seed) {
+        await expect(
+          service.create({ personaId: 'p1', title: 't', difficulty, maxMessages } as any),
+        ).resolves.toBeDefined();
+      }
     });
   });
 
