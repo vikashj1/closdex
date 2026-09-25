@@ -8,6 +8,25 @@ import './hire.css';
 const CRM_URL = 'https://crm.codevisionaryservices.com';
 const CONTACT_EMAIL = 'cvs.devs01@gmail.com';
 
+// A bare mailto: opens an empty draft, and "write to a stranger from scratch" is
+// where most of this page's intent dies. Prefilling a subject and three prompts
+// turns it into filling a form. Encoded so the line breaks survive the client.
+const MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+  'Project enquiry — from closdex.com/hire',
+)}&body=${encodeURIComponent(
+  [
+    "Here's what's eating my team's time:",
+    '',
+    '',
+    'Tools we already use:',
+    '',
+    '',
+    'Rough timeline or budget (if you have one):',
+    '',
+    '',
+  ].join('\n'),
+)}`;
+
 const PAGE_URL = 'https://closdex.com/hire';
 const PAGE_TITLE = 'Shashank — AI Automation & Integration Consultant';
 const PAGE_DESC =
@@ -41,6 +60,8 @@ const offers = [
     pitch: 'Your own CRM, self-hosted, AI outreach built in.',
     detail:
       'I deploy VS-CRM on your infrastructure, import your leads, and set up templates plus bulk email and WhatsApp. Mobile-ready, branded to you. No per-seat SaaS bill, and your data stays yours.',
+    scope:
+      '$2,500 is a standard deploy: your branding, your leads imported, email and WhatsApp templates live. It moves toward $6,000 with custom fields and pipelines, migration from an existing CRM, or integrations into tools you already run.',
     featured: true,
   },
   {
@@ -50,6 +71,8 @@ const offers = [
     pitch: 'A lead machine that runs itself.',
     detail:
       'Scraping, enrichment, and personalized LinkedIn/WhatsApp outreach wired into your CRM — built on infrastructure that survives the platform changing its interface, with a health check so it fails loudly instead of silently.',
+    scope:
+      '$1,500 covers one channel and one lead source, wired into your CRM. It moves toward $4,000 with multiple channels, enrichment from several sources, or per-lead messaging personalized by AI.',
     featured: false,
   },
   {
@@ -59,6 +82,8 @@ const offers = [
     pitch: 'A tireless teammate for one painful job.',
     detail:
       'A scoped agent that handles one repetitive job end to end — inbox triage, report generation, data crawling, or a content-to-video pipeline. Built, deployed, and documented so it keeps running without me.',
+    scope:
+      '$3,000 is one job, one clear input and output, running on your infrastructure. It moves toward $8,000 when the agent spans several systems, needs a human approval step, or has to hold up under real volume.',
     featured: false,
   },
 ];
@@ -121,7 +146,7 @@ export default function HirePage() {
               real data, and keeps running when a platform changes underneath it.
             </p>
             <div className="hire__cta-row">
-              <a className="hire__btn hire__btn--primary" href={`mailto:${CONTACT_EMAIL}`}>
+              <a className="hire__btn hire__btn--primary" href={MAILTO}>
                 Book a 20-min call <span aria-hidden="true">→</span>
               </a>
               <a
@@ -190,6 +215,10 @@ export default function HirePage() {
                 <span className="hire__price">{offer.price}</span>
                 <span className="hire__timeline">{offer.timeline}</span>
               </div>
+              {/* A bare range makes buyers price themselves at the top end and
+                  hesitate. Saying what sits at each end turns the number into a
+                  scope conversation instead of a risk. */}
+              <p className="hire__offer-scope">{offer.scope}</p>
             </article>
           ))}
         </div>
@@ -223,7 +252,7 @@ export default function HirePage() {
           Tell me what&rsquo;s eating your team&rsquo;s time. I&rsquo;ll tell you straight whether
           it&rsquo;s a good fit before you pay for anything.
         </p>
-        <a className="hire__btn hire__btn--primary" href={`mailto:${CONTACT_EMAIL}`}>
+        <a className="hire__btn hire__btn--primary" href={MAILTO}>
           Start a conversation <span aria-hidden="true">→</span>
         </a>
       </section>

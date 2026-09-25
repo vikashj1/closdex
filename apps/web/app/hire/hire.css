@@ -301,6 +301,16 @@
   color: var(--hire-muted);
 }
 
+/* Sits under the price, smaller than the detail copy: it answers "why is this a
+   range?" for someone already looking at the number, without competing with the
+   pitch above it. */
+.hire__offer-scope {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--hire-muted);
+  margin: 12px 0 0;
+}
+
 /* Proof */
 
 .hire__proof {
