@@ -227,6 +227,94 @@
 
 /* Offers */
 
+/* Pilot. Visually the odd one out on purpose: filled rather than outlined, and
+   full width above the grid, so it reads as the way in rather than a fourth
+   tier competing with the three below it. */
+.hire__pilot {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(20px, 4vw, 40px);
+  margin-bottom: 28px;
+  padding: 28px clamp(22px, 3vw, 32px);
+  border: 1px solid var(--hire-violet);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f7f6ff 0%, var(--hire-paper) 100%);
+}
+
+.hire__badge--pilot {
+  background: var(--hire-ink);
+}
+
+.hire__pilot-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.hire__pilot-pitch {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--hire-violet-deep);
+  margin: 0 0 12px;
+}
+
+.hire__pilot-detail {
+  font-size: 14.5px;
+  color: var(--hire-muted);
+  margin: 0 0 10px;
+  max-width: 60ch;
+}
+
+.hire__pilot-note {
+  font-size: 13px;
+  color: var(--hire-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+/* Price column: centred so the number, the timeline and the CTA read as one
+   block rather than three stacked strays. */
+.hire__pilot-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.hire__pilot-price {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.hire__pilot-cta {
+  margin-top: 10px;
+  white-space: nowrap;
+}
+
+/* Below this the side column has no room to sit beside the copy without
+   squeezing both, so it drops underneath and stretches. */
+@media (max-width: 720px) {
+  .hire__pilot {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .hire__pilot-side {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .hire__pilot-cta {
+    align-self: stretch;
+    text-align: center;
+  }
+}
+
 .hire__offers {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -309,6 +397,22 @@
   line-height: 1.65;
   color: var(--hire-muted);
   margin: 12px 0 0;
+}
+
+/* Set apart from the cards by the rule above it: it qualifies all three prices,
+   so it must not look like it belongs to the last card in the row. */
+.hire__founding {
+  margin: 28px 0 0;
+  padding-top: 22px;
+  border-top: 1px solid var(--hire-hairline);
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--hire-muted);
+  max-width: 68ch;
+}
+
+.hire__founding strong {
+  color: var(--hire-ink);
 }
 
 /* Proof */

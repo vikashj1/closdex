@@ -52,6 +52,19 @@ export const metadata: Metadata = {
   },
 };
 
+// Deliberately first and cheap. With no client testimonials yet, the page can't
+// borrow anyone else's trust, so the job of this offer is to make trying me
+// cost less than the risk of being wrong about me.
+const pilot = {
+  name: 'Pilot: one workflow, one week',
+  price: '$500',
+  timeline: '5 working days',
+  pitch: "Hire me for one job before you hire me for the big one.",
+  detail:
+    'Pick the single task eating the most time this week. I build it, deploy it on your infrastructure, and hand it over working. If it does not do what I said it would, you do not pay.',
+  note: 'The fee comes off the price if you go on to a full project.',
+};
+
 const offers = [
   {
     name: 'AI CRM Setup',
@@ -96,12 +109,12 @@ const proof = [
   },
   {
     name: 'Closdex',
-    body: 'A full platform, not a feature: salespeople practice against AI-simulated leads and get scored on a transparent rubric, companies browse rank-vetted talent and hire. Next.js and NestJS across eight services, Postgres and Redis, payments and AI scoring wired in.',
+    body: 'A full platform, not a feature: salespeople practice against AI-simulated leads and get scored on a transparent rubric, companies browse rank-vetted talent and hire. Next.js and NestJS, eighteen API modules across auth, payments, AI scoring, queues and notifications, on Postgres and Redis. 260 commits since May, deployed and serving traffic.',
     link: { href: 'https://closdex.com', label: 'Visit Closdex' },
   },
   {
     name: 'Outreach engine',
-    body: 'LinkedIn and WhatsApp lead generation on persistent sessions, video posting included — still working after the platforms redesigned their interfaces underneath it. Most scrapers die at exactly that point.',
+    body: 'LinkedIn and WhatsApp lead generation on persistent sessions, video posting included. Running since June and still working after LinkedIn redesigned its composer underneath it — most scrapers die at exactly that point. Built with a health check that fails loudly, because the expensive failure is the one that looks fine in the logs.',
     link: null,
   },
   {
@@ -201,13 +214,34 @@ export default function HirePage() {
 
       <section className="hire__container hire__section">
         <h2 className="hire__h2">What I take on</h2>
+
+        {/* Sits above the priced tiers, not inside the grid: it is the entry
+            point, and putting it in the grid would read as a cheaper fourth
+            option competing with them rather than a way in. */}
+        <div className="hire__pilot">
+          <div className="hire__pilot-main">
+            <span className="hire__badge hire__badge--pilot">Start small</span>
+            <h3 className="hire__pilot-name">{pilot.name}</h3>
+            <p className="hire__pilot-pitch">{pilot.pitch}</p>
+            <p className="hire__pilot-detail">{pilot.detail}</p>
+            <p className="hire__pilot-note">{pilot.note}</p>
+          </div>
+          <div className="hire__pilot-side">
+            <span className="hire__pilot-price">{pilot.price}</span>
+            <span className="hire__timeline">{pilot.timeline}</span>
+            <a className="hire__btn hire__btn--primary hire__pilot-cta" href={MAILTO}>
+              Start the pilot <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
+
         <div className="hire__offers">
           {offers.map((offer) => (
             <article
               key={offer.name}
               className={`hire__offer${offer.featured ? ' hire__offer--featured' : ''}`}
             >
-              {offer.featured ? <span className="hire__badge">Start here</span> : null}
+              {offer.featured ? <span className="hire__badge">Best value</span> : null}
               <h3 className="hire__offer-name">{offer.name}</h3>
               <p className="hire__offer-pitch">{offer.pitch}</p>
               <p className="hire__offer-detail">{offer.detail}</p>
@@ -222,6 +256,16 @@ export default function HirePage() {
             </article>
           ))}
         </div>
+
+        {/* Says the quiet part out loud. These rates are low for the scope, and a
+            buyer who notices that wonders what is wrong — naming the reason
+            turns a doubt into a deadline. */}
+        <p className="hire__founding">
+          <strong>Founding-client pricing.</strong> I&rsquo;m taking on my first few consulting
+          clients, so these rates are below what this work will cost later. In exchange I ask for
+          a reference once it&rsquo;s running — not a logo on a website, just a straight answer if
+          someone asks you whether it worked.
+        </p>
       </section>
 
       <section className="hire__container hire__section">
