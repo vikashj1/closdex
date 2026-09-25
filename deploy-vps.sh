@@ -12,6 +12,9 @@ git pull origin main
 echo "→ Installing dependencies..."
 pnpm install --frozen-lockfile 2>/dev/null || npm install --legacy-peer-deps
 
+echo "→ Sourcing .env (so DATABASE_URL is set for manual runs)..."
+if [ -f "$REPO_DIR/.env" ]; then set -a && . "$REPO_DIR/.env" && set +a; fi
+
 echo "→ Syncing DB schema (prisma db push — no migrations folder yet)..."
 cd packages/db
 pnpm exec prisma generate 2>/dev/null || npx prisma generate
@@ -26,6 +29,17 @@ cd "$REPO_DIR"
 echo "→ Building web..."
 cd apps/web
 pnpm build 2>/dev/null || npm run build
+
+echo "→ Copying standalone static assets (output: 'standalone' excludes these)..."
+# Monorepo standalone layout: server.js lives at .next/standalone/apps/web/
+STANDALONE_DIR=".next/standalone/apps/web"
+mkdir -p "$STANDALONE_DIR/.next"
+rm -rf "$STANDALONE_DIR/.next/static"
+cp -r .next/static "$STANDALONE_DIR/.next/static"
+if [ -d public ]; then
+  rm -rf "$STANDALONE_DIR/public"
+  cp -r public "$STANDALONE_DIR/public"
+fi
 cd "$REPO_DIR"
 
 echo "→ Restarting services..."

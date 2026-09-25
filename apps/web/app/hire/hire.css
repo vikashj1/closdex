@@ -1,0 +1,351 @@
+/* Scoped to .hire so nothing here leaks into the Closdex app or marketing
+   pages, which run their own type stacks and palettes. */
+
+.hire {
+  --hire-ink: #0b0b0f;
+  --hire-paper: #ffffff;
+  --hire-violet: #5b4bf5;
+  --hire-violet-deep: #3a2dc4;
+  --hire-muted: #7a7a86;
+  --hire-hairline: #e7e7ec;
+  --hire-maxw: 1080px;
+
+  background: var(--hire-paper);
+  color: var(--hire-ink);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hire__container {
+  max-width: var(--hire-maxw);
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 40px);
+}
+
+.hire__section {
+  padding-block: clamp(56px, 9vw, 96px);
+  border-top: 1px solid var(--hire-hairline);
+}
+
+/* Hero */
+
+.hire__hero {
+  padding-block: clamp(64px, 11vw, 128px);
+  background: linear-gradient(180deg, #f7f6ff 0%, var(--hire-paper) 100%);
+}
+
+/* Two columns on desktop: copy carries the pitch, portrait puts a face on it.
+   The portrait column is fixed-ish so the headline keeps its 22ch measure. */
+.hire__hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 34%, 430px);
+  align-items: start;
+  gap: clamp(24px, 5vw, 56px);
+}
+
+.hire__hero-copy {
+  min-width: 0;
+}
+
+.hire__portrait {
+  /* Top-aligned to the headline's first line, not to the column: the tag pill
+     sits above the headline, so the portrait is pushed down by the pill's own
+     height plus its 24px margin to make the two tops meet. The negative bottom
+     margin lets the faded base run past the hero's padding into the gradient,
+     so the cutout ends in the background instead of stopping mid-air. */
+  align-self: start;
+  /* pill: 13px text * ~1.4 line-height + 12px vertical padding + 24px margin */
+  margin-top: 54px;
+  margin-bottom: calc(-1 * clamp(24px, 4vw, 48px));
+}
+
+.hire__portrait img {
+  display: block;
+  /* Scaled to span the headline block (first line down to the last), so the
+     portrait reads as the headline's visual counterweight rather than a small
+     inset. Height drives the size; width follows the aspect ratio and is
+     capped by the column so it can never overlap the copy. */
+  height: clamp(340px, 42vw, 510px);
+  width: auto;
+  max-width: 100%;
+  margin-inline-start: auto;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+/* Below this the headline needs the full measure, and a 200px portrait beside
+   wrapped text just crowds it — so the portrait steps out of the grid flow. */
+@media (max-width: 860px) {
+  .hire__hero-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .hire__portrait {
+    display: none;
+  }
+}
+
+/* Tag row. Desktop is the pill alone; the avatar only appears on mobile, where
+   the full-height cutout is hidden. */
+.hire__idrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hire__avatar {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  /* Round window. The source is a full 2:3 portrait, so a plain cover crop
+     leaves the face tiny; the image inside is oversized and offset instead, and
+     this wrapper clips it to the circle. Offsets below are measured off the
+     source asset, not eyeballed — see the note on .hire__avatar img. */
+  .hire__avatar {
+    display: block;
+    position: relative;
+    flex: none;
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(91, 75, 245, 0.08);
+  }
+
+  /* In the 368x500 source the head runs y=10..168 and centres on x=211, i.e.
+     right of the image's own midline. Scaling to 182% sizes the head to ~78% of
+     the circle; the offsets put that head box in the middle of the window
+     instead of the image's geometric centre, which is what clipped the hair and
+     pushed the face off to one side. Keep these in step with the asset. */
+  .hire__avatar img {
+    position: absolute;
+    width: 182%;
+    height: auto;
+    left: -54%;
+    top: 4%;
+  }
+
+  /* The pill's 24px bottom margin would knock the flex row off-centre. */
+  .hire__idrow .hire__tag {
+    margin-bottom: 0;
+  }
+
+  .hire__idrow {
+    margin-bottom: 24px;
+  }
+}
+
+.hire__tag {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--hire-violet-deep);
+  background: rgba(91, 75, 245, 0.09);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin-bottom: 24px;
+}
+
+.hire__title {
+  font-size: clamp(30px, 5.2vw, 52px);
+  line-height: 1.12;
+  letter-spacing: -0.022em;
+  font-weight: 700;
+  margin: 0 0 20px;
+  max-width: 22ch;
+}
+
+.hire__title em {
+  font-style: normal;
+  color: var(--hire-violet);
+}
+
+.hire__lead {
+  font-size: clamp(16px, 2vw, 19px);
+  color: var(--hire-muted);
+  max-width: 62ch;
+  margin: 0 0 28px;
+}
+
+.hire__note {
+  font-size: 14px;
+  color: var(--hire-muted);
+  margin: 16px 0 0;
+}
+
+.hire__cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hire__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 13px 22px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.hire__btn--primary {
+  background: var(--hire-violet);
+  color: var(--hire-paper);
+}
+
+.hire__btn--primary:hover {
+  background: var(--hire-violet-deep);
+  transform: translateY(-1px);
+}
+
+.hire__btn--ghost {
+  border: 1px solid var(--hire-hairline);
+  color: var(--hire-ink);
+}
+
+.hire__btn--ghost:hover {
+  border-color: var(--hire-ink);
+  transform: translateY(-1px);
+}
+
+.hire__h2 {
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -0.015em;
+  font-weight: 700;
+  margin: 0 0 32px;
+}
+
+/* Offers */
+
+.hire__offers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.hire__offer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--hire-hairline);
+  border-radius: 14px;
+  padding: 26px 24px;
+  background: var(--hire-paper);
+}
+
+.hire__offer--featured {
+  border-color: var(--hire-violet);
+  box-shadow: 0 8px 28px rgba(91, 75, 245, 0.12);
+}
+
+.hire__badge {
+  position: absolute;
+  top: -11px;
+  left: 24px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hire-paper);
+  background: var(--hire-violet);
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+
+.hire__offer-name {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.hire__offer-pitch {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hire-violet-deep);
+  margin: 0 0 12px;
+}
+
+.hire__offer-detail {
+  font-size: 14.5px;
+  color: var(--hire-muted);
+  margin: 0 0 22px;
+  flex: 1;
+}
+
+.hire__offer-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hire-hairline);
+}
+
+.hire__price {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.hire__timeline {
+  font-size: 13.5px;
+  color: var(--hire-muted);
+}
+
+/* Proof */
+
+.hire__proof {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.hire__proof-name {
+  font-size: 16.5px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.hire__proof-body {
+  font-size: 14.5px;
+  color: var(--hire-muted);
+  margin: 0 0 12px;
+}
+
+.hire__proof-link {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--hire-violet);
+  text-decoration: none;
+}
+
+.hire__proof-link:hover {
+  text-decoration: underline;
+}
+
+.hire__close {
+  text-align: center;
+}
+
+.hire__close .hire__lead {
+  margin-inline: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hire__btn {
+    transition: none;
+  }
+
+  .hire__btn:hover {
+    transform: none;
+  }
+}
